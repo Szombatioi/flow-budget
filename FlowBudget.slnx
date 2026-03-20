@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FlowBudget/FlowBudget.Client/FlowBudget.Client.csproj" />
+  <Project Path="FlowBudget/FlowBudget/FlowBudget.csproj" />
+</Solution>

@@ -1,0 +1,30 @@
+## Visual Studio 
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.doccache
+
+## Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+## ASP.NET Core
+appsettings.Development.json
+appsettings.Local.json
+
+## Tooling & Build
+node_modules/
+.npm/
+dist/
+publish/
+*.log
+
+## OS generated files
+.DS_Store
+Thumbs.db
