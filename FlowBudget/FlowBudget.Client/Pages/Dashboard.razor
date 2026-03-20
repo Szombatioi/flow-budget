@@ -1,0 +1,27 @@
+﻿<MudChart T="double"
+          ChartType="ChartType.Donut"
+          Width="100%"
+          Height="300px"
+          @bind-SelectedIndex="Index"
+          ChartSeries="@([SeriesData])"
+          ChartOptions="@Options">
+    <CustomGraphics>
+        <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
+            <tspan x="50%" dy="-1.2em" style="font-size: 14px;">Today's budget</tspan>
+
+            <tspan x="50%" dy="1.4em" style="font-size: 24px; fill: var(--mud-palette-primary);">75%</tspan>
+
+            <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft</tspan>
+        </text>
+    </CustomGraphics>
+</MudChart>
+
+@code {
+    private int Index = -1;
+    private double[] SeriesData = { 25, 75 };
+
+    private ChartOptions Options = new ChartOptions()
+    {
+        ChartPalette = new string[] { "#594AE2", "#E5E5E5" }
+    };
+}
