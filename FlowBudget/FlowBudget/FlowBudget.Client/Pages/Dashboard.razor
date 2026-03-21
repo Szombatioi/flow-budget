@@ -1,0 +1,123 @@
+@page "/"
+@using System.Threading
+@using FlowBudget.Client.Components.DTO
+@using FlowBudget.Client.Components
+
+<style>
+    /* 2. Disable hover effect by making the SVG ignore pointer events */
+    .no-hover-chart {
+        pointer-events: none;
+    }
+</style>
+
+@* Center diagram of spendings *@
+<div class="no-hover-chart">
+    <MudChart T="double"
+              ChartType="ChartType.Donut"
+              Width="100%"
+              Height="300px"
+              ChartSeries="@( [SeriesData])"
+              ChartOptions="@Options">
+        <CustomGraphics>
+            <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
+                <tspan x="50%" dy="-1.2em" style="font-size: 14px;">Today's budget</tspan>
+                <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
+                <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft</tspan>
+            </text>
+        </CustomGraphics>
+    </MudChart>
+</div>
+
+@* List of items *@
+<div style="display: flex; justify-content: center; width: 100%">
+    <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
+        <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
+            Expenditures
+        </MudText>
+        <div style="display: flex; justify-content: space-between">
+            <div />
+            <MudTooltip Text="Felvétel" Placement="Placement.Top">
+                <MudIconButton Icon="@Icons.Material.Filled.Add">
+
+                </MudIconButton>
+            </MudTooltip>
+        </div>
+
+        @foreach (var e in expenditures)
+        {
+            <ExpenditureListItem Expenditure=e />
+            if (expenditures.Last().Id != e.Id)
+            {
+                <MudDivider />
+            }
+        }
+    </MudPaper>
+</div>
+
+@code {
+    private double[] SeriesData = { 100, 0 }; // Start at 0 for the progress part
+    private double targetValue = 75; // The final value you want to reach
+    private double currentDisplayValue = 0;
+
+    private ChartOptions Options = new ChartOptions();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // 1. "Load" animation logic
+            await AnimateChart();
+        }
+    }
+
+    private async Task AnimateChart()
+    {
+        // Smoothly increment the value
+        for (int i = 0; i <= targetValue; i++)
+        {
+            currentDisplayValue = i;
+            // Update the chart data: [Remaining, Progress]
+            SeriesData = new double[] { 100 - currentDisplayValue, currentDisplayValue };
+
+            // Refresh the colors based on current progress
+            Options.ChartPalette = new string[] { "#F5F5F5", GetProgressColor(currentDisplayValue) };
+
+            StateHasChanged(); // Force UI refresh
+            await Task.Delay(10); // Adjust delay for speed (10ms is fast and smooth)
+        }
+    }
+
+    private string GetProgressColor(double value)
+    {
+        if (value < 50) return "#00ff00"; // Green
+        if (value < 80) return "#ffff00"; // Yellow
+        return "#0000ff"; // Blue
+    }
+
+    private List<ExpenditureDto> expenditures { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //TODO: Replace mock data
+        expenditures = new()
+        {
+            new ExpenditureDto()
+            {
+                Id = "0",
+                Name = "Shopping",
+                Price = 2500,
+                Date = new DateTime(),
+                Currency = "Ft",
+            },
+            new ExpenditureDto()
+            {
+                Id = "1",
+                Name = "Coffee",
+                Price = 500,
+                Date = new DateTime(),
+                Currency = "Ft",
+            }
+        };
+    }
+
+}

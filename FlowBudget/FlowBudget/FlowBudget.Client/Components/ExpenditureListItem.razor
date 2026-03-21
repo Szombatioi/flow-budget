@@ -1,0 +1,11 @@
+@using FlowBudget.Client.Components.DTO
+
+<div class="py-2" style="display: flex; flex-direction: row; justify-content: space-between">
+    <MudText>@Expenditure.Name</MudText>
+    <MudText>@Expenditure.Price @Expenditure.Currency</MudText>
+</div>
+
+@code {
+    [Parameter]
+    public ExpenditureDto Expenditure { get; set; }
+}

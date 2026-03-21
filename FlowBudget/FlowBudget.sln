@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowBudget", "FlowBudget\FlowBudget\FlowBudget.csproj", "{DB9D3866-35B3-4990-AA3A-85C606E41B65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowBudget.Client", "FlowBudget\FlowBudget.Client\FlowBudget.Client.csproj", "{A403C814-CD32-4F41-B8F4-342AA16F0277}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB9D3866-35B3-4990-AA3A-85C606E41B65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB9D3866-35B3-4990-AA3A-85C606E41B65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB9D3866-35B3-4990-AA3A-85C606E41B65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB9D3866-35B3-4990-AA3A-85C606E41B65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A403C814-CD32-4F41-B8F4-342AA16F0277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A403C814-CD32-4F41-B8F4-342AA16F0277}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A403C814-CD32-4F41-B8F4-342AA16F0277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A403C814-CD32-4F41-B8F4-342AA16F0277}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
