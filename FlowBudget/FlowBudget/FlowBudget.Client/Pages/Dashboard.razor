@@ -11,11 +11,23 @@
 @attribute [Authorize]
 
 
-@if (isLoading)
+@if (UserDto == null)
 {
     <div class="d-flex justify-center align-center">
         <MudProgressCircular Indeterminate="true"/>
     </div>
+}
+else if (UserDto.AccountIds.Count == 0)
+{
+    <MudContainer Class="d-flex justify-center align-center flex-column">
+        <MudText>@L["no_accounts_yet"]</MudText>
+        <MudText>
+            @L["create_one_here"]:
+            <MudLink Href="/accounts">
+                @L["financial_accounts"]
+            </MudLink>
+        </MudText>
+    </MudContainer>
 }
 else
 {
@@ -25,12 +37,12 @@ else
             pointer-events: none;
         }
     </style>
-    
+
     @if (UserDto != null)
     {
         <p>User: @UserDto.Id</p>
     }
-    
+
     @* Center diagram of spendings *@
     @* TODO: kiszervezni komponensnek *@
     <div class="no-hover-chart">
@@ -69,18 +81,17 @@ else
             @foreach (var e in expenditures)
             {
                 <ExpenditureListItem Expenditure=e/>
-                if (expenditures.Last().Id != e.Id)
-                {
-                    <MudDivider/>
+                    if (expenditures.Last().Id != e.Id)
+                    {
+                        <MudDivider/>
+                    }
                 }
-            }
         </MudPaper>
     </div>
 }
 
 
 @code {
-    private bool isLoading { get; set; } = true;
     [CascadingParameter] private ClaimsPrincipal? User { get; set; }
     private UserBaseDTO? UserDto { get; set; }
 
@@ -156,7 +167,7 @@ else
         finally
         {
             // CRITICAL: This must be outside the 'if' to stop the spinner
-            isLoading = false;
+            // isLoading = false;
         }
     }
 

@@ -186,4 +186,13 @@
   <data name="pockets_title" xml:space="preserve">
     <value>Pockets</value>
   </data>
+  <data name="no_accounts_yet" xml:space="preserve">
+    <value>You don't have any financial accounts registered to your account yet.</value>
+  </data>
+  <data name="create_one_here" xml:space="preserve">
+    <value>Create one here</value>
+  </data>
+  <data name="financial_accounts" xml:space="preserve">
+    <value>Financial accounts</value>
+  </data>
 </root>
