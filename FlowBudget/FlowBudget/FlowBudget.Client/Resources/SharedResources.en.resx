@@ -129,4 +129,61 @@
     <value>Add</value>
     <comment/>
   </data>
+  <data name="incomes_title" xml:space="preserve">
+    <value>Incomes</value>
+  </data>
+  <data name="save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="add_income" xml:space="preserve">
+    <value>Add income</value>
+  </data>
+  <data name="amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="field_required" xml:space="preserve">
+    <value>This field is required</value>
+  </data>
+  <data name="income_name_label" xml:space="preserve">
+    <value>Income name</value>
+  </data>
+  <data name="income_amount_label" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="delete_income_title" xml:space="preserve">
+    <value>Are you sure you want to delete this income source?</value>
+  </data>
+  <data name="delete_income_confirm_description" xml:space="preserve">
+    <value>Your balance will be modified and your daily expense limits may be reduced.</value>
+  </data>
+  <data name="item_deleted" xml:space="preserve">
+    <value>Item deleted</value>
+  </data>
+  <data name="save_success" xml:space="preserve">
+    <value>Saved successfully</value>
+  </data>
+  <data name="pocket_name_label" xml:space="preserve">
+    <value>Pocket's name</value>
+  </data>
+  <data name="add_pocket" xml:space="preserve">
+    <value>Add pocket</value>
+  </data>
+  <data name="pocket_ratio_label" xml:space="preserve">
+    <value>Ratio (%)</value>
+  </data>
+  <data name="remaining_ratio" xml:space="preserve">
+    <value>Remaining ratio</value>
+  </data>
+  <data name="ratio_exceed_limit" xml:space="preserve">
+    <value>Ratio exceeds the upper limit!</value>
+  </data>
+  <data name="money_amount" xml:space="preserve">
+    <value>Money amount</value>
+  </data>
+  <data name="pockets_title" xml:space="preserve">
+    <value>Pockets</value>
+  </data>
 </root>

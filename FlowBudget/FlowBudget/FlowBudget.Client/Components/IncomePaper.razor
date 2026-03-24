@@ -1,0 +1,195 @@
+@inject IStringLocalizer<SharedResources> L
+@using DTO
+@using FlowBudget.Client.Components.Dialogs
+@using global::DTO
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6">
+        
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
+            <b>@L["incomes_title"]</b>
+        </MudText>
+
+        <MudList T="string" Clickable="false">
+            @foreach (var budget in _budgets)
+            {
+                <MudListItem>
+                    <MudGrid Items="12" Class="align-center">
+                        <MudItem xs="4">
+                            <MudBadge Visible="@saveables.Any(s => s.CostBudget.Id == budget.Id)"
+                                      Icon="@Icons.Material.Filled.Edit"
+                                      Color="Color.Warning"
+                                      Overlap="true"
+                                      Bordered="true"
+                                      Placement="Placement.TopRight"
+                                      Class="d-block w-100">
+                                <MudText Typo="Typo.body1">@budget.Name</MudText>
+                            </MudBadge>
+                        </MudItem>
+                        
+                        <MudItem xs="4">
+                            <MudText Typo="Typo.body1">
+                                @budget.Amount.ToString("N0") @SelectedCurrency
+                            </MudText>
+                        </MudItem>
+
+                        <MudItem xs="4" Class="d-flex justify-end">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                           OnClick="@(() => EditBudget(budget))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                           Color="Color.Error" 
+                                           OnClick="@(() => DeleteBudget(budget))" />
+                        </MudItem>
+                    </MudGrid>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-6">
+            <MudTooltip Text="@L["add_income"]">
+                <MudIconButton
+                    Icon="@Icons.Material.Filled.Add"
+                    Size="Size.Small"
+                    OnClick="AddBudget" />
+            </MudTooltip>
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Save" 
+                       OnClick="SaveAll">
+                @L["save"]
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<CostBudgetDTO> _budgets = new();
+    private List<CostBudgetModifyDTO> saveables = new();
+    private string SelectedCurrency = "HUF";
+
+    protected override void OnInitialized()
+    {
+        // Mocking some data
+        _budgets.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Main Salary", Amount = 550000 });
+        _budgets.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Bonus", Amount = 45000 });
+    }
+
+    private async Task AddBudget()
+    {
+        var parameters = new DialogParameters<AddIncomeDialog>
+        {
+            { x => x.Currency, SelectedCurrency },
+            { x => x.Model, new CostBudgetDTO() }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddIncomeDialog>(L["add_income"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CostBudgetDTO newBudget)
+        {
+            _budgets.Add(newBudget);
+            saveables.Add(new CostBudgetModifyDTO()
+            {
+                CostBudget = newBudget,
+                Method = ModificationMethod.CREATE,
+            });
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditBudget(CostBudgetDTO budget)
+    {
+        // Create a shallow copy so changes aren't live-updated in the list until 'Ok' is clicked
+        var modelCopy = new CostBudgetDTO 
+        { 
+            Id = budget.Id, 
+            Name = budget.Name, 
+            Amount = budget.Amount 
+        };
+
+        var parameters = new DialogParameters<AddIncomeDialog>
+        {
+            { x => x.Currency, SelectedCurrency },
+            { x => x.Model, modelCopy }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddIncomeDialog>(L["edit_income"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CostBudgetDTO updatedBudget)
+        {
+            // Apply changes to the UI list item
+            budget.Name = updatedBudget.Name;
+            budget.Amount = updatedBudget.Amount;
+
+            // Only add to saveables if it's not already marked as CREATE
+            if (!saveables.Any(x => x.CostBudget.Id == budget.Id && x.Method == ModificationMethod.CREATE))
+            {
+                saveables.Add(new CostBudgetModifyDTO()
+                {
+                    CostBudget = budget,
+                    Method = ModificationMethod.MODIFY
+                });
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteBudget(CostBudgetDTO budget)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_income_title"] },
+            { x => x.ContentText, L["delete_income_confirm_description"] }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_income_title"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            _budgets.Remove(budget);
+
+            // Logic check: If it was a new item (CREATE), just remove it from saveables entirely
+            var existingCreate = saveables.FirstOrDefault(x => x.CostBudget.Id == budget.Id && x.Method == ModificationMethod.CREATE);
+            if (existingCreate != null)
+            {
+                saveables.Remove(existingCreate);
+            }
+            else
+            {
+                saveables.Add(new CostBudgetModifyDTO()
+                {
+                    CostBudget = budget,
+                    Method = ModificationMethod.DELETE,
+                });
+            }
+
+            StateHasChanged();
+            Snackbar.Add(L["item_deleted"], Severity.Info);
+        }
+    }
+
+    private async Task SaveAll()
+    {
+        if (!saveables.Any())
+        {
+            Snackbar.Add(L["no_changes_to_save"], Severity.Info);
+            return;
+        }
+
+        // TODO: call backend API with the saveables list
+        // Example: await Http.PostAsJsonAsync("api/budgets/save", saveables);
+        
+        saveables.Clear();
+        Snackbar.Add(L["save_success"], Severity.Success);
+    }
+}

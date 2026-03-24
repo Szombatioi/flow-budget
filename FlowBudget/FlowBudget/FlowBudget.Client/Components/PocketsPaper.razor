@@ -1,0 +1,190 @@
+@page "/plan/pockets"
+@inject IStringLocalizer<SharedResources> L
+@using DTO
+@using FlowBudget.Client.Components.Dialogs
+@using global::DTO
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6">
+
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
+            <b>@L["pockets_title"]</b>
+        </MudText>
+
+        <MudList T="string" Clickable="false">
+            @foreach (var pocket in _pockets)
+            {
+                <MudListItem>
+                    <MudGrid Class="align-center">
+                        <MudItem xs="4">
+                            <MudBadge Visible="@saveables.Any(s => s.Pocket.Id == pocket.Id)"
+                                      Icon="@Icons.Material.Filled.Edit"
+                                      Color="Color.Warning"
+                                      Overlap="true"
+                                      Bordered="true"
+                                      Placement="Placement.TopRight"
+                                      Class="d-block w-100">
+                                <MudText Typo="Typo.body1">@pocket.Name</MudText>
+                            </MudBadge>
+                        </MudItem>
+
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1">
+                                @pocket.Money.ToString("N0") @SelectedCurrency
+                            </MudText>
+                        </MudItem>
+
+                        <MudItem xs="2">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
+                                @pocket.Ratio.ToString("N1") %
+                            </MudChip>
+                        </MudItem>
+
+                        <MudItem xs="3" Class="d-flex justify-end">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           OnClick="@(() => EditPocket(pocket))"/>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeletePocket(pocket))"/>
+                        </MudItem>
+                    </MudGrid>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-6">
+            <MudTooltip Text="@L["add_pocket"]">
+                <MudIconButton
+                    Icon="@Icons.Material.Filled.Add"
+                    Size="Size.Small"
+                    OnClick="AddPocket"/>
+            </MudTooltip>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       OnClick="SaveAll">
+                @L["save"]
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PocketDTO> _pockets = new();
+    private List<PocketModifyDTO> saveables = new();
+    private List<CostBudgetDTO> incomes = new();
+    private string SelectedCurrency = "HUF";
+
+    protected override void OnInitialized()
+    {
+        // Mocking Data
+        _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Savings", Money = 120000, Ratio = 20 });
+        _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Bills", Money = 80000, Ratio = 50 });
+
+        incomes.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Main Salary", Amount = 550000 });
+        incomes.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Bonus", Amount = 45000 });
+    }
+
+    private async Task AddPocket()
+    {
+        var parameters = new DialogParameters<AddPocketDialog>
+        {
+            { x => x.Currency, SelectedCurrency },
+            { x => x.Model, new PocketDTO() },
+            { x => x.PresentPockets, _pockets },
+            { x => x.Incomes, incomes.Sum(i => i.Amount) },
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["add_pocket"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is PocketDTO newPocket)
+        {
+            _pockets.Add(newPocket);
+            saveables.Add(new PocketModifyDTO { Pocket = newPocket, Method = ModificationMethod.CREATE });
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditPocket(PocketDTO pocket)
+    {
+        var modelCopy = new PocketDTO
+        {
+            Id = pocket.Id,
+            Name = pocket.Name,
+            Money = pocket.Money,
+            Ratio = pocket.Ratio
+        };
+
+        var parameters = new DialogParameters<AddPocketDialog>
+        {
+            { x => x.Currency, SelectedCurrency },
+            { x => x.Model, modelCopy },
+            { x => x.PresentPockets, _pockets },
+            { x => x.Incomes, incomes.Sum(i => i.Amount) },
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["edit_pocket"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is PocketDTO updatedPocket)
+        {
+            pocket.Name = updatedPocket.Name;
+            pocket.Money = updatedPocket.Money;
+            pocket.Ratio = updatedPocket.Ratio;
+
+            if (!saveables.Any(x => x.Pocket.Id == pocket.Id && x.Method == ModificationMethod.CREATE))
+            {
+                saveables.Add(new PocketModifyDTO { Pocket = pocket, Method = ModificationMethod.MODIFY });
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeletePocket(PocketDTO pocket)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_pocket_title"] },
+            { x => x.ContentText, L["delete_pocket_confirm_description"] }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_pocket_title"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            _pockets.Remove(pocket);
+            var existingCreate = saveables.FirstOrDefault(x => x.Pocket.Id == pocket.Id && x.Method == ModificationMethod.CREATE);
+
+            if (existingCreate != null) saveables.Remove(existingCreate);
+            else saveables.Add(new PocketModifyDTO { Pocket = pocket, Method = ModificationMethod.DELETE });
+
+            StateHasChanged();
+            Snackbar.Add(L["item_deleted"], Severity.Info);
+        }
+    }
+
+    private async Task SaveAll()
+    {
+        if (!saveables.Any())
+        {
+            Snackbar.Add(L["no_changes_to_save"], Severity.Info);
+            return;
+        }
+
+        // API Call Logic here
+        saveables.Clear();
+        Snackbar.Add(L["save_success"], Severity.Success);
+    }
+
+}

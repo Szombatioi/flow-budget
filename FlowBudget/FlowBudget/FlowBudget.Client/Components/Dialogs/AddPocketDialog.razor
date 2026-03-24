@@ -1,0 +1,102 @@
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5" Align="Align.Center">
+            <MudIcon Icon="@Icons.Material.Filled.AddCard" Class="mr-3 mb-n1"/>
+            @L["add_pocket"]
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField T="string"
+                          Label="@L["pocket_name_label"]"
+                          @bind-Value="Model.Name"
+                          Required="true"
+                          RequiredError="@L["field_required"]"
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          Margin="Margin.Normal" />
+
+            <MudNumericField T="double"
+                             Label="@L["pocket_ratio_label"]"
+                             @bind-Value="Model.Ratio"
+                             @bind-Value:after="OnRatioChange"
+                             Validation="@(new Func<double, string?>(ValidateRatio))"
+                             Immediate="true"
+                             Adornment="Adornment.End"
+                             AdornmentText="%"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Normal"
+                             Min="0"
+                             Max="100"
+                             HideSpinButtons="true"
+            />
+
+            @* Visual feedback for remaining ratio *@
+            <MudAlert Severity="@(RemainingRatio < 0 ? Severity.Error : Severity.Info)"
+                      Dense="true"
+                      Class="mt-4"
+                      Icon="@(RemainingRatio < 0 ? Icons.Material.Filled.Error : Icons.Material.Filled.Info)">
+                @L["remaining_ratio"]: @RemainingRatio.ToString("N1")%
+            </MudAlert>
+
+            <MudText Class="mt-2">
+                <b>@L["money_amount"]:</b> @((Incomes * (decimal)Model.Ratio / 100).ToString("N0")) @Currency
+            </MudText>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!_success)"
+                   OnClick="Submit">@L["add"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public PocketDTO Model { get; set; } = new();
+    [Parameter] public List<PocketDTO> PresentPockets { get; set; } = new();
+    [Parameter] public decimal Incomes { get; set; }
+    [Parameter] public string Currency { get; set; } = "HUF";
+
+    private MudForm _form = null!;
+    private bool _success;
+    private decimal RemainingRatio { get; set; }
+
+    protected override void OnInitialized() => OnRatioChange();
+
+    private void OnRatioChange()
+    {
+        double usedByOthers = PresentPockets
+            .Where(p => p.Id != Model.Id)
+            .Sum(p => p.Ratio);
+
+        RemainingRatio = (decimal)(100.0 - usedByOthers - Model.Ratio);
+
+        // Sync the Money field in the DTO
+        Model.Money = Incomes * (decimal)Model.Ratio / 100;
+    }
+
+    // This function is called by MudForm to validate the specific field
+    private string? ValidateRatio(double value)
+    {
+        double usedByOthers = PresentPockets
+            .Where(p => p.Id != Model.Id)
+            .Sum(p => p.Ratio);
+
+        if (usedByOthers + value > 100.001) // Small epsilon for double precision issues
+        {
+            return L["ratio_exceed_limit"];
+        }
+        return null;
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Model));
+    private void Cancel() => MudDialog.Cancel();
+}

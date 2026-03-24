@@ -13,7 +13,9 @@ namespace FlowBudget.Data.Models;
 public class CostBudget
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    
     public decimal Amount { get; set; }
+    
     [Required, MaxLength(50)]
     public string Name { get; set; } = string.Empty;
     
