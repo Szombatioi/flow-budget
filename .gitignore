@@ -29,4 +29,7 @@ publish/
 .DS_Store
 Thumbs.db
 
-app.db
+# Ignore SQLite database
+*.db
+*.db-shm
+*.db-wal
