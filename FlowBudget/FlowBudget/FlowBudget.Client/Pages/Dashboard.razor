@@ -2,6 +2,8 @@
 @using System.Threading
 @using FlowBudget.Client.Components.DTO
 @using FlowBudget.Client.Components
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResources> L
 
 <style>
     /* 2. Disable hover effect by making the SVG ignore pointer events */
@@ -11,18 +13,19 @@
 </style>
 
 @* Center diagram of spendings *@
+@* TODO: kiszervezni komponensnek *@
 <div class="no-hover-chart">
     <MudChart T="double"
               ChartType="ChartType.Donut"
               Width="100%"
               Height="300px"
-              ChartSeries="@( [SeriesData])"
+              ChartSeries="@([SeriesData])"
               ChartOptions="@Options">
         <CustomGraphics>
             <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
-                <tspan x="50%" dy="-1.2em" style="font-size: 14px;">Today's budget</tspan>
+                <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
                 <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
-                <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft</tspan>
+                <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft</tspan> @*TODO: replace this*@
             </text>
         </CustomGraphics>
     </MudChart>
@@ -32,11 +35,11 @@
 <div style="display: flex; justify-content: center; width: 100%">
     <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
         <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
-            Expenditures
+            @L["expenditures"]
         </MudText>
         <div style="display: flex; justify-content: space-between">
             <div />
-            <MudTooltip Text="Felvétel" Placement="Placement.Top">
+            <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
                 <MudIconButton Icon="@Icons.Material.Filled.Add">
 
                 </MudIconButton>
@@ -114,6 +117,14 @@
                 Id = "1",
                 Name = "Coffee",
                 Price = 500,
+                Date = new DateTime(),
+                Currency = "Ft",
+            },
+            new ExpenditureDto()
+            {
+                Id = "2",
+                Name = "BKV bérlet",
+                Price = 990,
                 Date = new DateTime(),
                 Currency = "Ft",
             }

@@ -9,4 +9,6 @@ builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddMudServices();
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
 await builder.Build().RunAsync();

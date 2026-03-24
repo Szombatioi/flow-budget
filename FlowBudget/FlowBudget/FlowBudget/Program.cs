@@ -43,6 +43,20 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 builder.Services.AddMudServices();
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+var supportedCultures = new[] { "en-US" }; //Add others here
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+//Choose language based on browser language
+builder.Services.Configure<RequestLocalizationOptions>(options => {
+    options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-EN");
+    options.SupportedCultures = localizationOptions.SupportedCultures;
+    options.SupportedUICultures = localizationOptions.SupportedUICultures;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -60,6 +74,7 @@ else
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.UseRequestLocalization();
 
 app.UseAntiforgery();
 
