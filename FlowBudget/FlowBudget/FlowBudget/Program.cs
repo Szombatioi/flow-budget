@@ -4,6 +4,7 @@ using FlowBudget.Client.Pages;
 using FlowBudget.Components;
 using FlowBudget.Components.Account;
 using FlowBudget.Data;
+using FlowBudget.Services;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,15 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
+
+var baseUrl = builder.Configuration["ApiSettings:BaseUrl"];
+builder.Services.AddHttpClient("APIClient", client =>
+{
+    client.BaseAddress = new Uri(baseUrl);
+});
+
+//List of injectable services
+builder.Services.AddTransient<UserService>();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -42,6 +52,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddMudServices();
+builder.Services.AddControllers(); 
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 var supportedCultures = new[] { "en-US" }; //Add others here
@@ -55,6 +66,16 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-EN");
     options.SupportedCultures = localizationOptions.SupportedCultures;
     options.SupportedUICultures = localizationOptions.SupportedUICultures;
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
 });
 
 var app = builder.Build();
@@ -76,6 +97,12 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseRequestLocalization();
 
+app.UseRouting();
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
@@ -86,4 +113,5 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
+app.MapControllers();
 app.Run();

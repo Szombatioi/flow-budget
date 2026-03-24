@@ -11,4 +11,6 @@ builder.Services.AddMudServices();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
+
 await builder.Build().RunAsync();

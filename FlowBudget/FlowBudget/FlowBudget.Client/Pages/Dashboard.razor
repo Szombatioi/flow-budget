@@ -1,63 +1,89 @@
 @page "/"
+@using System.Security.Claims
 @using System.Threading
+@using DTO
 @using FlowBudget.Client.Components.DTO
 @using FlowBudget.Client.Components
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<SharedResources> L
+@inject HttpClient http
+@attribute [Authorize]
 
-<style>
-    /* 2. Disable hover effect by making the SVG ignore pointer events */
-    .no-hover-chart {
-        pointer-events: none;
-    }
-</style>
 
-@* Center diagram of spendings *@
-@* TODO: kiszervezni komponensnek *@
-<div class="no-hover-chart">
-    <MudChart T="double"
-              ChartType="ChartType.Donut"
-              Width="100%"
-              Height="300px"
-              ChartSeries="@([SeriesData])"
-              ChartOptions="@Options">
-        <CustomGraphics>
-            <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
-                <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
-                <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
-                <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft</tspan> @*TODO: replace this*@
-            </text>
-        </CustomGraphics>
-    </MudChart>
-</div>
-
-@* List of items *@
-<div style="display: flex; justify-content: center; width: 100%">
-    <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
-        <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
-            @L["expenditures"]
-        </MudText>
-        <div style="display: flex; justify-content: space-between">
-            <div />
-            <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
-                <MudIconButton Icon="@Icons.Material.Filled.Add">
-
-                </MudIconButton>
-            </MudTooltip>
-        </div>
-
-        @foreach (var e in expenditures)
-        {
-            <ExpenditureListItem Expenditure=e />
-            if (expenditures.Last().Id != e.Id)
-            {
-                <MudDivider />
-            }
+@if (isLoading)
+{
+    <div class="d-flex justify-center align-center">
+        <MudProgressCircular Indeterminate="true"/>
+    </div>
+}
+else
+{
+    <style>
+        /* 2. Disable hover effect by making the SVG ignore pointer events */
+        .no-hover-chart {
+            pointer-events: none;
         }
-    </MudPaper>
-</div>
+    </style>
+    
+    @if (UserDto != null)
+    {
+        <p>User: @UserDto.Id</p>
+    }
+    
+    @* Center diagram of spendings *@
+    @* TODO: kiszervezni komponensnek *@
+    <div class="no-hover-chart">
+        <MudChart T="double"
+                  ChartType="ChartType.Donut"
+                  Width="100%"
+                  Height="300px"
+                  ChartSeries="@( [SeriesData])"
+                  ChartOptions="@Options">
+            <CustomGraphics>
+                <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
+                    <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
+                    <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
+                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft
+                    </tspan> @*TODO: replace this*@
+                </text>
+            </CustomGraphics>
+        </MudChart>
+    </div>
+
+    @* List of items *@
+    <div style="display: flex; justify-content: center; width: 100%">
+        <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
+            <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
+                @L["expenditures"]
+            </MudText>
+            <div style="display: flex; justify-content: space-between">
+                <div/>
+                <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
+                    <MudIconButton Icon="@Icons.Material.Filled.Add">
+
+                    </MudIconButton>
+                </MudTooltip>
+            </div>
+
+            @foreach (var e in expenditures)
+            {
+                <ExpenditureListItem Expenditure=e/>
+                if (expenditures.Last().Id != e.Id)
+                {
+                    <MudDivider/>
+                }
+            }
+        </MudPaper>
+    </div>
+}
+
 
 @code {
+    private bool isLoading { get; set; } = true;
+    [CascadingParameter] private ClaimsPrincipal? User { get; set; }
+    private UserBaseDTO? UserDto { get; set; }
+
     private double[] SeriesData = { 100, 0 }; // Start at 0 for the progress part
     private double targetValue = 75; // The final value you want to reach
     private double currentDisplayValue = 0;
@@ -94,40 +120,53 @@
     {
         if (value < 50) return "#00ff00"; // Green
         if (value < 80) return "#ffff00"; // Yellow
-        return "#0000ff"; // Blue
+        return "#ff0000"; // Red
     }
 
     private List<ExpenditureDto> expenditures { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
     protected override async Task OnInitializedAsync()
     {
-        //TODO: Replace mock data
+        try
+        {
+            if (AuthStateTask != null)
+            {
+                var authState = await AuthStateTask;
+                var user = authState.User;
+
+                if (user.Identity?.IsAuthenticated == true)
+                {
+                    // Use a try-catch for the specific API call
+                    try
+                    {
+                        UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
+                        Console.WriteLine($"User loaded: {UserDto?.Id}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"API Error: {ex.Message}");
+                    }
+                }
+            }
+
+            // Initialize your mock data here so it shows up even for guests
+            LoadMockData();
+        }
+        finally
+        {
+            // CRITICAL: This must be outside the 'if' to stop the spinner
+            isLoading = false;
+        }
+    }
+
+    private void LoadMockData()
+    {
         expenditures = new()
         {
-            new ExpenditureDto()
-            {
-                Id = "0",
-                Name = "Shopping",
-                Price = 2500,
-                Date = new DateTime(),
-                Currency = "Ft",
-            },
-            new ExpenditureDto()
-            {
-                Id = "1",
-                Name = "Coffee",
-                Price = 500,
-                Date = new DateTime(),
-                Currency = "Ft",
-            },
-            new ExpenditureDto()
-            {
-                Id = "2",
-                Name = "BKV bérlet",
-                Price = 990,
-                Date = new DateTime(),
-                Currency = "Ft",
-            }
+            new ExpenditureDto { Id = "0", Name = "Shopping", Price = 2500, Currency = "Ft" },
+            new ExpenditureDto { Id = "1", Name = "Coffee", Price = 500, Currency = "Ft" },
+            new ExpenditureDto { Id = "2", Name = "BKV bérlet", Price = 990, Currency = "Ft" }
         };
     }
 

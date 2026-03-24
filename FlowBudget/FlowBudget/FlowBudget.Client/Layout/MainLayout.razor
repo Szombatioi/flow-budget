@@ -1,4 +1,12 @@
 ﻿@inherits LayoutComponentBase
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthProvider
+@attribute [Authorize]
+
+@* Optional: @inject UserManager<ApplicationUser> UserManager *@
+
 <MudThemeProvider />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -6,6 +14,21 @@
 
 <MudLayout>
     <MudMainContent>
-        @Body
+        <CascadingValue Value="_currentUser">
+            @Body
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private ClaimsPrincipal? _currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        _currentUser = authState.User;
+        
+        // If you need the full DB object (ApplicationUser):
+        // _fullUser = await UserManager.GetUserAsync(_currentUser);
+    }
+}

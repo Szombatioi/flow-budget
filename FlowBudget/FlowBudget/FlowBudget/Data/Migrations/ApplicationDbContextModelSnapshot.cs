@@ -89,6 +89,9 @@ namespace FlowBudget.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ApplicationUserId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CurrencyId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -98,6 +101,8 @@ namespace FlowBudget.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
 
                     b.HasIndex("CurrencyId");
 
@@ -441,6 +446,10 @@ namespace FlowBudget.Migrations
 
             modelBuilder.Entity("FlowBudget.Data.Models.Account", b =>
                 {
+                    b.HasOne("FlowBudget.Data.ApplicationUser", null)
+                        .WithMany("Accounts")
+                        .HasForeignKey("ApplicationUserId");
+
                     b.HasOne("FlowBudget.Data.Models.Currency", "Currency")
                         .WithMany()
                         .HasForeignKey("CurrencyId")
@@ -620,6 +629,11 @@ namespace FlowBudget.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("FlowBudget.Data.ApplicationUser", b =>
+                {
+                    b.Navigation("Accounts");
                 });
 
             modelBuilder.Entity("FlowBudget.Data.Models.Account", b =>
