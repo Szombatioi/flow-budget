@@ -92,9 +92,7 @@ else
 
 
 @code {
-    [CascadingParameter] private ClaimsPrincipal? User { get; set; }
-    private UserBaseDTO? UserDto { get; set; }
-
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
     private double[] SeriesData = { 100, 0 }; // Start at 0 for the progress part
     private double targetValue = 75; // The final value you want to reach
     private double currentDisplayValue = 0;
@@ -135,40 +133,11 @@ else
     }
 
     private List<ExpenditureDto> expenditures { get; set; }
-    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            if (AuthStateTask != null)
-            {
-                var authState = await AuthStateTask;
-                var user = authState.User;
-
-                if (user.Identity?.IsAuthenticated == true)
-                {
-                    // Use a try-catch for the specific API call
-                    try
-                    {
-                        UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
-                        Console.WriteLine($"User loaded: {UserDto?.Id}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"API Error: {ex.Message}");
-                    }
-                }
-            }
-
-            // Initialize your mock data here so it shows up even for guests
-            LoadMockData();
-        }
-        finally
-        {
-            // CRITICAL: This must be outside the 'if' to stop the spinner
-            // isLoading = false;
-        }
+        // Initialize your mock data here so it shows up even for guests
+        LoadMockData();
     }
 
     private void LoadMockData()

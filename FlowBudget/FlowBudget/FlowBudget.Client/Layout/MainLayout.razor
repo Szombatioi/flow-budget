@@ -1,9 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @using System.Security.Claims
+@using DTO
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthProvider
 @attribute [Authorize]
+@inject HttpClient http
 
 @* Optional: @inject UserManager<ApplicationUser> UserManager *@
 
@@ -15,20 +17,47 @@
 <MudLayout>
     <MudMainContent>
         <CascadingValue Value="_currentUser">
+        <CascadingValue Value="UserDto">
             @Body
+            </CascadingValue>
         </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
 @code {
     private ClaimsPrincipal? _currentUser;
+    [CascadingParameter] private ClaimsPrincipal? User { get; set; }
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthProvider.GetAuthenticationStateAsync();
-        _currentUser = authState.User;
+        // var authState = await AuthProvider.GetAuthenticationStateAsync();
+        // _currentUser = authState.User;
         
         // If you need the full DB object (ApplicationUser):
         // _fullUser = await UserManager.GetUserAsync(_currentUser);
+        
+        
+            if (AuthStateTask != null)
+            {
+                var authState = await AuthStateTask;
+                var user = authState.User;
+
+                if (user.Identity?.IsAuthenticated == true)
+                {
+                    // Use a try-catch for the specific API call
+                    try
+                    {
+                        UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
+                        Console.WriteLine($"User loaded: {UserDto?.Id}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"API Error: {ex.Message}");
+                    }
+                }
+            }
+
     }
 }
