@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Data;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>{
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>{
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
     }
     public DbSet<Account> Accounts { get; set; }
     public DbSet<Currency> Currencies { get; set; }
-    public DbSet<CostBudget> CostBudgets { get; set; }
+    public DbSet<Income> Incomes { get; set; }
     public DbSet<DivisionPlan> DivisionPlans { get; set; }
     public DbSet<Pocket> Pockets { get; set; }
     public DbSet<DailyExpense> DailyExpenses { get; set; }
@@ -26,7 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         modelBuilder.Entity<Account>()
             .HasOne(a => a.Currency)
             .WithMany()
-            .HasForeignKey(a => a.CurrencyId)
+            .HasForeignKey(a => a.CurrencyCode)
             .OnDelete(DeleteBehavior.Restrict); // Don't delete Currency if an Account uses it
 
         // --- Pocket Configuration ---
@@ -57,9 +57,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .OnDelete(DeleteBehavior.Cascade);
 
         // --- CostBudget Configuration ---
-        modelBuilder.Entity<CostBudget>()
+        modelBuilder.Entity<Income>()
             .HasOne(cb => cb.Account)
-            .WithMany(a => a.CostBudgets)
+            .WithMany(a => a.Incomes)
             .HasForeignKey(cb => cb.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
 

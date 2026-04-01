@@ -15,11 +15,11 @@ public class UserService
     {
         _db = db;
     }
-    public async Task<UserBaseDTO> Get(Guid UserGuid)
+    public async Task<UserBaseDTO> Get(string UserId)
     {
         var user = await _db.Users
             .Include(u => u.Accounts)
-            .SingleOrDefaultAsync(u => u.Id == UserGuid);
+            .SingleOrDefaultAsync(u => u.Id == UserId);
         if (user == null)
         {
             throw new NotFoundException();

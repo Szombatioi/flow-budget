@@ -10,15 +10,15 @@ namespace FlowBudget.Data.Models;
 // So for account 1 the whole income will be 260 USD
 // The splitting of pockets will work with this amount
 
-public class CostBudget
+public class Income
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     
     public decimal Amount { get; set; }
     
     [Required, MaxLength(50)]
     public string Name { get; set; } = string.Empty;
     
-    public Guid AccountId { get; set; }
+    public string AccountId { get; set; }
     public virtual Account Account { get; set; } = null!;
 }

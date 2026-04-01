@@ -4,7 +4,7 @@ namespace FlowBudget.Data.Models;
 
 public class Expenditure
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public DateTime Date { get; set; } = DateTime.Now;
     public decimal Amount { get; set; }
     
@@ -12,6 +12,6 @@ public class Expenditure
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    public Guid DailyExpenseId { get; set; }
+    public string DailyExpenseId { get; set; }
     public virtual DailyExpense DailyExpense { get; set; } = null!;
 }

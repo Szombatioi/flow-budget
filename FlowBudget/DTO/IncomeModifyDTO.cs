@@ -1,8 +1,8 @@
 namespace DTO;
 
-public class CostBudgetModifyDTO
+public class IncomeModifyDTO
 {
-    public CostBudgetDTO CostBudget { get; set; }
+    public IncomeDTO Income { get; set; }
     public ModificationMethod Method { get; set; }
 }
 

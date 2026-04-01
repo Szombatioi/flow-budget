@@ -1,0 +1,167 @@
+@page "/accounts"
+@using DTO
+@using FlowBudget.Client.Components.Dialogs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient http
+@rendermode InteractiveWebAssembly
+@inject IConfiguration Configuration
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+@if (isLoading)
+{
+    <MudContainer Class="d-flex justify-center align-center">
+        <MudProgressCircular Indeterminate="true" />
+    </MudContainer>
+}
+else
+{
+    <MudContainer Class="w-50">
+        <MudPaper Elevation="3" Class="p-4 d-flex flex-column">
+            <MudText Align="Align.Center" Typo="Typo.h4">@L["create_account"]</MudText>
+            <MudTextField T="string"
+                          Variant="Variant.Outlined"
+                          Label="@L["account_name"]"
+                          @bind-Value="accountName"
+                          Required
+                          Error="@accountNameError"
+                          ErrorText="@L["account_name_required"]"/>
+            <MudAutocomplete T="CurrencyDTO"
+                             Label="@L["currency"]"
+                             Variant="Variant.Outlined"
+                             @bind-Value="selectedCurrency"
+                             SearchFunc="SearchCurrencies"
+                             ToStringFunc="@(c => c is null ? string.Empty : $"{c.Code} – {L[c.Name]}")"
+                             ResetValueOnEmptyText="true"
+                             CoerceText="false"
+                             Required
+                             Error="@currencyError"
+                             ErrorText="@L["currency_required"]"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Class="align-self-end" OnClick="() => CreateAccount()">
+                @L["create"]
+            </MudButton>
+        </MudPaper>
+    </MudContainer>
+
+    <MudContainer Class="w-50">
+        <MudTable Elevation="3" Items="accounts" Hover="true" Striped="true" Class="mt-4 p-4">
+            <HeaderContent>
+                <MudTh>@L["account_name"]</MudTh>
+                <MudTh>@L["currency"]</MudTh>
+                <MudTh>@L["actions"]</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="@L["account_name"]">@context.Name</MudTd>
+                <MudTd DataLabel="@L["currency"]">@context.CurrencyCode</MudTd>
+                <MudTd Style="width: 20%;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Class="p-1 m-0"
+                                   OnClick="@(() => EditAccount(context))"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Class="p-1 m-0"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteAccount(context))"/>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>@L["no_accounts"]</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudContainer>
+}
+
+@code {
+    private bool isLoading = true;
+    private string accountName { get; set; } = string.Empty;
+    private CurrencyDTO? selectedCurrency { get; set; }
+
+    private bool accountNameError { get; set; }
+    private bool currencyError { get; set; }
+
+    private List<CurrencyDTO> currencies { get; set; } = new();
+    private List<AccountDTO> accounts { get; set; } = new();
+
+    private async Task GetAccounts()
+    {
+        accounts = await http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!OperatingSystem.IsBrowser()) return; // skip on server/SSR
+
+        currencies = await http.GetFromJsonAsync<List<CurrencyDTO>>($"{Configuration["ApiSettings:BaseUrl"]}api/currencies") ?? new();
+        await GetAccounts();
+        
+        isLoading = false;
+    }
+
+    private async Task<IEnumerable<CurrencyDTO>> SearchCurrencies(string value, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return currencies;
+
+        return currencies.Where(c =>
+            c.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            c.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void EditAccount(AccountDTO account)
+    {
+        // TODO: open edit dialog or navigate to edit page
+    }
+
+    private async Task DeleteAccount(AccountDTO account)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_account_title"] },
+            { x => x.ContentText, L["delete_account_confirm_description"] }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_income_title"], parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await http.DeleteAsync($"api/accounts/{account.Id}");
+            if (response.IsSuccessStatusCode)
+                accounts.Remove(account);   
+        }
+    }
+
+    private async Task CreateAccount()
+    {
+        accountNameError = string.IsNullOrWhiteSpace(accountName);
+        currencyError = selectedCurrency is null;
+
+        if (accountNameError || currencyError)
+            return;
+
+        isLoading = true;
+        var payload = new CreateAccountDTO()
+        {
+            CurrencyCode = selectedCurrency.Code,
+            Name = accountName
+        };
+        var res = await http.PostAsJsonAsync<CreateAccountDTO>("api/accounts", payload);
+        if (!res.IsSuccessStatusCode)
+        {
+            //TODO: snackbar
+            Console.WriteLine("Error when saving account");
+        }
+        else
+        {
+            //TODO: snackbar
+            Console.WriteLine("Account saved");
+            await GetAccounts();
+        }
+
+        isLoading = false;
+    }
+
+}

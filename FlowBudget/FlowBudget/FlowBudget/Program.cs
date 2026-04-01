@@ -25,6 +25,9 @@ builder.Services.AddHttpClient("APIClient", client =>
 
 //List of injectable services
 builder.Services.AddTransient<UserService>();
+builder.Services.AddTransient<CurrencyService>();
+builder.Services.AddTransient<AccountService>();
+builder.Services.AddTransient<IncomeService>();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -53,6 +56,8 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 builder.Services.AddMudServices();
 builder.Services.AddControllers(); 
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 var supportedCultures = new[] { "en-US" }; //Add others here
@@ -109,6 +114,16 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
+
+using (var scope = app.Services.CreateScope())
+{
+    Console.WriteLine("Seeding currencies...");
+    var currencyService = scope.ServiceProvider.GetRequiredService<CurrencyService>();
+    await currencyService.SeedCurrencies();
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("Currencies seeded successfully");
+    Console.ResetColor();
+}
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

@@ -17,7 +17,8 @@
                           Required="true" 
                           RequiredError="@L["field_required"]"
                           Variant="Variant.Outlined" 
-                          Margin="Margin.Normal" />
+                          Margin="Margin.Normal"
+                          Immediate/>
 
             <MudNumericField T="decimal" 
                              Label="@L["income_amount_label"]" 
@@ -27,6 +28,7 @@
                              Variant="Variant.Outlined" 
                              Margin="Margin.Normal" 
                              Min="0"
+                             Immediate
                              HideSpinButtons="true" />
         </MudForm>
     </DialogContent>
@@ -47,7 +49,7 @@
     [Parameter] public string Currency { get; set; } = "HUF";
     
     // We initialize a new model here, or pass one in if editing
-    [Parameter] public CostBudgetDTO Model { get; set; } = new();
+    [Parameter] public IncomeDTO Model { get; set; } = new();
 
     private MudForm _form = null!;
     private bool _success;

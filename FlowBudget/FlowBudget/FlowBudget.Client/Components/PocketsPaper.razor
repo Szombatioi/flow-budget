@@ -10,7 +10,7 @@
     <MudPaper Elevation="3" Class="pa-6">
 
         <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
-            <b>@L["pockets_title"]</b>
+            <MudIcon Icon=@Icons.Material.Filled.BarChart Class="mx-2" /><b>@L["pockets_title"]</b>
         </MudText>
 
         <MudList T="string" Clickable="false">
@@ -77,7 +77,7 @@
 @code {
     private List<PocketDTO> _pockets = new();
     private List<PocketModifyDTO> saveables = new();
-    private List<CostBudgetDTO> incomes = new();
+    private List<IncomeDTO> incomes = new();
     private string SelectedCurrency = "HUF";
 
     protected override void OnInitialized()
@@ -86,8 +86,8 @@
         _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Savings", Money = 120000, Ratio = 20 });
         _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Bills", Money = 80000, Ratio = 50 });
 
-        incomes.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Main Salary", Amount = 550000 });
-        incomes.Add(new CostBudgetDTO { Id = Guid.NewGuid(), Name = "Bonus", Amount = 45000 });
+        incomes.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Main Salary", Amount = 550000 });
+        incomes.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Bonus", Amount = 45000 });
     }
 
     private async Task AddPocket()

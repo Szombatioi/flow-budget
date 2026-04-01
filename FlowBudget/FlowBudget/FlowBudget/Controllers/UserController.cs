@@ -22,7 +22,7 @@ namespace FlowBudget.Controllers
         [HttpGet]
         public async Task<ActionResult<UserBaseDTO>> Get()
         {
-            return await _userService.Get(UserGuid);
+            return await _userService.Get(UserId);
         }
     }
 }
