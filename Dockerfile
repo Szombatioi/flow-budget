@@ -1,29 +1,26 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy solution file and project files
-COPY FlowBudget/FlowBudget.sln .
-COPY FlowBudget/FlowBudget/FlowBudget/FlowBudget.csproj ./FlowBudget/FlowBudget/
-COPY FlowBudget/FlowBudget/FlowBudget.Client/FlowBudget.Client.csproj ./FlowBudget/FlowBudget.Client/
-COPY FlowBudget/DTO/DTO.csproj ./DTO/
-
-# Copy all source files
+# Copy the entire FlowBudget directory with all projects
 COPY FlowBudget/ .
 
-# Restore and build
-RUN dotnet restore
-RUN dotnet build -c Release
+# Restore dependencies
+RUN dotnet restore FlowBudget.sln
+
+# Build the solution
+RUN dotnet build FlowBudget.sln -c Release --no-restore
 
 # Publish stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS publish
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
 WORKDIR /src
 
-COPY --from=build /src .
-RUN dotnet publish -c Release -o /app/publish
+COPY FlowBudget/ .
+RUN dotnet restore FlowBudget.sln
+RUN dotnet publish FlowBudget.sln -c Release -o /app/publish --no-restore
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=publish /app/publish .
 
