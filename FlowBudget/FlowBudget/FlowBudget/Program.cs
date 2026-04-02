@@ -114,6 +114,8 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
+app.MapAdditionalIdentityEndpoints();
+app.MapControllers();
 
 // Apply database migrations automatically
 using (var scope = app.Services.CreateScope())
@@ -147,7 +149,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
 
-app.MapControllers();
 app.Run();
