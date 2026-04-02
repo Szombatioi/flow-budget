@@ -115,6 +115,27 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
 
+// Apply database migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    Console.WriteLine("Applying database migrations...");
+    try
+    {
+        await dbContext.Database.MigrateAsync();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Database migrations applied successfully");
+        Console.ResetColor();
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Error applying migrations: {ex.Message}");
+        Console.ResetColor();
+        throw;
+    }
+}
+
 using (var scope = app.Services.CreateScope())
 {
     Console.WriteLine("Seeding currencies...");
