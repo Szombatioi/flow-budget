@@ -19,12 +19,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 COPY --from=publish /app/publish .
-COPY init-db.sh .
 
-# Create data directory for SQLite database
-RUN mkdir -p /app/data && chmod +x /app/init-db.sh
+# Create data directory with proper permissions
+RUN mkdir -p /app/Data && chmod 777 /app/Data
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
-ENTRYPOINT ["/app/init-db.sh"]
+ENTRYPOINT ["dotnet", "FlowBudget.dll"]
