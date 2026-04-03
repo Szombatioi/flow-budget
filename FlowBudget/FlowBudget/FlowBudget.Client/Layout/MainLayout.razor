@@ -9,23 +9,25 @@
 
 @* Optional: @inject UserManager<ApplicationUser> UserManager *@
 
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudThemeProvider Theme="theme"/>
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
 <MudLayout>
     <MudMainContent>
         <CascadingValue Value="_currentUser">
-        <CascadingValue Value="UserDto">
-            <form action="Account/Logout" method="post">
-                <AntiforgeryToken/>
-                <input type="hidden" name="ReturnUrl" value="http://localhost:5288/"/>
-                <button type="submit" class="nav-link">
-                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                </button>
-            </form>
-            @Body
+            <CascadingValue Value="UserDto">
+                <CascadingValue Value="theme">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="ReturnUrl" value="http://localhost:5288/"/>
+                        <button type="submit" class="nav-link">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        </button>
+                    </form>
+                    @Body
+                </CascadingValue>
             </CascadingValue>
         </CascadingValue>
     </MudMainContent>
@@ -37,34 +39,47 @@
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
     [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
+    [CascadingParameter]
+    public MudTheme theme { get; set; } = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Background = "#F0F1F2",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Background = "#032F64"
+        }
+    };
+
     protected override async Task OnInitializedAsync()
     {
         // var authState = await AuthProvider.GetAuthenticationStateAsync();
         // _currentUser = authState.User;
-        
+
         // If you need the full DB object (ApplicationUser):
         // _fullUser = await UserManager.GetUserAsync(_currentUser);
-        
-        
-            if (AuthStateTask != null)
-            {
-                var authState = await AuthStateTask;
-                var user = authState.User;
 
-                if (user.Identity?.IsAuthenticated == true)
+
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                // Use a try-catch for the specific API call
+                try
                 {
-                    // Use a try-catch for the specific API call
-                    try
-                    {
-                        UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
-                        Console.WriteLine($"User loaded: {UserDto?.Id}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"API Error: {ex.Message}");
-                    }
+                    UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
+                    Console.WriteLine($"User loaded: {UserDto?.Id}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"API Error: {ex.Message}");
                 }
             }
-
+        }
     }
+
 }
