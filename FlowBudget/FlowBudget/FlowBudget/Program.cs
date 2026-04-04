@@ -121,6 +121,29 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
+app.MapAdditionalIdentityEndpoints();
+app.MapControllers();
+
+// Apply database migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    Console.WriteLine("Applying database migrations...");
+    try
+    {
+        await dbContext.Database.MigrateAsync();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Database migrations applied successfully");
+        Console.ResetColor();
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Error applying migrations: {ex.Message}");
+        Console.ResetColor();
+        throw;
+    }
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -133,7 +156,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
 
-app.MapControllers();
 app.Run();
