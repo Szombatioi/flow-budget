@@ -17,6 +17,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Pocket> Pockets { get; set; }
     public DbSet<DailyExpense> DailyExpenses { get; set; }
     public DbSet<Expenditure> Expenditures { get; set; }
+    public DbSet<FixedExpense> FixedExpenses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,17 +31,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .OnDelete(DeleteBehavior.Restrict); // Don't delete Currency if an Account uses it
 
         // --- Pocket Configuration ---
-        modelBuilder.Entity<Pocket>()
-            .HasOne(p => p.Account)
-            .WithMany(a => a.Pockets)
-            .HasForeignKey(p => p.AccountId)
-            .OnDelete(DeleteBehavior.Cascade); // Delete Account -> Delete Pockets
+        // modelBuilder.Entity<Pocket>()
+        //     .HasOne(p => p.Account)
+        //     .WithMany(a => a.Pockets)
+        //     .HasForeignKey(p => p.AccountId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Delete Account -> Delete Pockets
 
         modelBuilder.Entity<Pocket>()
             .HasOne(p => p.DivisionPlan)
             .WithMany(dp => dp.Pockets)
             .HasForeignKey(p => p.DivisionPlanId)
-            .OnDelete(DeleteBehavior.SetNull); // Plan deleted? Keep the pocket, just remove the link
+            .OnDelete(DeleteBehavior.Cascade);
 
         // --- DailyExpense Configuration ---
         modelBuilder.Entity<DailyExpense>()
@@ -61,6 +62,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasOne(cb => cb.Account)
             .WithMany(a => a.Incomes)
             .HasForeignKey(cb => cb.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<FixedExpense>()
+            .HasOne(fe => fe.Account)
+            .WithMany(a => a.FixedExpenses)
+            .HasForeignKey(fe => fe.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // --- DivisionPlan Configuration ---

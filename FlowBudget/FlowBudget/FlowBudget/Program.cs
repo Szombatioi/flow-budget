@@ -4,6 +4,7 @@ using FlowBudget.Client.Pages;
 using FlowBudget.Components;
 using FlowBudget.Components.Account;
 using FlowBudget.Data;
+using FlowBudget.Profiles;
 using FlowBudget.Services;
 using MudBlazor.Services;
 
@@ -28,6 +29,12 @@ builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<CurrencyService>();
 builder.Services.AddTransient<AccountService>();
 builder.Services.AddTransient<IncomeService>();
+builder.Services.AddTransient<PocketService>();
+builder.Services.AddTransient<DivisionPlanService>();
+builder.Services.AddTransient<FixedExpenseService>();
+
+// builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); //Note: with this parameter it scans all profiles
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
 builder.Services.AddAuthentication(options =>
     {

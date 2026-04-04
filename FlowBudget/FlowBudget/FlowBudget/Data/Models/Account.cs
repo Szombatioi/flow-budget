@@ -20,6 +20,7 @@ public class Account
     public virtual Currency Currency { get; set; } = null!;
 
     public virtual ICollection<Income> Incomes { get; set; } = new List<Income>();
+    public virtual ICollection<FixedExpense> FixedExpenses { get; set; } = new List<FixedExpense>();
     public virtual ICollection<DivisionPlan> DivisionPlans { get; set; } = new List<DivisionPlan>();
     public virtual ICollection<Pocket> Pockets { get; set; } = new List<Pocket>();
 }

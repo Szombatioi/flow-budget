@@ -1,3 +1,4 @@
+// TODO: edit & delete
 using DTO;
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
@@ -6,15 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Services;
 
-public class IncomeService(ApplicationDbContext db)
+public class FixedExpenseService(ApplicationDbContext db)
 {
     private readonly ApplicationDbContext _db = db;
 
-    public async Task<List<IncomeDTO>> GetAllIncomes(string userId, string accountId)
+    public async Task<List<FixedExpenseDTO>> GetAllFixedExpensesForAccount(string userId, string accountId)
     {
         var user = await  _db.Users
             .Include(u => u.Accounts)
-            .ThenInclude(a => a.Incomes)
+            .ThenInclude(a => a.FixedExpenses)
             .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
@@ -27,8 +28,8 @@ public class IncomeService(ApplicationDbContext db)
             throw new NotFoundException();
         }
         
-        return account.Incomes
-            .Select(c => new IncomeDTO()
+        return account.FixedExpenses
+            .Select(c => new FixedExpenseDTO()
             {
                 Id = c.Id,
                 Amount = c.Amount,
@@ -36,11 +37,11 @@ public class IncomeService(ApplicationDbContext db)
             }).ToList();
     }
     
-    public async Task AddIncome(string UserId, CreateIncomeDTO dto)
+    public async Task AddFixExpenditure(string userId, CreateFixedExpenseDTO dto)
     {
         var user = await  _db.Users
             .Include(u => u.Accounts)
-            .SingleOrDefaultAsync(u => u.Id == UserId);
+            .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             throw new NotFoundException();
@@ -51,8 +52,8 @@ public class IncomeService(ApplicationDbContext db)
         {
             throw new NotFoundException();
         }
-
-        var costBudget = new Income()
+    
+        var fixedExpense = new FixedExpense()
         {
             Amount = dto.Amount,
             Name = dto.Name,
@@ -60,74 +61,61 @@ public class IncomeService(ApplicationDbContext db)
             AccountId = account.Id,
         };
         
-        await _db.Incomes.AddAsync(costBudget);
+        
+        await _db.FixedExpenses.AddAsync(fixedExpense);
         await _db.SaveChangesAsync();
     }
-
-    public async Task UpdateIncome(string UserId, EditIncomeDTO dto)
+    
+    public async Task UpdateFixExpenditure(string userId, EditFixedExpenseDTO dto)
     {
         var user = await _db.Users
             .Include(u => u.Accounts)
-            .ThenInclude(a => a.Incomes)
-            .SingleOrDefaultAsync(u => u.Id == UserId);
-        if (user == null)
-        {
-            throw new NotFoundException();
-        }
-        
-        var income = await _db.Incomes.SingleOrDefaultAsync(i => i.Id == dto.Id);
-        if (income == null)
-        {
-            throw new NotFoundException();
-        }
-
-        if (!user.Accounts.Any(a => a.Incomes.Any(i => i.Id == income.Id)))
-        {
-            throw new UnauthorizedAccessException();
-        }
-        
-        var anyChange = false;
-        if (dto.Amount != null && dto.Amount != income.Amount)
-        {
-            anyChange = true;
-            income.Amount = dto.Amount.Value;
-        }
-
-        if (dto.Name != null && dto.Name != income.Name)
-        {
-            anyChange = true;
-            income.Name = dto.Name;
-        }
-
-        if (anyChange)
-        {
-            await _db.SaveChangesAsync();
-        }
-    }
-
-    public async Task DeleteIncome(string userId, string incomeId)
-    {
-        var user = await _db.Users
-            .Include(u => u.Accounts)
-            .ThenInclude(a => a.Incomes)
+            .ThenInclude(a => a.FixedExpenses)
             .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             throw new NotFoundException();
         }
         
-        var income = await _db.Incomes.SingleOrDefaultAsync(i => i.Id == incomeId);
-        if (income == null)
+        var fixedExpense = await _db.FixedExpenses.SingleOrDefaultAsync(i => i.Id == dto.Id);
+        if (fixedExpense == null)
         {
             throw new NotFoundException();
         }
-
-        if (!user.Accounts.Any(a => a.Incomes.Any(i => i.Id == income.Id)))
+    
+        if (!user.Accounts.Any(a => a.FixedExpenses.Any(i => i.Id == fixedExpense.Id)))
         {
             throw new UnauthorizedAccessException();
         }
         
-        _db.Incomes.Remove(income);
+        if (dto.Amount != null && dto.Amount != fixedExpense.Amount) fixedExpense.Amount = dto.Amount.Value;
+        if (dto.Name != null && dto.Name != fixedExpense.Name) fixedExpense.Name = dto.Name;
+        await _db.SaveChangesAsync();
+    }
+    
+    public async Task DeleteFixedExpense(string userId, string fixedExpenseId)
+    {
+        var user = await _db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.FixedExpenses)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            throw new NotFoundException();
+        }
+        
+        var fixedExpense = await _db.FixedExpenses.SingleOrDefaultAsync(i => i.Id == fixedExpenseId);
+        if (fixedExpense == null)
+        {
+            throw new NotFoundException();
+        }
+    
+        if (!user.Accounts.Any(a => a.FixedExpenses.Any(i => i.Id == fixedExpense.Id)))
+        {
+            throw new UnauthorizedAccessException();
+        }
+        
+        _db.FixedExpenses.Remove(fixedExpense);
         await _db.SaveChangesAsync();
     }
 }
