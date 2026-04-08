@@ -18,6 +18,9 @@ builder.Services.AddMudServices(config => {
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
-Console.WriteLine($"BaseUrl: {builder.Configuration["ApiSettings:BaseUrl"]}");
+builder.Services.AddScoped(sp =>
+{
+    var navManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(navManager.BaseUri) };
+});
 await builder.Build().RunAsync();

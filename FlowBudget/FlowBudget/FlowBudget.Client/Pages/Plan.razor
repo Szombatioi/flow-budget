@@ -1,6 +1,56 @@
 @page "/plan"
+@using DTO
 @using FlowBudget.Client.Components
+@inject HttpClient http
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<SharedResources> L
 
-<IncomePaper />
-<PocketsPaper />
-<FixedExpenses />
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_selectedAccountId != null)
+    {
+        <MudStack Spacing="6">
+            @* Pass the ID to all children *@
+            <IncomePaper AccountId="@_selectedAccountId" />
+
+            <PocketsPaper AccountId="@_selectedAccountId" />
+
+            <FixedExpensesPaper AccountId="@_selectedAccountId" />
+
+            <CategoryPaper />
+        </MudStack>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">@L["no_accounts_found"]</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private bool _isLoading = true;
+    private string? _selectedAccountId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var accounts = await http.GetFromJsonAsync<List<AccountDTO>>("api/accounts");
+            if (accounts != null && accounts.Any())
+            {
+                // Default to the first account
+                _selectedAccountId = accounts[0].Id;
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_loading_accounts"], Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

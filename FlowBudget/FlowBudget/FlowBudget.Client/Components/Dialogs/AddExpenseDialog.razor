@@ -1,0 +1,136 @@
+@using FlowBudget.Client.Components.DTO
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex flex-column">
+            <MudText Typo="Typo.h5"><b>@L["record_new_transaction"]</b></MudText>
+            <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">@L["transaction_subtitle"]</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto" Class="pa-0">
+            @* Name Section *@
+            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["name"].ToString().ToUpper()</MudText>
+            <MudTextField @bind-Value="_name"
+                          Placeholder="@L["name_placeholder"]"
+                          Variant="Variant.Filled"
+                          Class="mb-4 rounded-lg" />
+
+            @* Amount Section *@
+            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["amount"].ToString().ToUpper()</MudText>
+            <MudNumericField @bind-Value="_price"
+                             Variant="Variant.Filled"
+                             Adornment="Adornment.End"
+                             AdornmentText="@(Currency ?? "HUF")"
+                             HideSpinButtons="true"
+                             Class="mb-4 rounded-lg"
+                             Format="0.##" />
+
+            <MudGrid Class="mb-4">
+                @* Category *@
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["category"].ToString().ToUpper()</MudText>
+                    <MudSelect @bind-Value="_categoryId" Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter" Class="rounded-lg">
+                        @foreach (var cat in Categories)
+                        {
+                            <MudSelectItem Value="@cat.Id">@(cat.IsSystem ? @L[cat.DisplayName] : cat.DisplayName)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                @* Date *@
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["date"].ToString().ToUpper()</MudText>
+                    <MudDatePicker @bind-Date="_date" Variant="Variant.Filled" Class="rounded-lg" />
+                </MudItem>
+            </MudGrid>
+
+            @* Description *@
+            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["description"].ToString().ToUpper()</MudText>
+            <MudTextField @bind-Value="_description"
+                          Placeholder="@L["description_placeholder"]"
+                          Variant="Variant.Filled"
+                          Class="mb-4 rounded-lg" />
+
+            @* Receipt Upload Area *@
+            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">
+                @L["receipt"].ToString().ToUpper()
+            </MudText>
+
+            <MudFileUpload T="IBrowserFile" OnFilesChanged="UploadFiles">
+                <ActivatorContent>
+                    <MudPaper Outlined="true"
+                              Class="d-flex flex-column align-center justify-center pa-6 rounded-lg border-dashed"
+                              Style="background-color: #2c3034; cursor: pointer;">
+                        <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Color="Color.Default" />
+                        <MudText Typo="Typo.body2" Class="mt-2"><b>@L["upload_or_scan_receipt"]</b></MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["upload_constraints_hint"]</MudText>
+                    </MudPaper>
+                </ActivatorContent>
+            </MudFileUpload>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <div class="d-flex justify-space-between w-100 pa-4 pt-0">
+            <MudButton OnClick="Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="rounded-pill px-8 flex-grow-1 mr-2 py-3"
+                       Style="text-transform:none; background-color: #0d1b3e">
+                @L["add_transaction"]
+            </MudButton>
+            <MudButton OnClick="Cancel"
+                       Variant="Variant.Outlined"
+                       Class="rounded-pill px-8 py-3"
+                       Style="text-transform:none">
+                @L["cancel"]
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .rounded-lg {
+        margin-top: 0;
+    }
+    .border-dashed {
+        border: 2px dashed #e0e0e0 !important;
+    }
+    .fw-bold {
+        font-weight: 700;
+    }
+</style>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public List<CategoryDTO> Categories { get; set; } = new();
+    [Parameter] public string? Currency { get; set; }
+
+    private decimal _price;
+    private string? _categoryId;
+    private DateTime? _date = DateTime.Today;
+    private string? _name;
+    private string? _description;
+
+    private void UploadFiles(InputFileChangeEventArgs e)
+    {
+        // Handle logic
+    }
+
+    private void Submit()
+    {
+        var payload = new CreateExpenditureDTO
+        {
+            Name = _name ?? string.Empty,
+            Description = _description,
+            Price = _price,
+            CategoryId = _categoryId,
+            Date = _date,
+        };
+        MudDialog.Close(DialogResult.Ok(payload));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

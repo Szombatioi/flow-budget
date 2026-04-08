@@ -1,0 +1,64 @@
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5" Align="Align.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Label" Class="mr-3 mb-n1"/>
+            @(IsEditMode ? L["edit_category"] : L["add_category"])
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField T="string"
+                          Label="@L["category_name_label"]"
+                          @bind-Value="_name"
+                          Required="true"
+                          RequiredError="@L["field_required"]"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal"
+                          Immediate />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!_success)"
+                   OnClick="Submit">@(IsEditMode ? L["save"] : L["add"])</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public CategoryDTO? Model { get; set; }
+
+    private bool IsEditMode => Model is not null;
+
+    private MudForm _form = null!;
+    private bool _success;
+    private string _name = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (Model is not null)
+        {
+            _name = Model.DisplayName;
+        }
+    }
+
+    private void Submit()
+    {
+        var result = new CategoryDTO
+        {
+            Id = Model?.Id ?? string.Empty,
+            Name = _name,
+            DisplayName = _name,
+            IsSystem = false
+        };
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

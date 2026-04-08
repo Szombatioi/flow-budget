@@ -7,4 +7,5 @@ namespace FlowBudget.Data;
 public class ApplicationUser : IdentityUser<string>
 {
     public List<Account> Accounts { get; set; }
+    public List<Category> Categories { get; set; }
 }

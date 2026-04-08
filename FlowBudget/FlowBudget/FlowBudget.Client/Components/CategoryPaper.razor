@@ -1,0 +1,177 @@
+@inject IStringLocalizer<SharedResources> L
+@using DTO
+@using FlowBudget.Client.Components.Dialogs
+@using global::DTO
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject HttpClient http
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6">
+
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.Label" Class="mx-1" /><b>@L["categories_title"]</b>
+        </MudText>
+
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+        }
+        else
+        {
+            <MudList T="string" Clickable="false" Class="pb-2">
+                @foreach (var category in _categories)
+                {
+                    <MudListItem>
+                        <MudGrid Items="12" Class="align-center">
+                            <MudItem xs="8">
+                                <MudText Typo="Typo.body1">
+                                    @(category.IsSystem ? @L[category.DisplayName] : category.DisplayName)
+                                </MudText>
+                            </MudItem>
+
+                            <MudItem xs="4" Class="d-flex justify-end align-center">
+                                @if (category.IsSystem)
+                                {
+                                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                                        @L["system_category"]
+                                    </MudChip>
+                                }
+                                else
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   OnClick="@(() => EditCategory(category))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => DeleteCategory(category))" />
+                                }
+                            </MudItem>
+                        </MudGrid>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
+
+            <MudStack Row="true" Justify="Justify.FlexStart" Class="mt-6">
+                <MudButton Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Variant="Variant.Text"
+                           Size="Size.Small"
+                           OnClick="AddCategory">
+                    @L["add_category"]
+                </MudButton>
+            </MudStack>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<CategoryDTO> _categories = new();
+    private bool _isLoading = true;
+
+    private readonly DialogOptions _standardOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        _isLoading = true;
+        try
+        {
+            var categories = await http.GetFromJsonAsync<List<CategoryDTO>>("api/categories");
+            _categories = categories ?? new();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_loading_categories"], Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AddCategory()
+    {
+        var dialog = await DialogService.ShowAsync<AddCategoryDialog>(L["add_category"], _standardOptions);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CategoryDTO data)
+        {
+            var payload = new CreateCategoryDTO { Name = data.Name };
+            var response = await http.PostAsJsonAsync("api/categories", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                await LoadCategories();
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+    }
+
+    private async Task EditCategory(CategoryDTO category)
+    {
+        var modelCopy = new CategoryDTO { Id = category.Id, Name = category.Name, DisplayName = category.DisplayName };
+
+        var parameters = new DialogParameters<AddCategoryDialog>
+        {
+            { x => x.Model, modelCopy }
+        };
+
+        var dialog = await DialogService.ShowAsync<AddCategoryDialog>(L["edit_category"], parameters, _standardOptions);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CategoryDTO updated)
+        {
+            var payload = new EditCategoryDTO { Id = updated.Id, Name = updated.Name };
+            var response = await http.PutAsJsonAsync("api/categories", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                category.Name = updated.Name;
+                category.DisplayName = updated.DisplayName;
+                Snackbar.Add(L["save_success"], Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteCategory(CategoryDTO category)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_category_title"] },
+            { x => x.ContentText, L["delete_category_confirm_description"] }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_category_title"], parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await http.DeleteAsync($"api/categories/{category.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                _categories.Remove(category);
+                Snackbar.Add(L["item_deleted"], Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(L["delete_error"], Severity.Error);
+            }
+        }
+    }
+}

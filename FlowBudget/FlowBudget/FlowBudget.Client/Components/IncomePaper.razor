@@ -69,6 +69,8 @@
 </MudContainer>
 
 @code {
+    [Parameter] public string? AccountId { get; set; }
+    
     private List<IncomeDTO> _budgets = new();
     private string SelectedCurrency = "HUF";
     private string? SelectedAccount { get; set; }
@@ -82,43 +84,29 @@
         FullWidth = true 
     };
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        await LoadInitialData();
+        if (!string.IsNullOrEmpty(AccountId))
+        {
+            await LoadIncomes();
+        }
     }
-
-    private async Task LoadInitialData()
+    
+    private async Task LoadIncomes()
     {
         _isLoading = true;
         try
         {
-            var accounts = await http.GetFromJsonAsync<List<AccountDTO>>("api/accounts");
-            if (accounts != null && accounts.Any())
-            {
-                SelectedAccount = accounts[0].Id;
-                await LoadIncomes();
-            }
-        }
-        catch (Exception)
-        {
-            Snackbar.Add(L["error_loading_accounts"], Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-        }
-    }
-
-    private async Task LoadIncomes()
-    {
-        try
-        {
-            var incomes = await http.GetFromJsonAsync<List<IncomeDTO>>($"api/incomes/{SelectedAccount}");
+            var incomes = await http.GetFromJsonAsync<List<IncomeDTO>>($"api/incomes/{AccountId}");
             _budgets = incomes ?? new();
         }
         catch (Exception)
         {
             Snackbar.Add(L["error_loading_incomes"], Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -137,7 +125,7 @@
         {
             var payload = new CreateIncomeDTO
             {
-                AccountId = SelectedAccount,
+                AccountId = AccountId,
                 Name = newIncome.Name,
                 Amount = newIncome.Amount
             };

@@ -1,17 +1,18 @@
 @page "/"
-@using System.Security.Claims
-@using System.Threading
 @using DTO
 @using FlowBudget.Client.Components.DTO
 @using FlowBudget.Client.Components
+@using FlowBudget.Client.Components.Dialogs
+@using FlowBudget.Client.Components.Helpers
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.Extensions.Localization
 @inject IStringLocalizer<SharedResources> L
-@inject HttpClient http
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @attribute [Authorize]
+@* TODO: add account selection Select element *@
 
-
-@if (UserDto == null)
+@if (UserDto is null || ActivePlan is null || DailyExpense is null)
 {
     <div class="d-flex justify-center align-center">
         <MudProgressCircular Indeterminate="true"/>
@@ -38,13 +39,8 @@ else
         }
     </style>
 
-    @if (UserDto != null)
-    {
-        <p>User: @UserDto.Id</p>
-    }
-
+    <p>@Today</p>
     @* Center diagram of spendings *@
-    @* TODO: kiszervezni komponensnek *@
     <div class="no-hover-chart">
         <MudChart T="double"
                   ChartType="ChartType.Donut"
@@ -56,8 +52,8 @@ else
                 <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
                     <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
                     <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
-                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">7500 / 10000 Ft
-                    </tspan> @*TODO: replace this*@
+                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">@((DailyExpense.StartAmount - DailyExpense.EoDAmount).ToString("0.##")) / @(DailyExpense.StartAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}"])
+                    </tspan>
                 </text>
             </CustomGraphics>
         </MudChart>
@@ -70,10 +66,10 @@ else
                 @L["expenditures"]
             </MudText>
             <div style="display: flex; justify-content: space-between">
-                <div/>
+                <div></div>
                 <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
-                    <MudIconButton Icon="@Icons.Material.Filled.Add">
-
+                    <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                   OnClick="() => OpenDialog()">
                     </MudIconButton>
                 </MudTooltip>
             </div>
@@ -85,7 +81,7 @@ else
                     {
                         <MudDivider/>
                     }
-                }
+            }
         </MudPaper>
     </div>
 }
@@ -93,61 +89,138 @@ else
 
 @code {
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
-    private double[] SeriesData = { 100, 0 }; // Start at 0 for the progress part
-    private double targetValue = 75; // The final value you want to reach
+    private double[] SeriesData = { 100, 0 };
+    private double targetValue = 0;
     private double currentDisplayValue = 0;
+    private bool _hasAnimated = false;
+    private bool _isDataReady = false;
+
+    private DivisionPlanDTO? ActivePlan { get; set; }
+    private PocketDTO? SelectedPocket { get; set; }
+    private DailyExpenseDTO? DailyExpense { get; set; }
 
     private ChartOptions Options = new ChartOptions();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private DateTime Today { get; set; }
+
+    private List<CategoryDTO> _categories = new();
+
+    private readonly DialogOptions _standardOptions = new()
     {
-        if (firstRender)
-        {
-            // 1. "Load" animation logic
-            await AnimateChart();
-        }
-    }
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (_isDataReady && !_hasAnimated)
+    //     {
+    //         _hasAnimated = true;
+    //         await AnimateChart();
+    //     }
+    // }
 
     private async Task AnimateChart()
     {
-        // Smoothly increment the value
         for (int i = 0; i <= targetValue; i++)
         {
             currentDisplayValue = i;
-            // Update the chart data: [Remaining, Progress]
             SeriesData = new double[] { 100 - currentDisplayValue, currentDisplayValue };
-
-            // Refresh the colors based on current progress
             Options.ChartPalette = new string[] { "#F5F5F5", GetProgressColor(currentDisplayValue) };
-
-            StateHasChanged(); // Force UI refresh
-            await Task.Delay(10); // Adjust delay for speed (10ms is fast and smooth)
+            StateHasChanged();
+            await Task.Delay(10);
         }
     }
 
     private string GetProgressColor(double value)
     {
-        if (value < 50) return "#00ff00"; // Green
-        if (value < 80) return "#ffff00"; // Yellow
-        return "#ff0000"; // Red
+        if (value < 50) return "#00ff00";
+        if (value < 80) return "#ffff00";
+        return "#ff0000";
     }
 
-    private List<ExpenditureDto> expenditures { get; set; }
+    private List<ExpenditureDTO> expenditures { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        // Initialize your mock data here so it shows up even for guests
-        LoadMockData();
-    }
+        if (UserDto == null) return;
+        Today = DateTime.Today;
 
-    private void LoadMockData()
-    {
-        expenditures = new()
+        try
         {
-            new ExpenditureDto { Id = "0", Name = "Shopping", Price = 2500, Currency = "Ft" },
-            new ExpenditureDto { Id = "1", Name = "Coffee", Price = 500, Currency = "Ft" },
-            new ExpenditureDto { Id = "2", Name = "BKV bérlet", Price = 990, Currency = "Ft" }
-        };
+            var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
+            var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
+            ActivePlan = activePlan ?? throw new Exception();
+            SelectedPocket = ActivePlan.Pockets[0];
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_load_active_division_plan"], Severity.Error);
+        }
+
+        try
+        {
+            var categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories");
+            _categories = categories ?? new();
+        }
+        catch (Exception)
+        {
+            // Non-critical: dialog will just show empty category list
+        }
+
+        await LoadDailyExpense();
     }
 
+    private async Task LoadDailyExpense()
+    {
+        try
+        {
+            var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={Today.FormatDate()}");
+            DailyExpense = res;
+
+            var sumOfExpenses = DailyExpense.Expenditures.Sum(ex => ex.Price);
+            targetValue = (double)(sumOfExpenses / DailyExpense.StartAmount * 100);
+            _isDataReady = true;
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_load_daily_expense"], Severity.Error);
+        }
+    }
+
+    private async Task OpenDialog()
+    {
+        var parameters = new DialogParameters<AddExpenseDialog>
+        {
+            { x => x.Categories, _categories },
+            { x => x.Currency, ActivePlan?.Account.CurrencyCode }
+        };
+
+        var dialog = await DialogService.ShowAsync<AddExpenseDialog>(L["record_new_transaction"], parameters, _standardOptions);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            var payload = (CreateExpenditureDTO)result.Data!;
+            try
+            {
+                var res = await Http.PostAsJsonAsync($"api/expenditures/{SelectedPocket.Id}", payload);
+                if (res.IsSuccessStatusCode)
+                {
+                    Snackbar.Add(L["save_success"], Severity.Success);
+                    await LoadDailyExpense();
+                }
+                else
+                {
+                    Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
+                }
+            }
+            catch (Exception)
+            {
+                Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
+            }
+        }
+    }
 }

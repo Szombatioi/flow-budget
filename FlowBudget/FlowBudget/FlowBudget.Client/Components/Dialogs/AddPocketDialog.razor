@@ -22,7 +22,7 @@
 
             <MudNumericField T="double"
                              Label="@L["pocket_ratio_label"]"
-                             @bind-Value="Model.Ratio"
+                             @bind-Value="Model.Ration"
                              @bind-Value:after="OnRatioChange"
                              Validation="@(new Func<double, string?>(ValidateRatio))"
                              Immediate="true"
@@ -44,7 +44,7 @@
             </MudAlert>
 
             <MudText Class="mt-2">
-                <b>@L["money_amount"]:</b> @((Incomes * (decimal)Model.Ratio / 100).ToString("N0")) @Currency
+                <b>@L["money_amount"]:</b> @((Incomes * (decimal)Model.Ration / 100).ToString("N0")) @Currency
             </MudText>
         </MudForm>
     </DialogContent>
@@ -75,12 +75,12 @@
     {
         double usedByOthers = PresentPockets
             .Where(p => p.Id != Model.Id)
-            .Sum(p => p.Ratio);
+            .Sum(p => p.Ration);
 
-        RemainingRatio = (decimal)(100.0 - usedByOthers - Model.Ratio);
+        RemainingRatio = (decimal)(100.0 - usedByOthers - Model.Ration);
 
         // Sync the Money field in the DTO
-        Model.Money = Incomes * (decimal)Model.Ratio / 100;
+        // Model.Money = Incomes * (decimal)Model.Ration / 100;
     }
 
     // This function is called by MudForm to validate the specific field
@@ -88,7 +88,7 @@
     {
         double usedByOthers = PresentPockets
             .Where(p => p.Id != Model.Id)
-            .Sum(p => p.Ratio);
+            .Sum(p => p.Ration);
 
         if (usedByOthers + value > 100.001) // Small epsilon for double precision issues
         {

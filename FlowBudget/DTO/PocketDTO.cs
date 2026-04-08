@@ -2,10 +2,26 @@ namespace DTO;
 
 public class PocketDTO
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = string.Empty;
-    public decimal Money { get; set; }
-    public double Ratio { get; set; } // e.g., 25.5 for 25.5%
+    public string Id { get; set; }
+    public string Name { get; set; }
+    // public decimal Money { get; set; }
+    public double Ration { get; set; } // e.g., 25.5 for 25.5%
+    public string DivisionPlanId { get; set; }
+}
+
+public class CreatePocketDTO
+{
+    public string Name { get; set; }
+    // public decimal Money { get; set; }
+    public double Ration { get; set; }
+}
+
+public class EditPocketDTO
+{
+    public string Id { get; set; }
+    public string? Name { get; set; }
+    
+    public double? Ration { get; set; }
 }
 
 public class PocketModifyDTO

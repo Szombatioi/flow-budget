@@ -4,6 +4,7 @@
 @using global::DTO
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject HttpClient http
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
     <MudPaper Elevation="3" Class="pa-6">
@@ -12,184 +13,189 @@
             <MudIcon Icon=@Icons.Material.Filled.MoneyOff Class="mx-1" /><b>@L["fixed_expenses_title"]</b>
         </MudText>
 
-        <MudList T="string" Clickable="false">
-            @foreach (var budget in _budgets)
-            {
-                <MudListItem>
-                    <MudGrid Items="12" Class="align-center">
-                        <MudItem xs="4">
-                            <MudBadge Visible="@saveables.Any(s => s.Income.Id == budget.Id)"
-                                      Icon="@Icons.Material.Filled.Edit"
-                                      Color="Color.Warning"
-                                      Overlap="true"
-                                      Bordered="true"
-                                      Placement="Placement.TopRight"
-                                      Class="d-block w-100">
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+        }
+        else
+        {
+            <MudList T="string" Clickable="false" Class="pb-2">
+                @foreach (var budget in _fixedExpenses)
+                {
+                    <MudListItem>
+                        <MudGrid Items="12" Class="align-center">
+                            <MudItem xs="4">
                                 <MudText Typo="Typo.body1">@budget.Name</MudText>
-                            </MudBadge>
-                        </MudItem>
-                        
-                        <MudItem xs="4">
-                            <MudText Typo="Typo.body1">
-                                @budget.Amount.ToString("N0") @SelectedCurrency
-                            </MudText>
-                        </MudItem>
+                            </MudItem>
+                
+                            <MudItem xs="4">
+                                <MudText Typo="Typo.body1">
+                                    @budget.Amount.ToString("N0") @SelectedCurrency
+                                </MudText>
+                            </MudItem>
 
-                        <MudItem xs="4" Class="d-flex justify-end">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                           OnClick="@(() => EditBudget(budget))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                           Color="Color.Error" 
-                                           OnClick="@(() => DeleteBudget(budget))" />
-                        </MudItem>
-                    </MudGrid>
-                </MudListItem>
-                <MudDivider />
-            }
-        </MudList>
+                            <MudItem xs="4" Class="d-flex justify-end">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                               OnClick="@(() => EditFE(budget))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                               Color="Color.Error" 
+                                               OnClick="@(() => DeleteFE(budget))" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
 
-        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-6">
-            <MudTooltip Text="@L["add_income"]">
-                <MudIconButton
-                    Icon="@Icons.Material.Filled.Add"
-                    Size="Size.Small"
-                    OnClick="AddBudget" />
-            </MudTooltip>
+            @* Total Section *@
+            <MudText Typo="Typo.subtitle1">
+                <b>@L["total_fixed_expenses"]</b>
+            </MudText>
+            <MudPaper Elevation="0" Class="p-2" Style="background-color: #2c3034; color: white;">
+                <MudText Typo="Typo.h6"><b>@_fixedExpenses.Sum(x => x.Amount).ToString("N0") @SelectedCurrency</b></MudText>
+            </MudPaper>
             
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Success"
-                       StartIcon="@Icons.Material.Filled.Save" 
-                       OnClick="SaveAll">
-                @L["save"]
-            </MudButton>
-        </MudStack>
-
+            <MudStack Row="true" Justify="Justify.FlexStart" Class="mt-6">
+                <MudButton Color="Color.Primary" 
+                           StartIcon="@Icons.Material.Filled.Add" 
+                           Variant="Variant.Text"
+                           Size="Size.Small"
+                           OnClick="AddFE">
+                    @L["add_fixed_expense"]
+                </MudButton>
+            </MudStack>
+        }
     </MudPaper>
 </MudContainer>
 
 @code {
-    private List<IncomeDTO> _budgets = new();
-    private List<IncomeModifyDTO> saveables = new();
+    [Parameter] public string? AccountId { get; set; }
+    
+    private List<FixedExpenseDTO> _fixedExpenses = new();
     private string SelectedCurrency = "HUF";
+    private bool _isLoading = true;
 
-    protected override void OnInitialized()
+    private readonly DialogOptions _standardOptions = new() 
+    { 
+        CloseOnEscapeKey = true, 
+        MaxWidth = MaxWidth.Small, 
+        FullWidth = true 
+    };
+
+    protected override async Task OnParametersSetAsync()
     {
-        // Mocking some data
-        _budgets.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Main Salary", Amount = 550000 });
-        _budgets.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Bonus", Amount = 45000 });
+        if (!string.IsNullOrEmpty(AccountId))
+        {
+            await LoadFixedExpenses();
+        }
     }
-
-    private async Task AddBudget()
+    
+    private async Task LoadFixedExpenses()
     {
-        var parameters = new DialogParameters<AddIncomeDialog>
+        _isLoading = true;
+        try
         {
-            { x => x.Currency, SelectedCurrency },
-            { x => x.Model, new IncomeDTO() }
-        };
-
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddIncomeDialog>(L["add_income"], parameters, options);
-        var result = await dialog.Result;
-
-        if (!result.Canceled && result.Data is IncomeDTO newBudget)
+            // Update endpoint naming as per your backend convention
+            var expenses = await http.GetFromJsonAsync<List<FixedExpenseDTO>>($"api/fixed-expenses/{AccountId}");
+            _fixedExpenses = expenses ?? new();
+        }
+        catch (Exception)
         {
-            _budgets.Add(newBudget);
-            saveables.Add(new IncomeModifyDTO()
-            {
-                Income = newBudget,
-                Method = ModificationMethod.CREATE,
-            });
-            StateHasChanged();
+            Snackbar.Add(L["error_loading_fixed_expenses"], Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
-    private async Task EditBudget(IncomeDTO budget)
+    private async Task AddFE()
     {
-        // Create a shallow copy so changes aren't live-updated in the list until 'Ok' is clicked
-        var modelCopy = new IncomeDTO 
-        { 
-            Id = budget.Id, 
-            Name = budget.Name, 
-            Amount = budget.Amount 
+        var parameters = new DialogParameters<AddFixedExpenseDialog>
+        {
+            { x => x.Currency, SelectedCurrency },
+            { x => x.Model, new FixedExpenseDTO() }
         };
 
-        var parameters = new DialogParameters<AddIncomeDialog>
+        var dialog = await DialogService.ShowAsync<AddFixedExpenseDialog>(L["add_fixed_expense"], parameters, _standardOptions);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is FixedExpenseDTO newExpense)
+        {
+            var payload = new CreateFixedExpenseDTO()
+            {
+                AccountId = AccountId,
+                Name = newExpense.Name,
+                Amount = newExpense.Amount
+            };
+
+            var response = await http.PostAsJsonAsync("api/fixed-expenses", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                await LoadFixedExpenses();
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+    }
+
+    private async Task EditFE(FixedExpenseDTO fixedExpense)
+    {
+        var modelCopy = new FixedExpenseDTO() { Id = fixedExpense.Id, Name = fixedExpense.Name, Amount = fixedExpense.Amount };
+
+        var parameters = new DialogParameters<AddFixedExpenseDialog>
         {
             { x => x.Currency, SelectedCurrency },
             { x => x.Model, modelCopy }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddIncomeDialog>(L["edit_income"], parameters, options);
+        var dialog = await DialogService.ShowAsync<AddFixedExpenseDialog>(L["edit_fixed_expense"], parameters, _standardOptions);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is IncomeDTO updatedBudget)
+        if (!result.Canceled && result.Data is FixedExpenseDTO updated)
         {
-            // Apply changes to the UI list item
-            budget.Name = updatedBudget.Name;
-            budget.Amount = updatedBudget.Amount;
-
-            // Only add to saveables if it's not already marked as CREATE
-            if (!saveables.Any(x => x.Income.Id == budget.Id && x.Method == ModificationMethod.CREATE))
+            var payload = new EditFixedExpenseDTO { Id = updated.Id, Name = updated.Name, Amount = updated.Amount };
+            
+            var response = await http.PutAsJsonAsync("api/fixed-expenses", payload);
+            if (response.IsSuccessStatusCode)
             {
-                saveables.Add(new IncomeModifyDTO()
-                {
-                    Income = budget,
-                    Method = ModificationMethod.MODIFY
-                });
+                fixedExpense.Name = updated.Name;
+                fixedExpense.Amount = updated.Amount;
+                Snackbar.Add(L["save_success"], Severity.Success);
             }
-            StateHasChanged();
+            else
+            {
+                Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
+            }
         }
     }
 
-    private async Task DeleteBudget(IncomeDTO budget)
+    private async Task DeleteFE(FixedExpenseDTO fixedExpense)
     {
         var parameters = new DialogParameters<ConfirmDialog>
         {
-            { x => x.Title, L["delete_income_title"] },
-            { x => x.ContentText, L["delete_income_confirm_description"] }
+            { x => x.Title, L["delete_fixed_expense_title"] },
+            { x => x.ContentText, L["delete_fixed_expense_confirm_description"] }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_income_title"], parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_fixed_expense_title"], parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
         {
-            _budgets.Remove(budget);
-
-            // Logic check: If it was a new item (CREATE), just remove it from saveables entirely
-            var existingCreate = saveables.FirstOrDefault(x => x.Income.Id == budget.Id && x.Method == ModificationMethod.CREATE);
-            if (existingCreate != null)
+            var response = await http.DeleteAsync($"api/fixed-expenses/{fixedExpense.Id}");
+            if (response.IsSuccessStatusCode)
             {
-                saveables.Remove(existingCreate);
+                _fixedExpenses.Remove(fixedExpense);
+                Snackbar.Add(L["item_deleted"], Severity.Success);
             }
             else
             {
-                saveables.Add(new IncomeModifyDTO()
-                {
-                    Income = budget,
-                    Method = ModificationMethod.DELETE,
-                });
+                Snackbar.Add(L["delete_error"], Severity.Error);
             }
-
-            StateHasChanged();
-            Snackbar.Add(L["item_deleted"], Severity.Info);
         }
-    }
-
-    private async Task SaveAll()
-    {
-        if (!saveables.Any())
-        {
-            Snackbar.Add(L["no_changes_to_save"], Severity.Info);
-            return;
-        }
-
-        // TODO: call backend API with the saveables list
-        // Example: await Http.PostAsJsonAsync("api/budgets/save", saveables);
-        
-        saveables.Clear();
-        Snackbar.Add(L["save_success"], Severity.Success);
     }
 }

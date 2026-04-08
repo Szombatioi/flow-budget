@@ -252,4 +252,145 @@
   <data name="total_income" xml:space="preserve">
     <value>Total Income</value>
   </data>
+  <data name="error_loading_pockets" xml:space="preserve">
+    <value>Could not load pockets</value>
+  </data>
+  <data name="total_allocated" xml:space="preserve">
+    <value>Total allocated</value>
+  </data>
+  <data name="ratio_warning_not_100" xml:space="preserve">
+    <value>Warning: ratio is not yet 100%</value>
+  </data>
+  <data name="total_ratio" xml:space="preserve">
+    <value>Total Ratio</value>
+  </data>
+  <data name="select_division_plan" xml:space="preserve">
+    <value>Select a division plan</value>
+  </data>
+  <data name="error_loading_accounts" xml:space="preserve">
+    <value>Could not load accounts</value>
+  </data>
+  <data name="no_pockets_for_plan" xml:space="preserve">
+    <value>No pockets yet for plan</value>
+  </data>
+  <data name="create_first_plan" xml:space="preserve">
+    <value>Create your first division plan</value>
+  </data>
+  <data name="plan_created" xml:space="preserve">
+    <value>Division plan created</value>
+  </data>
+  <data name="add_new_plan" xml:space="preserve">
+    <value>Add a new Division Plan</value>
+  </data>
+  <data name="delete_pocket_title" xml:space="preserve">
+    <value>Delete Pocket?</value>
+  </data>
+  <data name="delete_pocket_confirm_description" xml:space="preserve">
+    <value>Are you sure you want to delete this pocket? This operation will not be reversible.</value>
+  </data>
+  <data name="error_loading_fixed_expenses" xml:space="preserve">
+    <value>Cloud not load fixed expenses</value>
+  </data>
+  <data name="total_fixed_expenses" xml:space="preserve">
+    <value>Total fixed expenses</value>
+  </data>
+  <data name="add_fixed_expense" xml:space="preserve">
+    <value>Add Fixed Expense</value>
+  </data>
+  <data name="fixed_expense_amount_label" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="fixed_expense_name_label" xml:space="preserve">
+    <value>Fixed expense name</value>
+  </data>
+  <data name="delete_fixed_expense_title" xml:space="preserve">
+    <value>Delete fixed expense?</value>
+  </data>
+  <data name="delete_fixed_expense_confirm_description" xml:space="preserve">
+    <value>Are you sure you want to delete this fixed expense? This operation will not be reversible.</value>
+  </data>
+  <data name="nav_dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="nav_planning_and_setup" xml:space="preserve">
+    <value>Planning &amp; Setup</value>
+  </data>
+  <data name="nav_statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="error_load_daily_expense" xml:space="preserve">
+    <value>Could not load this daily expense</value>
+  </data>
+  <data name="error_load_active_division_plan" xml:space="preserve">
+    <value>Could not load the active division plan</value>
+  </data>
+  <data name="categories_title" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="add_category" xml:space="preserve">
+    <value>Add category</value>
+  </data>
+  <data name="edit_category" xml:space="preserve">
+    <value>Edit category</value>
+  </data>
+  <data name="category_name_label" xml:space="preserve">
+    <value>Category name</value>
+  </data>
+  <data name="delete_category_title" xml:space="preserve">
+    <value>Delete category?</value>
+  </data>
+  <data name="delete_category_confirm_description" xml:space="preserve">
+    <value>Are you sure you want to delete this category?</value>
+  </data>
+  <data name="system_category" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="error_loading_categories" xml:space="preserve">
+    <value>Could not load categories</value>
+  </data>
+  <data name="name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="name_placeholder" xml:space="preserve">
+    <value>E.g. Coffee, Groceries...</value>
+  </data>
+  <data name="record_new_transaction" xml:space="preserve">
+    <value>Record new transaction</value>
+  </data>
+  <data name="transaction_subtitle" xml:space="preserve">
+    <value>Track your spending</value>
+  </data>
+  <data name="add_transaction" xml:space="preserve">
+    <value>Add transaction</value>
+  </data>
+  <data name="description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="description_placeholder" xml:space="preserve">
+    <value>Optional note...</value>
+  </data>
+  <data name="receipt" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="upload_or_scan_receipt" xml:space="preserve">
+    <value>Upload or scan receipt</value>
+  </data>
+  <data name="upload_constraints_hint" xml:space="preserve">
+    <value>PNG, JPG or PDF, max 5MB</value>
+  </data>
+  <data name="date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="save_error" xml:space="preserve">
+    <value>Could not save</value>
+  </data>
+  <data name="error_loading_incomes" xml:space="preserve">
+    <value>Could not load incomes</value>
+  </data>
+  <data name="edit_income" xml:space="preserve">
+    <value>Edit income</value>
+  </data>
+  <data name="no_accounts_found" xml:space="preserve">
+    <value>No accounts found</value>
+  </data>
 </root>

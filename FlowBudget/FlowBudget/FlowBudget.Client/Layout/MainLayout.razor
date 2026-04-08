@@ -6,6 +6,8 @@
 @inject AuthenticationStateProvider AuthProvider
 @attribute [Authorize]
 @inject HttpClient http
+@inject IStringLocalizer<SharedResources> L
+@inject NavigationManager nav
 
 @* Optional: @inject UserManager<ApplicationUser> UserManager *@
 
@@ -14,21 +16,70 @@
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
+<style>
+    /* Remove the default shadow from the AppBar to let it blend */
+    .mud-appbar {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Subtle separator instead of shadow */
+    }
+
+    /* Fix the Drawer shadow to only cast to the right */
+    .mud-drawer-fixed {
+        box-shadow: 4px 0 8px -3px rgba(0, 0, 0, 0.1);
+        border-right: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Ensure the mini-drawer icons are centered when collapsed */
+    .mud-drawer-mini .mud-nav-link {
+        justify-content: center;
+        padding-left: 0;
+    }
+</style>
+
 <MudLayout>
+    @* Elevation 0 removes the bottom shadow that separates it from the drawer *@
+    <MudAppBar Elevation="0" Class="border-b">
+        @* <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" *@
+        @*                Edge="Edge.Start" OnClick="ToggleDrawer"/> *@
+        @* <MudText Typo="Typo.h6" Class="ml-3"><b>FlowBudget</b></MudText> *@
+        @* <MudSpacer /> *@
+        <MudText Typo="Typo.h4">@appBarTitle</MudText>
+    </MudAppBar>
+
+    @* ClipMode.Always ensures the AppBar stays 'above' the Drawer visually *@
+    <MudDrawer @bind-Open="@_open"
+               Variant="@DrawerVariant.Mini"
+               ClipMode="DrawerClipMode.Never"
+               Overlay="false"
+               Elevation="0"
+               OpenMiniOnHover="true">
+        <MudDrawerHeader Class="d-flex flex-column">
+            <MudText Typo="Typo.h5">FlowBudget</MudText>
+            <MudText Typo="Typo.subtitle1">Some slogen here</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu Class="mt-4 ml-2" Style="background: transparent;">
+            <MudNavLink Class="p-1" Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.Dashboard"
+                        OnClick="@(() => PageChanged("nav_dashboard", "/"))">
+            @L["nav_dashboard"]
+            </MudNavLink>
+            <MudNavLink Class="p-1" Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.SettingsSuggest"
+                        OnClick="@(() => PageChanged("nav_planning_and_setup", "/plan"))">
+            @L["nav_planning_and_setup"]
+            </MudNavLink>
+            <MudNavLink Class="p-1" Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.BarChart"
+                        OnClick="@(() => PageChanged("nav_statistics", "/statistics"))">
+            @L["nav_statistics"]
+            </MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
     <MudMainContent>
-        <CascadingValue Value="_currentUser">
-            <CascadingValue Value="UserDto">
-                <CascadingValue Value="theme">
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken/>
-                        <input type="hidden" name="ReturnUrl" value="http://localhost:5288/"/>
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
-                    </form>
-                    @Body
-                </CascadingValue>
-            </CascadingValue>
+        <CascadingValue Value="UserDto">
+            <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+                @Body
+            </MudContainer>
         </CascadingValue>
     </MudMainContent>
 </MudLayout>
@@ -39,12 +90,27 @@
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
     [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
+    private string appBarTitle = "Dashboard"; //TODO: make a dictionary with URL-title pairs and use them here (OnInitializedAsync method)
+    private bool _open = true;
+    private readonly bool _overlayAutoClose = false;
+
+    private void ToggleDrawer()
+    {
+        // _open = !_open;
+    }
+
+    private const string LightPaletteGrey = "#F0F1F2";
+
     [CascadingParameter]
     public MudTheme theme { get; set; } = new MudTheme()
     {
         PaletteLight = new PaletteLight()
         {
-            Background = "#F0F1F2",
+            Background = LightPaletteGrey,
+            DrawerBackground = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            TextPrimary = "#454748",
+            AppbarText = "#454748"
         },
         PaletteDark = new PaletteDark()
         {
@@ -82,4 +148,10 @@
         }
     }
 
+    private void PageChanged(string title, string url)
+    {
+        appBarTitle = L[title];
+        nav.NavigateTo(url);       
+        StateHasChanged();
+    }
 }

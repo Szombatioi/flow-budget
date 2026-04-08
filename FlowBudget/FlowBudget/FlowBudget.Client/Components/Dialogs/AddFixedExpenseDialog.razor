@@ -1,0 +1,60 @@
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5" Align="Align.Center">
+            <MudIcon Icon="@Icons.Material.Filled.AddCard" Class="mr-3 mb-n1"/>
+            @L["add_income"]
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField T="string" 
+                          Label="@L["fixed_expense_name_label"]" 
+                          @bind-Value="Model.Name" 
+                          Required="true" 
+                          RequiredError="@L["field_required"]"
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Normal"
+                          Immediate/>
+
+            <MudNumericField T="decimal" 
+                             Label="@L["fixed_expense_amount_label"]" 
+                             @bind-Value="Model.Amount" 
+                             Adornment="Adornment.End" 
+                             AdornmentText="@Currency"
+                             Variant="Variant.Outlined" 
+                             Margin="Margin.Normal" 
+                             Min="0"
+                             Immediate
+                             HideSpinButtons="true" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary" 
+                   Variant="Variant.Filled" 
+                   Disabled="@(!_success)" 
+                   OnClick="Submit">@L["add"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+
+    [Parameter] public string Currency { get; set; } = "HUF";
+    
+    // We initialize a new model here, or pass one in if editing
+    [Parameter] public FixedExpenseDTO Model { get; set; } = new();
+
+    private MudForm _form = null!;
+    private bool _success;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Model));
+    
+    private void Cancel() => MudDialog.Cancel();
+}

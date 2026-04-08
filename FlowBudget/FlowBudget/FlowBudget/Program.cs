@@ -4,6 +4,7 @@ using FlowBudget.Client.Pages;
 using FlowBudget.Components;
 using FlowBudget.Components.Account;
 using FlowBudget.Data;
+using FlowBudget.Data.Models;
 using FlowBudget.Profiles;
 using FlowBudget.Services;
 using MudBlazor.Services;
@@ -32,6 +33,9 @@ builder.Services.AddTransient<IncomeService>();
 builder.Services.AddTransient<PocketService>();
 builder.Services.AddTransient<DivisionPlanService>();
 builder.Services.AddTransient<FixedExpenseService>();
+builder.Services.AddTransient<DailyExpenseService>();
+builder.Services.AddTransient<ExpenditureService>();
+builder.Services.AddTransient<CategoryService>();
 
 // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); //Note: with this parameter it scans all profiles
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
@@ -52,7 +56,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()

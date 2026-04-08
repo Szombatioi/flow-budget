@@ -1,93 +1,259 @@
-@page "/plan/pockets"
+@* TODO: Add divisionPlan activation button*@
 @inject IStringLocalizer<SharedResources> L
+@using System.Diagnostics
 @using DTO
 @using FlowBudget.Client.Components.Dialogs
 @using global::DTO
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
-
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+@inject HttpClient http
+<MudContainer MaxWidth="MaxWidth.Medium">
     <MudPaper Elevation="3" Class="pa-6">
 
         <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
-            <MudIcon Icon=@Icons.Material.Filled.BarChart Class="mx-2" /><b>@L["pockets_title"]</b>
+            <MudIcon Icon=@Icons.Material.Filled.BarChart Class="mx-2"/>
+            <b>@L["pockets_title"]</b>
         </MudText>
 
-        <MudList T="string" Clickable="false">
-            @foreach (var pocket in _pockets)
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7"/>
+        }
+        else
+        {
+            if (!_pockets.Any())
             {
-                <MudListItem>
-                    <MudGrid Class="align-center">
-                        <MudItem xs="4">
-                            <MudBadge Visible="@saveables.Any(s => s.Pocket.Id == pocket.Id)"
-                                      Icon="@Icons.Material.Filled.Edit"
-                                      Color="Color.Warning"
-                                      Overlap="true"
-                                      Bordered="true"
-                                      Placement="Placement.TopRight"
-                                      Class="d-block w-100">
-                                <MudText Typo="Typo.body1">@pocket.Name</MudText>
-                            </MudBadge>
-                        </MudItem>
-
-                        <MudItem xs="3">
-                            <MudText Typo="Typo.body1">
-                                @pocket.Money.ToString("N0") @SelectedCurrency
-                            </MudText>
-                        </MudItem>
-
-                        <MudItem xs="2">
-                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
-                                @pocket.Ratio.ToString("N1") %
-                            </MudChip>
-                        </MudItem>
-
-                        <MudItem xs="3" Class="d-flex justify-end">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           OnClick="@(() => EditPocket(pocket))"/>
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           OnClick="@(() => DeletePocket(pocket))"/>
-                        </MudItem>
-                    </MudGrid>
-                </MudListItem>
-                <MudDivider/>
+                <MudText Align="Align.Center" Typo="Typo.h6">
+                    @L["no_pockets_for_plan"]
+                </MudText>
             }
-        </MudList>
+            else
+            {
+                <MudList T="string" Clickable="false">
+                    @foreach (var pocket in _pockets)
+                    {
+                        <MudListItem>
+                            <MudGrid Class="align-center">
+                                <MudItem xs="4">
+                                    <MudText Typo="Typo.body1">@pocket.Name</MudText>
+                                </MudItem>
 
-        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-6">
-            <MudTooltip Text="@L["add_pocket"]">
-                <MudIconButton
-                    Icon="@Icons.Material.Filled.Add"
-                    Size="Size.Small"
-                    OnClick="AddPocket"/>
-            </MudTooltip>
+                                <MudItem xs="3">
+                                    <MudText Typo="Typo.body1">
+                                        @((((decimal)pocket.Ration / 100m) * _incomes.Sum(i => i.Amount)).ToString("N0")) @SelectedCurrency
+                                    </MudText>
+                                </MudItem>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Success"
-                       StartIcon="@Icons.Material.Filled.Save"
-                       OnClick="SaveAll">
-                @L["save"]
-            </MudButton>
-        </MudStack>
+                                <MudItem xs="2">
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
+                                        @pocket.Ration.ToString("N1") %
+                                    </MudChip>
+                                </MudItem>
 
+                                <MudItem xs="3" Class="d-flex justify-end">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   OnClick="@(() => EditPocket(pocket))"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                   OnClick="@(() => DeletePocket(pocket))"/>
+                                </MudItem>
+                            </MudGrid>
+                        </MudListItem>
+                        <MudDivider/>
+                    }
+                </MudList>
+
+                @* <MudGrid Class="mt-4 align-center"> *@
+                    @* <MudItem xs="6"> *@
+                    @*     <MudText Typo="Typo.subtitle1"><b>@L["total_allocated"]</b></MudText> *@
+                    @*     <MudPaper Elevation="0" Class="pa-2 mt-1" *@
+                    @*               Style="background-color: #2c3034; color: white; width: fit-content;"> *@
+                    @*         <MudText Typo="Typo.h6"><b>@_pockets.Sum(x => x.Money).ToString("N0") @SelectedCurrency</b> *@
+                    @*         </MudText> *@
+                    @*     </MudPaper> *@
+                    @* </MudItem> *@
+                    
+                // </MudGrid>
+
+                @if (Math.Abs(_pockets.Sum(x => x.Ration) - 100) > 0.01)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-4">
+                        @L["ratio_warning_not_100"]
+                    </MudAlert>
+                }
+            }
+
+            // Bottom
+            <MudContainer Class="d-flex justify-space-between align-center mt-6 w-100" Style="border: 1px solid red;">
+
+                @* --- Left Side --- *@
+                <MudButton Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Variant="Variant.Text"
+                           Size="Size.Small"
+                           OnClick="AddPocket"
+                           Disabled="@(string.IsNullOrEmpty(_selectedPlanId))">
+                    @L["add_pocket"]
+                </MudButton>
+                
+
+                <MudContainer xs="6" Class="d-flex flex-column align-center justify-center">
+                    <MudText Typo="Typo.subtitle2">@L["total_ratio"]</MudText>
+                    @{
+                        var totalRatio = _pockets.Sum(x => x.Ration);
+                        var isRatioValid = Math.Abs(totalRatio - 100) < 0.01;
+                    }
+                    <MudChip T="string" Color="@(isRatioValid ? Color.Success : Color.Warning)"
+                             Variant="Variant.Filled">
+                        @totalRatio.ToString("N1") % / 100%
+                    </MudChip>
+                </MudContainer>
+
+                @* --- Right Side --- *@
+                <MudSelect T="string"
+                           Label="@L["select_division_plan"]"
+                           Value="_selectedPlanId"
+                           ValueChanged="OnPlanChanged"
+                           Variant="Variant.Outlined"
+                           FullWidth="false"
+                           Dense="true"
+                           Margin="Margin.Dense"
+                           Style="width: 280px;">
+                    @if (!_plans.Any())
+                    {
+                        <MudSelectItem Value="@("CREATE_NEW")">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                         Color="Color.Primary"/>
+                                <MudText Color="Color.Primary"><b>@L["create_first_plan"]</b></MudText>
+                            </div>
+                        </MudSelectItem>
+                    }
+                    else
+                    {
+                        @foreach (var plan in _plans)
+                        {
+                            <MudSelectItem Value="@plan.Id">
+                                @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
+                            </MudSelectItem>
+                        }
+
+                        <MudDivider/>
+                        <MudSelectItem Value="@("CREATE_NEW")">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                         Color="Color.Primary"/>
+                                <MudText Color="Color.Primary"><b>@L["add_new_plan"]</b></MudText>
+                            </div>
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudContainer>
+        }
     </MudPaper>
 </MudContainer>
 
 @code {
+    [Parameter] public string? AccountId { get; set; }
+
     private List<PocketDTO> _pockets = new();
-    private List<PocketModifyDTO> saveables = new();
-    private List<IncomeDTO> incomes = new();
+    private List<DivisionPlanDTO> _plans = new();
+    private List<IncomeDTO> _incomes = new();
+
+    private string? _selectedPlanId;
     private string SelectedCurrency = "HUF";
+    private bool _isLoading = true;
 
-    protected override void OnInitialized()
+    private readonly DialogOptions _standardOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnParametersSetAsync()
     {
-        // Mocking Data
-        _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Savings", Money = 120000, Ratio = 20 });
-        _pockets.Add(new PocketDTO { Id = Guid.NewGuid(), Name = "Bills", Money = 80000, Ratio = 50 });
+        if (!string.IsNullOrEmpty(AccountId))
+        {
+            await LoadData();
+        }
+    }
 
-        incomes.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Main Salary", Amount = 550000 });
-        incomes.Add(new IncomeDTO { Id = Guid.NewGuid().ToString(), Name = "Bonus", Amount = 45000 });
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        try
+        {
+            // Fetch Plans and Incomes simultaneously for better performance
+            var plansTask = http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{AccountId}");
+            var incomesTask = http.GetFromJsonAsync<List<IncomeDTO>>($"api/incomes/{AccountId}");
+            
+            await Task.WhenAll(plansTask, incomesTask);
+            Console.WriteLine(plansTask);
+            Console.WriteLine(incomesTask);
+            _plans = await plansTask ?? new();
+            _incomes = await incomesTask ?? new();
+
+            var activePlan = _plans.FirstOrDefault(x => x.IsActive) ?? _plans.FirstOrDefault();
+            _selectedPlanId = activePlan?.Id;
+
+            if (_selectedPlanId != null)
+            {
+                Console.WriteLine($"Pockets: ");
+                foreach (var pocket in activePlan?.Pockets!)
+                {
+                    Console.WriteLine(pocket.Name);
+                }
+                _pockets = activePlan?.Pockets ?? new();
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_loading_pockets"], Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnPlanChanged(string newPlanId)
+    {
+        if (newPlanId == "CREATE_NEW")
+        {
+            await CreateNewPlan();
+            return;
+        }
+
+        _selectedPlanId = newPlanId;
+        var plan = _plans.FirstOrDefault(p => p.Id == _selectedPlanId);
+        _pockets = plan?.Pockets ?? new();
+    }
+
+    private async Task CreateNewPlan()
+    {
+        try
+        {
+            // Matches your POST /api/plans requirement
+            var payload = new { accountId = AccountId };
+
+            var response = await http.PostAsJsonAsync("api/plans", payload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["plan_created"], Severity.Success);
+
+                // Reload everything. LoadData will automatically pick 
+                // the new/active plan and set _selectedPlanId correctly.
+                await LoadData();
+            }
+            else
+            {
+                Snackbar.Add(L["error_creating_plan"], Severity.Error);
+
+                // Reset the select value so it doesn't stay stuck on "CREATE_NEW"
+                var activePlan = _plans.FirstOrDefault(x => x.IsActive) ?? _plans.FirstOrDefault();
+                _selectedPlanId = activePlan?.Id;
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_creating_plan"], Severity.Error);
+        }
     }
 
     private async Task AddPocket()
@@ -97,55 +263,56 @@
             { x => x.Currency, SelectedCurrency },
             { x => x.Model, new PocketDTO() },
             { x => x.PresentPockets, _pockets },
-            { x => x.Incomes, incomes.Sum(i => i.Amount) },
+            { x => x.Incomes, _incomes.Sum(i => i.Amount) },
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["add_pocket"], parameters, options);
+        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["add_pocket"], parameters, _standardOptions);
         var result = await dialog.Result;
 
         if (!result.Canceled && result.Data is PocketDTO newPocket)
         {
-            _pockets.Add(newPocket);
-            saveables.Add(new PocketModifyDTO { Pocket = newPocket, Method = ModificationMethod.CREATE });
-            StateHasChanged();
+            var payload = new CreatePocketDTO()
+            {
+                Name = newPocket.Name,
+                // Money = newPocket.Money,
+                Ration = newPocket.Ration
+            };
+            var response = await http.PostAsJsonAsync<CreatePocketDTO>($"api/pockets/{_selectedPlanId}", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                await LoadData();
+            }
+            else Snackbar.Add($"{L["save_error_for"]} {newPocket.Name}", Severity.Error);
         }
     }
 
     private async Task EditPocket(PocketDTO pocket)
     {
-        var modelCopy = new PocketDTO
-        {
-            Id = pocket.Id,
-            Name = pocket.Name,
-            Money = pocket.Money,
-            Ratio = pocket.Ratio
-        };
+        var modelCopy = new PocketDTO { Id = pocket.Id, Name = pocket.Name, Ration = pocket.Ration };
 
         var parameters = new DialogParameters<AddPocketDialog>
         {
             { x => x.Currency, SelectedCurrency },
             { x => x.Model, modelCopy },
             { x => x.PresentPockets, _pockets },
-            { x => x.Incomes, incomes.Sum(i => i.Amount) },
+            { x => x.Incomes, _incomes.Sum(i => i.Amount) },
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["edit_pocket"], parameters, options);
+        var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["edit_pocket"], parameters, _standardOptions);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is PocketDTO updatedPocket)
+        if (!result.Canceled && result.Data is PocketDTO updated)
         {
-            pocket.Name = updatedPocket.Name;
-            pocket.Money = updatedPocket.Money;
-            pocket.Ratio = updatedPocket.Ratio;
-
-            if (!saveables.Any(x => x.Pocket.Id == pocket.Id && x.Method == ModificationMethod.CREATE))
+            var response = await http.PutAsJsonAsync("api/pockets", updated);
+            if (response.IsSuccessStatusCode)
             {
-                saveables.Add(new PocketModifyDTO { Pocket = pocket, Method = ModificationMethod.MODIFY });
+                pocket.Name = updated.Name;
+                // pocket.Money = updated.Money;
+                pocket.Ration = updated.Ration;
+                Snackbar.Add(L["save_success"], Severity.Success);
             }
-
-            StateHasChanged();
+            else Snackbar.Add(L["save_error"], Severity.Error);
         }
     }
 
@@ -157,34 +324,19 @@
             { x => x.ContentText, L["delete_pocket_confirm_description"] }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_pocket_title"], parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_pocket_title"], parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
         {
-            _pockets.Remove(pocket);
-            var existingCreate = saveables.FirstOrDefault(x => x.Pocket.Id == pocket.Id && x.Method == ModificationMethod.CREATE);
-
-            if (existingCreate != null) saveables.Remove(existingCreate);
-            else saveables.Add(new PocketModifyDTO { Pocket = pocket, Method = ModificationMethod.DELETE });
-
-            StateHasChanged();
-            Snackbar.Add(L["item_deleted"], Severity.Info);
+            var response = await http.DeleteAsync($"api/pockets/{pocket.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                _pockets.Remove(pocket);
+                Snackbar.Add(L["item_deleted"], Severity.Success);
+            }
+            else Snackbar.Add(L["delete_error"], Severity.Error);
         }
-    }
-
-    private async Task SaveAll()
-    {
-        if (!saveables.Any())
-        {
-            Snackbar.Add(L["no_changes_to_save"], Severity.Info);
-            return;
-        }
-
-        // API Call Logic here
-        saveables.Clear();
-        Snackbar.Add(L["save_success"], Severity.Success);
     }
 
 }

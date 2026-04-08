@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Income> Incomes { get; set; }
     public DbSet<DivisionPlan> DivisionPlans { get; set; }
     public DbSet<Pocket> Pockets { get; set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<DailyExpense> DailyExpenses { get; set; }
     public DbSet<Expenditure> Expenditures { get; set; }
     public DbSet<FixedExpense> FixedExpenses { get; set; }
@@ -29,6 +30,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(a => a.CurrencyCode)
             .OnDelete(DeleteBehavior.Restrict); // Don't delete Currency if an Account uses it
+        
+        modelBuilder.Entity<Category>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.Categories)
+            .HasForeignKey(c => c.UserId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // --- Pocket Configuration ---
         // modelBuilder.Entity<Pocket>()
@@ -56,6 +64,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany(de => de.Expenditures)
             .HasForeignKey(e => e.DailyExpenseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Expenditure>()
+            .HasOne(e => e.Category)
+            .WithMany()
+            .HasForeignKey(e => e.CategoryId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // --- CostBudget Configuration ---
         modelBuilder.Entity<Income>()
