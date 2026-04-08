@@ -128,34 +128,25 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 app.MapControllers();
 
-// Apply database migrations automatically
+// Create database schema from the current model.
+// EnsureCreated is used instead of MigrateAsync because EF Core 10 does not
+// reliably discover migration types in Release-published assemblies.
+// On an existing database EnsureCreated is a no-op, so restarts are safe.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("Applying database migrations...");
+    Console.WriteLine("Ensuring database schema...");
     try
     {
-        var migrations = dbContext.Database.GetMigrations().ToList();
-        if (migrations.Count > 0)
-        {
-            await dbContext.Database.MigrateAsync();
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Database migrations applied successfully");
-        }
-        else
-        {
-            // No migration files compiled into the assembly (e.g. first deploy before
-            // migrations are committed) — create the schema directly from the current model.
-            await dbContext.Database.EnsureCreatedAsync();
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("No migrations found — schema created via EnsureCreated");
-        }
+        await dbContext.Database.EnsureCreatedAsync();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Database schema ready");
         Console.ResetColor();
     }
     catch (Exception ex)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"Error applying migrations: {ex.Message}");
+        Console.WriteLine($"Error creating database schema: {ex.Message}");
         Console.ResetColor();
         throw;
     }
