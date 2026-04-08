@@ -1,0 +1,18 @@
+services:
+  flowbudget:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5288:5288"
+    volumes:
+      # Persists the SQLite database across container restarts
+      - flowbudget-data:/app/Data
+    environment:
+      # Bind HTTP only — UseHttpsRedirection() is a no-op when no HTTPS port is configured
+      - ASPNETCORE_URLS=http://+:5288
+      - ASPNETCORE_ENVIRONMENT=Production
+    restart: unless-stopped
+
+volumes:
+  flowbudget-data:
