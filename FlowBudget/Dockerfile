@@ -14,8 +14,7 @@ RUN dotnet restore "FlowBudget/FlowBudget/FlowBudget.csproj"
 COPY . .
 RUN dotnet publish "FlowBudget/FlowBudget/FlowBudget.csproj" \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
