@@ -135,9 +135,21 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine("Applying database migrations...");
     try
     {
-        await dbContext.Database.MigrateAsync();
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("Database migrations applied successfully");
+        var migrations = dbContext.Database.GetMigrations().ToList();
+        if (migrations.Count > 0)
+        {
+            await dbContext.Database.MigrateAsync();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Database migrations applied successfully");
+        }
+        else
+        {
+            // No migration files compiled into the assembly (e.g. first deploy before
+            // migrations are committed) — create the schema directly from the current model.
+            await dbContext.Database.EnsureCreatedAsync();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("No migrations found — schema created via EnsureCreated");
+        }
         Console.ResetColor();
     }
     catch (Exception ex)

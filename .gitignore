@@ -34,4 +34,5 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
-**/Migrations/ 
+# Why was this here?
+# **/Migrations/ 
