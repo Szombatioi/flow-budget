@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlowBudget.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260329164059_AccountUserApplicationUser")]
-    partial class AccountUserApplicationUser
+    [Migration("20260408145551_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -112,16 +112,14 @@ namespace FlowBudget.Migrations
                     b.ToTable("Accounts");
                 });
 
-            modelBuilder.Entity("FlowBudget.Data.Models.CostBudget", b =>
+            modelBuilder.Entity("FlowBudget.Data.Models.Category", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AccountId")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Amount")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -129,11 +127,14 @@ namespace FlowBudget.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("UserId");
 
-                    b.ToTable("CostBudgets");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("FlowBudget.Data.Models.Currency", b =>
@@ -202,7 +203,7 @@ namespace FlowBudget.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<string>("CategoryId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DailyExpenseId")
@@ -220,14 +221,19 @@ namespace FlowBudget.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("Price")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("DailyExpenseId");
 
                     b.ToTable("Expenditures");
                 });
 
-            modelBuilder.Entity("FlowBudget.Data.Models.Pocket", b =>
+            modelBuilder.Entity("FlowBudget.Data.Models.FixedExpense", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -236,18 +242,62 @@ namespace FlowBudget.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DivisionPlanId")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Money")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.ToTable("FixedExpenses");
+                });
+
+            modelBuilder.Entity("FlowBudget.Data.Models.Income", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.ToTable("Incomes");
+                });
+
+            modelBuilder.Entity("FlowBudget.Data.Models.Pocket", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DivisionPlanId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<double>("Ration")
                         .HasColumnType("REAL");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
 
                     b.HasIndex("DivisionPlanId");
 
@@ -422,15 +472,14 @@ namespace FlowBudget.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FlowBudget.Data.Models.CostBudget", b =>
+            modelBuilder.Entity("FlowBudget.Data.Models.Category", b =>
                 {
-                    b.HasOne("FlowBudget.Data.Models.Account", "Account")
-                        .WithMany("CostBudgets")
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("FlowBudget.Data.ApplicationUser", "User")
+                        .WithMany("Categories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("Account");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FlowBudget.Data.Models.DailyExpense", b =>
@@ -457,29 +506,51 @@ namespace FlowBudget.Migrations
 
             modelBuilder.Entity("FlowBudget.Data.Models.Expenditure", b =>
                 {
+                    b.HasOne("FlowBudget.Data.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FlowBudget.Data.Models.DailyExpense", "DailyExpense")
                         .WithMany("Expenditures")
                         .HasForeignKey("DailyExpenseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Category");
+
                     b.Navigation("DailyExpense");
                 });
 
-            modelBuilder.Entity("FlowBudget.Data.Models.Pocket", b =>
+            modelBuilder.Entity("FlowBudget.Data.Models.FixedExpense", b =>
                 {
                     b.HasOne("FlowBudget.Data.Models.Account", "Account")
-                        .WithMany("Pockets")
+                        .WithMany("FixedExpenses")
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("FlowBudget.Data.Models.Income", b =>
+                {
+                    b.HasOne("FlowBudget.Data.Models.Account", "Account")
+                        .WithMany("Incomes")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("FlowBudget.Data.Models.Pocket", b =>
+                {
                     b.HasOne("FlowBudget.Data.Models.DivisionPlan", "DivisionPlan")
                         .WithMany("Pockets")
                         .HasForeignKey("DivisionPlanId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Account");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("DivisionPlan");
                 });
@@ -589,15 +660,17 @@ namespace FlowBudget.Migrations
             modelBuilder.Entity("FlowBudget.Data.ApplicationUser", b =>
                 {
                     b.Navigation("Accounts");
+
+                    b.Navigation("Categories");
                 });
 
             modelBuilder.Entity("FlowBudget.Data.Models.Account", b =>
                 {
-                    b.Navigation("CostBudgets");
-
                     b.Navigation("DivisionPlans");
 
-                    b.Navigation("Pockets");
+                    b.Navigation("FixedExpenses");
+
+                    b.Navigation("Incomes");
                 });
 
             modelBuilder.Entity("FlowBudget.Data.Models.DailyExpense", b =>
