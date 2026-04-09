@@ -14,6 +14,7 @@ namespace FlowBudget.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
         private readonly UserManager<ApplicationUser> _userManager = userManager;
     
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDTO model)
         {
@@ -36,7 +37,8 @@ namespace FlowBudget.Controllers
     
             return Unauthorized("Invalid login attempt.");
         }
-    
+
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO model)
         {
