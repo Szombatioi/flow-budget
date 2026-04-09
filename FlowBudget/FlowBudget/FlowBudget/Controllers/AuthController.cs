@@ -66,6 +66,7 @@ namespace FlowBudget.Controllers
         }
     
         [HttpPost("logout")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();

@@ -393,4 +393,22 @@
   <data name="no_accounts_found" xml:space="preserve">
     <value>No accounts found</value>
   </data>
+  <data name="something_went_wrong" xml:space="preserve">
+    <value>Something went wrong.</value>
+  </data>
+  <data name="nav_logout" xml:space="preserve">
+    <value>Logout</value>
+  </data>
+  <data name="no_plans_yet" xml:space="preserve">
+    <value>There are no Division Plans to your account yet.</value>
+  </data>
+  <data name="remaining_budget" xml:space="preserve">
+    <value>Remaining budget</value>
+  </data>
+  <data name="currency_eur_short" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="currency_huf_short" xml:space="preserve">
+    <value>Ft</value>
+  </data>
 </root>

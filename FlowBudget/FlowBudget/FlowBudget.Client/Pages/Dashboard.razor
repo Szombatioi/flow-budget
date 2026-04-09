@@ -12,7 +12,7 @@
 @attribute [Authorize]
 @* TODO: add account selection Select element *@
 
-@if (UserDto is null)
+@if (UserDto is null || IsLoading)
 {
     <div class="d-flex justify-center align-center">
         <MudProgressCircular Indeterminate="true"/>
@@ -32,9 +32,15 @@ else if (UserDto.AccountIds.Count == 0)
 }
 else if(ActivePlan is null || DailyExpense is null)
 {
-    <div class="d-flex justify-center align-center">
-        <MudProgressCircular Indeterminate="true"/>
-    </div>
+    <MudContainer Class="d-flex justify-center align-center flex-column">
+        <MudText Align="Align.Center">@L["no_plans_yet"]</MudText>
+        <MudText Align="Align.Center">
+            @L["create_one_here"]:
+            <MudLink Href="/plan">
+                @L["Planning & Setup"]
+            </MudLink>
+        </MudText>
+    </MudContainer>
 }
 else
 {
@@ -53,18 +59,25 @@ else
                   Width="100%"
                   Height="300px"
                   ChartSeries="@( [SeriesData])"
-                  ChartOptions="@Options">
+                  ChartOptions="@Options"
+                  Class="mb-0">
             <CustomGraphics>
                 <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
                     <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
                     <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
-                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">@((DailyExpense.StartAmount - DailyExpense.EoDAmount).ToString("0.##")) / @(DailyExpense.StartAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}"])
-                    </tspan>
+                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">@((DailyExpense.StartAmount - DailyExpense.EoDAmount).ToString("0.##")) / @(DailyExpense.StartAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</tspan>
                 </text>
             </CustomGraphics>
         </MudChart>
     </div>
+    <MudContainer Class="w-100 d-flex justify-center align-center mb-4 mt-0">
+        <MudAlert Severity="Severity.Info">
+            @(L["remaining_budget"]): <b>@(DailyExpense.EoDAmount) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
+        </MudAlert>
+    </MudContainer>
 
+    
+    
     @* List of items *@
     <div style="display: flex; justify-content: center; width: 100%">
         <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
@@ -80,13 +93,13 @@ else
                 </MudTooltip>
             </div>
 
-            @foreach (var e in expenditures)
+            @foreach (var e in DailyExpense.Expenditures)
             {
                 <ExpenditureListItem Expenditure=e/>
-                    if (expenditures.Last().Id != e.Id)
-                    {
-                        <MudDivider/>
-                    }
+                if (DailyExpense.Expenditures.Last().Id != e.Id)
+                {
+                    <MudDivider/>
+                }
             }
         </MudPaper>
     </div>
@@ -105,6 +118,8 @@ else
     private PocketDTO? SelectedPocket { get; set; }
     private DailyExpenseDTO? DailyExpense { get; set; }
 
+    private bool IsLoading { get; set; } = true;
+
     private ChartOptions Options = new ChartOptions();
 
     private DateTime Today { get; set; }
@@ -118,24 +133,32 @@ else
         FullWidth = true
     };
 
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (_isDataReady && !_hasAnimated)
-    //     {
-    //         _hasAnimated = true;
-    //         await AnimateChart();
-    //     }
-    // }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isDataReady && !_hasAnimated)
+        {
+            _hasAnimated = true;
+            await AnimateChart();
+        }
+    }
 
     private async Task AnimateChart()
     {
+        //TargetValue can be > 100, so we need to 
         for (int i = 0; i <= targetValue; i++)
         {
-            currentDisplayValue = i;
-            SeriesData = new double[] { 100 - currentDisplayValue, currentDisplayValue };
+            currentDisplayValue = i; //%
+            SeriesData = new double[] { Math.Max(100 - currentDisplayValue, 0.0), Math.Min(currentDisplayValue, 100.0) };
             Options.ChartPalette = new string[] { "#F5F5F5", GetProgressColor(currentDisplayValue) };
             StateHasChanged();
-            await Task.Delay(10);
+            
+            //The delay amount is cut down if the deviation between 
+            //the EoD and Start is too big (e.g. when we spend much more a day than the limit)
+            int delay = targetValue <= 100 ? 10
+                : (int)Math.Max(1, 8 - 10 * Math.Log10(targetValue / 100.0));
+            if (delay < 1) delay = 1;
+            Console.WriteLine($"Delay: {delay}");
+            await Task.Delay(delay);
         }
     }
 
@@ -146,20 +169,21 @@ else
         return "#ff0000";
     }
 
-    private List<ExpenditureDTO> expenditures { get; set; } = new();
+    // private List<ExpenditureDTO> expenditures { get; set; } = new();
 
     protected override async Task OnParametersSetAsync()
     {
         if (UserDto == null) return;
         if(UserDto.AccountIds.Count == 0) return;
+        IsLoading = true;
         Today = DateTime.Today;
 
         try
         {
             var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
             var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
-            ActivePlan = activePlan ?? throw new Exception();
-            SelectedPocket = ActivePlan.Pockets[0];
+            ActivePlan = activePlan ?? null;
+            SelectedPocket = ActivePlan?.Pockets[0] ?? null;
         }
         catch (Exception)
         {
@@ -175,18 +199,23 @@ else
         {
             // Non-critical: dialog will just show empty category list
         }
+        
+        if(SelectedPocket != null) await LoadDailyExpense();
 
-        await LoadDailyExpense();
+        IsLoading = false;
     }
 
     private async Task LoadDailyExpense()
     {
+        Console.WriteLine("Load daily expense");
         try
         {
+            
             var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={Today.FormatDate()}");
             DailyExpense = res;
 
             var sumOfExpenses = DailyExpense.Expenditures.Sum(ex => ex.Price);
+            Console.WriteLine($"sumOfExpenses: {sumOfExpenses}");
             targetValue = (double)(sumOfExpenses / DailyExpense.StartAmount * 100);
             _isDataReady = true;
             StateHasChanged();
@@ -199,6 +228,7 @@ else
 
     private async Task OpenDialog()
     {
+        Console.WriteLine("Open dialog");
         var parameters = new DialogParameters<AddExpenseDialog>
         {
             { x => x.Categories, _categories },

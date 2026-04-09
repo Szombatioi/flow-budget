@@ -36,6 +36,7 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
         
         //Find DailyExpense
         var dailyExpense = await db.DailyExpenses
+            .Include(de => de.Expenditures)
             .SingleOrDefaultAsync(de => de.PocketId == pocket.Id && de.Date.Date == dto.Date);
         if (dailyExpense == null)
         {
@@ -52,7 +53,13 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
             DailyExpenseId = dailyExpense.Id,
             DailyExpense = dailyExpense
         };
-        await db.AddAsync(newExpenditure);
+        
+        dailyExpense.Expenditures.Add(newExpenditure);
+        
+        //Update dailyExpense EoD - we sum all expenses in order to ALWAYS fix misconfigurations (e.g. when EoD was not yet updated :))
+        var sumExpenses = dailyExpense.Expenditures.Sum(e => e.Price);
+        dailyExpense.EoDAmount = dailyExpense.StartAmount - sumExpenses;
+        
         await db.SaveChangesAsync();
     }
 }
