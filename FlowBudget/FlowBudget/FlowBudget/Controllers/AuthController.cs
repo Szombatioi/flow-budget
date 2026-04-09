@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using FlowBudget.Data.Models;
+using FlowBudget.Data;
+using DTO;
 
 [Route("api/[controller]")]
 [ApiController]
