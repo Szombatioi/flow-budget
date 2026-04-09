@@ -3,6 +3,7 @@
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<SharedResources> L
+@using DTO
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
     <MudCard Elevation="4" Class="pa-8 rounded-lg">
@@ -33,7 +34,7 @@
 </MudContainer>
 
 @code {
-    private LoginDto _model = new();
+    private LoginDTO _model = new();
     private bool _loading;
 
     private async Task HandleLogin()
