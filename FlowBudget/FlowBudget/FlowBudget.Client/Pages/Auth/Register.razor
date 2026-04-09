@@ -64,7 +64,7 @@
         _loading = true;
         try 
         {
-            var response = await Http.PostAsJsonAsync("api/account/register", _model);
+            var response = await Http.PostAsJsonAsync("api/auth/register", _model);
             
             if (response.IsSuccessStatusCode)
             {
