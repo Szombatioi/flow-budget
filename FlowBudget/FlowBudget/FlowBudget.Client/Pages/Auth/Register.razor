@@ -1,11 +1,11 @@
 @page "/register"
 @using System.ComponentModel.DataAnnotations
 @using FlowBudget.Client.Components.DTO
+@using DTO
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<SharedResources> L
-@using DTO
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
     <MudCard Elevation="4" Class="pa-8 rounded-lg">
@@ -14,24 +14,37 @@
         <EditForm Model="@_model" OnValidSubmit="HandleRegister">
             <DataAnnotationsValidator />
             
-            <MudTextField Label="@L["first_name"]" @bind-Value="_model.FirstName" 
-                          For="@(() => _model.FirstName)" Variant="Variant.Outlined" Class="mb-4" />
-            
-            <MudTextField Label="@L["last_name"]" @bind-Value="_model.LastName" 
-                          For="@(() => _model.LastName)" Variant="Variant.Outlined" Class="mb-4" />
+            @* Unified Username Field *@
+            <MudTextField Label="@L["username"]" 
+                          @bind-Value="_model.Username" 
+                          For="@(() => _model.Username)" 
+                          Variant="Variant.Outlined" 
+                          Class="mb-4" />
 
-            <MudTextField Label="@L["username"]" @bind-Value="_model.Username" 
-                          For="@(() => _model.Username)" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField Label="@L["email"]" 
+                          @bind-Value="_model.Email" 
+                          InputType="InputType.Email"
+                          For="@(() => _model.Email)" 
+                          Variant="Variant.Outlined" 
+                          Class="mb-4" />
 
-            <MudTextField Label="@L["email"]" @bind-Value="_model.Email" InputType="InputType.Email"
-                          For="@(() => _model.Email)" Variant="Variant.Outlined" Class="mb-4" />
+            <MudTextField Label="@L["password"]" 
+                          @bind-Value="_model.Password" 
+                          InputType="InputType.Password"
+                          For="@(() => _model.Password)" 
+                          Variant="Variant.Outlined" 
+                          Class="mb-6" />
 
-            <MudTextField Label="@L["password"]" @bind-Value="_model.Password" InputType="InputType.Password"
-                          For="@(() => _model.Password)" Variant="Variant.Outlined" Class="mb-6" />
-
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" 
-                       FullWidth="true" Size="Size.Large" Disabled="_loading">
-                @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+            <MudButton ButtonType="ButtonType.Submit" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       FullWidth="true" 
+                       Size="Size.Large" 
+                       Disabled="_loading">
+                @if (_loading) 
+                { 
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> 
+                }
                 @L["create_account"]
             </MudButton>
         </EditForm>
@@ -49,18 +62,29 @@
     private async Task HandleRegister()
     {
         _loading = true;
-        var response = await Http.PostAsJsonAsync("api/account/register", _model);
-        
-        if (response.IsSuccessStatusCode)
+        try 
         {
-            Snackbar.Add(@L["registration_success"], Severity.Success);
-            Nav.NavigateTo("/");
+            var response = await Http.PostAsJsonAsync("api/account/register", _model);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["registration_success"], Severity.Success);
+                Nav.NavigateTo("/", forceLoad: true); // Force load to refresh AuthState
+            }
+            else
+            {
+                // Identity often returns a list of errors (Password too short, etc.)
+                var error = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"{L["registration_failed"]}: {error}", Severity.Error);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            Snackbar.Add($"{L["registration_failed"]}: {error}", Severity.Error);
+            Snackbar.Add(L["error_connecting_to_server"], Severity.Error);
         }
-        _loading = false;
+        finally 
+        {
+            _loading = false;
+        }
     }
 }
