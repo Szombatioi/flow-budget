@@ -145,6 +145,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         if (UserDto == null) return;
+        if(UserDto.AccountIds.Count == 0) return;
         Today = DateTime.Today;
 
         try
