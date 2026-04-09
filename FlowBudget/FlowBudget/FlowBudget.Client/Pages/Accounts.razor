@@ -91,7 +91,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!OperatingSystem.IsBrowser()) return; // skip on server/SSR
+        //if (!OperatingSystem.IsBrowser()) return; // skip on server/SSR //TODO: uncomment?
 
         currencies = await http.GetFromJsonAsync<List<CurrencyDTO>>($"{Configuration["ApiSettings:BaseUrl"]}api/currencies") ?? new();
         await GetAccounts();
