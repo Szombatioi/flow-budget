@@ -12,7 +12,7 @@
 @attribute [Authorize]
 @* TODO: add account selection Select element *@
 
-@if (UserDto is null || ActivePlan is null || DailyExpense is null)
+@if (UserDto is null)
 {
     <div class="d-flex justify-center align-center">
         <MudProgressCircular Indeterminate="true"/>
@@ -29,6 +29,12 @@ else if (UserDto.AccountIds.Count == 0)
             </MudLink>
         </MudText>
     </MudContainer>
+}
+else if(ActivePlan is null || DailyExpense is null)
+{
+    <div class="d-flex justify-center align-center">
+        <MudProgressCircular Indeterminate="true"/>
+    </div>
 }
 else
 {
