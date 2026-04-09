@@ -1,1 +1,56 @@
+@page "/login"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<SharedResources> L
 
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard Elevation="4" Class="pa-8 rounded-lg">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">@L["login"]</MudText>
+
+        <EditForm Model="@_model" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <MudTextField Label="@L["email"]" @bind-Value="_model.Email" 
+                          Variant="Variant.Outlined" Class="mb-4" />
+
+            <MudTextField Label="@L["password"]" @bind-Value="_model.Password" InputType="InputType.Password"
+                          Variant="Variant.Outlined" Class="mb-4" />
+
+            <MudCheckBox @bind-Value="_model.RememberMe" Label="@L["remember_me"]" Color="Color.Primary" Class="mb-6" />
+
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" 
+                       FullWidth="true" Size="Size.Large" Disabled="_loading">
+                @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+                @L["login_button"]
+            </MudButton>
+        </EditForm>
+
+        <MudText Align="Align.Center" Class="mt-4">
+            @L["no_account_yet"] <MudLink Href="/register">@L["register"]</MudLink>
+        </MudText>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private LoginDto _model = new();
+    private bool _loading;
+
+    private async Task HandleLogin()
+    {
+        _loading = true;
+        var response = await Http.PostAsJsonAsync("api/account/login", _model);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // After successful login, redirect to home. 
+            // The auth cookie is set by the server automatically.
+            Nav.NavigateTo("/", forceLoad: true); 
+        }
+        else
+        {
+            Snackbar.Add(L["invalid_credentials"], Severity.Error);
+        }
+        _loading = false;
+    }
+}
