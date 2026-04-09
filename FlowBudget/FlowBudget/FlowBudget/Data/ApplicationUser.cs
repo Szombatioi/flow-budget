@@ -6,6 +6,10 @@ namespace FlowBudget.Data;
 // Add profile data for application users by adding properties to the ApplicationUser class
 public class ApplicationUser : IdentityUser<string>
 {
+    public ApplicationUser()
+    {
+        Id = Guid.NewGuid().ToString();
+    }
     public List<Account> Accounts { get; set; }
     public List<Category> Categories { get; set; }
 }
