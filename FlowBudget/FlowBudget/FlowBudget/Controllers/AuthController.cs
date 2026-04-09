@@ -6,6 +6,7 @@ using DTO;
 
 namespace FlowBudget.Controllers
 {
+    [IgnoreAntiforgeryToken] //TODO: Temporary, remove to prevent use from curl
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager) : ApiBaseController
