@@ -78,8 +78,9 @@ else
     
     
     @* List of items *@
-    <div style="display: flex; justify-content: center; width: 100%">
-        <MudPaper Elevation="2" Width="40%" MinHeight="64px" Class="p-4">
+    <MudGrid Justify="Justify.Center">
+        <MudItem xs="8" md="8">
+        <MudPaper Elevation="2" Width="100%" MinHeight="64px" Class="p-4">
             <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
                 @L["expenditures"]
             </MudText>
@@ -94,14 +95,15 @@ else
 
             @foreach (var e in DailyExpense.Expenditures)
             {
-                <ExpenditureListItem Expenditure=e/>
+                <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure"/>
                 if (DailyExpense.Expenditures.Last().Id != e.Id)
                 {
                     <MudDivider/>
                 }
             }
         </MudPaper>
-    </div>
+        </MudItem>
+    </MudGrid>
 }
 
 
@@ -180,6 +182,8 @@ else
         try
         {
             var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
+            
+            //TODO: exception helyett...
             var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
             ActivePlan = activePlan ?? null;
             SelectedPocket = ActivePlan?.Pockets[0] ?? null;
@@ -209,7 +213,7 @@ else
         Console.WriteLine("Load daily expense");
         try
         {
-            
+            if (SelectedPocket == null) throw new Exception(); //Catch below
             var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={Today.FormatDate()}");
             DailyExpense = res;
 
@@ -222,6 +226,34 @@ else
         catch (Exception)
         {
             Snackbar.Add(L["error_load_daily_expense"], Severity.Error);
+        }
+    }
+
+    private async Task DeleteExpenditure(ExpenditureDTO expenditure)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_expenditure_title"] },
+            { x => x.ContentText, L["delete_expenditure_confirm_description"] }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_expenditure_title"], parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await Http.DeleteAsync($"api/expenditures/{expenditure.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                DailyExpense!.Expenditures.Remove(expenditure);
+                Snackbar.Add(L["item_deleted"], Severity.Success);
+                await LoadDailyExpense();
+                await AnimateChart();
+            }
+            else
+            {
+                Snackbar.Add(L["delete_error"], Severity.Error);
+            }
         }
     }
 
@@ -247,6 +279,7 @@ else
                 {
                     Snackbar.Add(L["save_success"], Severity.Success);
                     await LoadDailyExpense();
+                    await AnimateChart();
                 }
                 else
                 {

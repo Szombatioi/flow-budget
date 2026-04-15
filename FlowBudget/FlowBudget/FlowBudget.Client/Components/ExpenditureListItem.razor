@@ -1,11 +1,17 @@
 @using FlowBudget.Client.Components.DTO
 
-<div class="py-2" style="display: flex; flex-direction: row; justify-content: space-between">
+<div class="py-2" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
     <MudText Typo="Typo.h6">@Expenditure.Name</MudText>
-    <MudText Typo="Typo.h6">@Expenditure.Price @Expenditure.Currency</MudText>
+    <div style="display: flex; align-items: center; gap: 4px;">
+        <MudText Typo="Typo.h6">@Expenditure.Price @Expenditure.Currency</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                       Color="Color.Error"
+                       Size="Size.Small"
+                       OnClick="@(() => OnDelete.InvokeAsync(Expenditure))" />
+    </div>
 </div>
 
 @code {
-    [Parameter]
-    public ExpenditureDTO Expenditure { get; set; }
+    [Parameter] public ExpenditureDTO Expenditure { get; set; } = default!;
+    [Parameter] public EventCallback<ExpenditureDTO> OnDelete { get; set; }
 }

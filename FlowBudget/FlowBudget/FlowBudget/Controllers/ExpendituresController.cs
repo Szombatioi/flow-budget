@@ -17,5 +17,12 @@ namespace FlowBudget.Controllers
             await expenditureService.AddExpenditure(UserId, pid, dto);
             return Created();
         }
+
+        [HttpDelete("{eid}")]
+        public async Task<ActionResult> DeleteExpenditure(string eid)
+        {
+            await expenditureService.RemoveExpenditure(UserId, eid);
+            return NoContent();
+        }
     }
 }

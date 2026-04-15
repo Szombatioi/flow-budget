@@ -1,3 +1,5 @@
+using DTO;
+
 namespace FlowBudget.Client.Components.DTO;
 
 public class ExpenditureDTO

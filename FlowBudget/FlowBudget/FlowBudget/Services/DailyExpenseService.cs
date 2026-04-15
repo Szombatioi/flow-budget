@@ -111,6 +111,14 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         await db.SaveChangesAsync();
     }
 
+    //Additional logic: If we load a daily expense for a given day, 
+    //we check if the day is started already.
+    //If it is not, find the last started day in this month and start each day between.
+    //Starting each day:
+        //Setting flag
+        //Getting EoD from the previous day
+            //If yesterday's EoD is positive, next day StartAmount will be more :)
+            //If yesterday's EoD is negative, you'll need to spend less the next day :(
     public async Task<DailyExpenseDTO> GetDailyExpense(string userId, string pocketId, DateTime date)
     {
         var user = await db.Users
@@ -152,7 +160,39 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
             await CreateDailyExpenseForMonth(userId, pocket.DivisionPlan.AccountId, date);
             return await GetDailyExpense(userId, pocket.Id, date); //retry logic
         }
-        
+
+        if (!dailyExpense.IsStarted)
+        {
+            var dailyExpenses = await db.DailyExpenses
+                .Include(de => de.Expenditures)
+                .Where(de => de.PocketId == pocket.Id)
+                .OrderBy(de => de.Date)
+                .ToListAsync();
+            
+            //Find last started day
+            var lastStartedIndex = dailyExpenses.FindLastIndex(de => de.IsStarted); // -1 if none
+            var requestedDayIndex = dailyExpenses.FindIndex(de => de.Date.Date == date.Date);
+            
+            //Why +1? -> If none is started, we start from the first
+            for (int i = lastStartedIndex + 1; i <= requestedDayIndex; i++)
+            {
+               //Start day
+               dailyExpenses[i].IsStarted = true;
+               
+               //Get Eod amount from last day
+               //If this is the first day in the month, we set it to 0
+               decimal eod = i > 0 ? dailyExpenses[i - 1].EoDAmount : 0;
+
+               //Set this day's StartAmount
+               //StartAmount = Original StartAmount + last EoD
+               dailyExpenses[i].StartAmount += eod;
+
+               //Recalculate EoD
+               dailyExpenses[i].EoDAmount = dailyExpenses[i].StartAmount - dailyExpenses[i].Expenditures.Sum(e => e.Price);
+            }
+            
+            await db.SaveChangesAsync();
+        }
         return mapper.Map<DailyExpenseDTO>(dailyExpense);
     }
 }

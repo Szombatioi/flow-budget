@@ -36,6 +36,7 @@ builder.Services.AddTransient<FixedExpenseService>();
 builder.Services.AddTransient<DailyExpenseService>();
 builder.Services.AddTransient<ExpenditureService>();
 builder.Services.AddTransient<CategoryService>();
+builder.Services.AddTransient<SeederService>();
 
 // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); //Note: with this parameter it scans all profiles
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
@@ -45,7 +46,10 @@ builder.Services.AddAuthentication(options =>
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     })
-    .AddIdentityCookies();
+    .AddIdentityCookies(o =>
+    {
+        o.ApplicationCookie?.Configure(c => c.LoginPath = "/auth/login");
+    });
 builder.Services.AddAuthorization();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
@@ -154,11 +158,18 @@ using (var scope = app.Services.CreateScope())
 
 using (var scope = app.Services.CreateScope())
 {
+    var seederService = scope.ServiceProvider.GetRequiredService<SeederService>();
+    
     Console.WriteLine("Seeding currencies...");
-    var currencyService = scope.ServiceProvider.GetRequiredService<CurrencyService>();
-    await currencyService.SeedCurrencies();
+    await seederService.SeedCurrencies();
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine("Currencies seeded successfully");
+    Console.ResetColor();
+    
+    Console.WriteLine("Seeding categories...");
+    await seederService.SeedCategories();
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("Categories seeded successfully");
     Console.ResetColor();
 }
 

@@ -9,4 +9,5 @@ public class DailyExpenseDTO
     public decimal EoDAmount { get; set; }
     public PocketDTO Pocket { get; set; }
     public List<ExpenditureDTO> Expenditures { get; set; }
+    
 }

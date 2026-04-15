@@ -125,6 +125,14 @@
     <value>Expenditures</value>
     <comment/>
   </data>
+  <data name="delete_expenditure_title" xml:space="preserve">
+    <value>Delete expenditure</value>
+    <comment/>
+  </data>
+  <data name="delete_expenditure_confirm_description" xml:space="preserve">
+    <value>Are you sure you want to delete this expenditure? This action cannot be undone.</value>
+    <comment/>
+  </data>
   <data name="add" xml:space="preserve">
     <value>Add</value>
     <comment/>
@@ -410,5 +418,50 @@
   </data>
   <data name="currency_huf_short" xml:space="preserve">
     <value>Ft</value>
+  </data>
+  <data name="login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="remember_me" xml:space="preserve">
+    <value>Remember me</value>
+  </data>
+  <data name="login_button" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="no_account_yet" xml:space="preserve">
+    <value>No account yet?</value>
+  </data>
+  <data name="already_have_account" xml:space="preserve">
+    <value>Already a member?</value>
+  </data>
+  <data name="username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="invalid_credentials" xml:space="preserve">
+    <value>Invalid credentials!</value>
+  </data>
+  <data name="seeded_category_foods_drinks" xml:space="preserve">
+    <value>Foods &amp; Drinks</value>
+  </data>
+  <data name="seeded_category_clothes" xml:space="preserve">
+    <value>Clothes</value>
+  </data>
+  <data name="seeded_category_sports_hobbies" xml:space="preserve">
+    <value>Sports &amp; Hobbies</value>
+  </data>
+  <data name="seeded_category_transportation" xml:space="preserve">
+    <value>Transportation</value>
+  </data>
+  <data name="seeded_category_housing" xml:space="preserve">
+    <value>Housing</value>
   </data>
 </root>

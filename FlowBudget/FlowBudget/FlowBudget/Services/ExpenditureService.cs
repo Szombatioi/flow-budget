@@ -62,4 +62,44 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
         
         await db.SaveChangesAsync();
     }
+
+    public async Task RemoveExpenditure(string userId, string expenditureId)
+    {
+        var user = await db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.DivisionPlans)
+            .ThenInclude(dp => dp.Pockets)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            throw new NotFoundException();
+        }
+        
+        var expenditure = await db.Expenditures
+            .Include(e => e.DailyExpense)
+            .SingleOrDefaultAsync(e => e.Id == expenditureId);
+        if (expenditure == null)
+        {
+            throw new NotFoundException();
+        }
+
+        if (user.Accounts.All(a =>
+            a.DivisionPlans.All(dp => 
+            dp.Pockets.All(p => p.Id != expenditure.DailyExpense.PocketId))))
+        {
+            throw new UnauthorizedAccessException();
+        }
+        
+        var dailyExpense = await db.DailyExpenses
+            .Include(dailyExpense => dailyExpense.Expenditures)
+            .SingleAsync(e => e.Id == expenditure.DailyExpense.Id);
+     
+        //Remove Expense
+        dailyExpense.Expenditures.Remove(expenditure);
+        
+        //Recalculate EoD - reason of recalculating from 0 is to avoid glitches
+        dailyExpense.EoDAmount = dailyExpense.StartAmount - dailyExpense.Expenditures.Sum(e => e.Price);
+        
+        await db.SaveChangesAsync();
+    }
 }

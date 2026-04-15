@@ -13,6 +13,6 @@ public class DailyExpense
 
     public string PocketId { get; set; }
     public virtual Pocket Pocket { get; set; } = null!;
-
+    public bool IsStarted { get; set; } = false;
     public virtual ICollection<Expenditure> Expenditures { get; set; } = new List<Expenditure>();
 }

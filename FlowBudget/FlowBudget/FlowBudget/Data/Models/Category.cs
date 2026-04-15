@@ -15,6 +15,6 @@ public class Category
     public string DisplayName { get; set; } 
     
     //Nullable properties, because there are common categories
-    public string? UserId { get; set; }
-    public virtual ApplicationUser? User { get; set; }
+    public string? UserId { get; set; } = null;
+    public virtual ApplicationUser? User { get; set; } = null;
 }

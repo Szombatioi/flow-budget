@@ -21,34 +21,4 @@ public class CurrencyService(ApplicationDbContext db)
             })
             .ToListAsync();
     }
-
-    public async Task SeedCurrencies()
-    {
-        List<Currency> currencies = new List<Currency>()
-        {
-            new Currency()
-            {
-                Code = "HUF",
-                Name = "currency_huf",
-                Country = "currency_country_huf"
-            },
-            new Currency()
-            {
-                Code = "EUR",
-                Name = "currency_eur",
-                Country = null //Many countries have Euro
-            }
-        };
-        
-        var insertables = new List<Currency>();
-        foreach (var currency in currencies)
-        {
-            var existingCurrency = await _db.Currencies.FindAsync(currency.Code);
-            if(existingCurrency != null) continue;
-            insertables.Add(currency);
-        }
-        
-        await db.Currencies.AddRangeAsync(insertables);
-        await db.SaveChangesAsync();
-    }
 }
