@@ -53,8 +53,10 @@
                Overlay="false"
                Elevation="0">
         <MudDrawerHeader Class="d-flex flex-column">
-            <MudText Typo="Typo.h5">FlowBudget</MudText>
-            <MudText Typo="Typo.subtitle1">Some slogen here</MudText>
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                <MudText Typo="Typo.h5">FlowBudget</MudText>
+                <MudText Typo="Typo.subtitle1">@L["slogan"]</MudText>
+            </MudHidden>
         </MudDrawerHeader>
         <MudNavMenu Class="mt-4 h-100 d-flex flex-column justify-space-between"
                     Style="background: transparent;">
@@ -88,7 +90,7 @@
 
     <MudMainContent>
         <CascadingValue Value="UserDto">
-            <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+            <MudContainer MaxWidth="MaxWidth.False" Class="mt-4 px-4">
                 @Body
             </MudContainer>
         </CascadingValue>
@@ -118,6 +120,7 @@
         PaletteLight = new PaletteLight()
         {
             Background = LightPaletteGrey,
+            Surface = "#ffffff",       // MudPaper background — slightly darker than the page
             DrawerBackground = "#FFFFFF",
             AppbarBackground = "#FFFFFF",
             TextPrimary = "#454748",

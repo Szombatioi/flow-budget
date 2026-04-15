@@ -30,7 +30,7 @@ else if (UserDto.AccountIds.Count == 0)
         </MudText>
     </MudContainer>
 }
-else if(ActivePlan is null || DailyExpense is null)
+else if (ActivePlan is null || DailyExpense is null)
 {
     <MudContainer Class="d-flex justify-center align-center flex-column">
         <MudText Align="Align.Center">@L["no_plans_yet"]</MudText>
@@ -45,63 +45,82 @@ else if(ActivePlan is null || DailyExpense is null)
 else
 {
     <style>
-        /* 2. Disable hover effect by making the SVG ignore pointer events */
         .no-hover-chart {
             pointer-events: none;
         }
     </style>
-    
-    @* Center diagram of spendings *@
-    <div class="no-hover-chart">
-        <MudChart T="double"
-                  ChartType="ChartType.Donut"
-                  Width="100%"
-                  Height="300px"
-                  ChartSeries="@( [SeriesData])"
-                  ChartOptions="@Options"
-                  Class="mb-0">
-            <CustomGraphics>
-                <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary" style="font-weight: bold;">
-                    <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
-                    <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
-                    <tspan x="50%" dy="1.5em" style="font-size: 12px; font-weight: normal;">@((DailyExpense.StartAmount - DailyExpense.EoDAmount).ToString("0.##")) / @(DailyExpense.StartAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</tspan>
-                </text>
-            </CustomGraphics>
-        </MudChart>
-    </div>
-    <MudContainer Class="w-100 d-flex justify-center align-center mb-4 mt-0">
-        <MudAlert Severity="Severity.Info">
-            @(L["remaining_budget"]): <b>@(DailyExpense.EoDAmount) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
-        </MudAlert>
-    </MudContainer>
 
-    
-    
-    @* List of items *@
     <MudGrid Justify="Justify.Center">
-        <MudItem xs="8" md="8">
-        <MudPaper Elevation="2" Width="100%" MinHeight="64px" Class="p-4">
-            <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
-                @L["expenditures"]
-            </MudText>
-            <div style="display: flex; justify-content: space-between">
-                <div></div>
-                <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
-                    <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                   OnClick="() => OpenDialog()">
-                    </MudIconButton>
-                </MudTooltip>
-            </div>
 
-            @foreach (var e in DailyExpense.Expenditures)
-            {
-                <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure"/>
-                if (DailyExpense.Expenditures.Last().Id != e.Id)
+        @* Pocket selector — full-width row, select constrained to left *@
+        <MudItem xs="12">
+            <MudSelect T="PocketDTO"
+                       Value="SelectedPocket"
+                       ValueChanged="OnPocketChanged!"
+                       Label="@L["select_pocket"]"
+                       Variant="Variant.Outlined"
+                       ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Dense="true"
+                       Style="max-width: 200px;">
+                @foreach (var pocket in ActivePlan!.Pockets)
                 {
-                    <MudDivider/>
+                    <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
                 }
-            }
-        </MudPaper>
+            </MudSelect>
+        </MudItem>
+
+        @* Chart + alert + expenditures — centred *@
+        <MudItem xs="12" sm="8">
+            <MudPaper Elevation="0" Class="no-hover-chart d-flex justify-center pa-2 mb-2">
+                <MudChart T="double"
+                          ChartType="ChartType.Donut"
+                          Width="300px"
+                          Height="300px"
+                          ChartSeries="@( [SeriesData])"
+                          ChartOptions="@Options"
+                          Class="mb-0">
+                    <CustomGraphics>
+                        <text x="50%" y="50%" text-anchor="middle" class="mud-text-secondary"
+                              style="font-weight: bold;">
+                            <tspan x="50%" dy="-1.2em" style="font-size: 14px;">@L["todays_budget"]</tspan>
+                            <tspan x="50%" dy="1.4em" style="font-size: 24px;">@((int)currentDisplayValue)%</tspan>
+                            <tspan x="50%" dy="1.5em"
+                                   style="font-size: 12px; font-weight: normal;">@((DailyExpense.StartAmount - DailyExpense.EoDAmount).ToString("0.##")) / @(DailyExpense.StartAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</tspan>
+                        </text>
+                    </CustomGraphics>
+                </MudChart>
+            </MudPaper>
+
+            @* Remaining budget alert *@
+            <MudAlert Severity="Severity.Info" Class="my-2">
+                @(L["remaining_budget"]):
+                <b>@(DailyExpense.EoDAmount) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
+            </MudAlert>
+
+            @* Expenditure list *@
+            <MudPaper Elevation="2" Width="100%" MinHeight="64px" Class="p-4 my-2">
+                <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
+                    @L["expenditures"]
+                </MudText>
+                <div style="display: flex; justify-content: space-between">
+                    <div></div>
+                    <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       OnClick="() => OpenDialog()">
+                        </MudIconButton>
+                    </MudTooltip>
+                </div>
+
+                @foreach (var e in DailyExpense.Expenditures)
+                {
+                    <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure"/>
+                    if (DailyExpense.Expenditures.Last().Id != e.Id)
+                    {
+                        <MudDivider/>
+                    }
+                }
+            </MudPaper>
         </MudItem>
     </MudGrid>
 }
@@ -152,10 +171,11 @@ else
             SeriesData = new double[] { Math.Max(100 - currentDisplayValue, 0.0), Math.Min(currentDisplayValue, 100.0) };
             Options.ChartPalette = new string[] { "#F5F5F5", GetProgressColor(currentDisplayValue) };
             StateHasChanged();
-            
+
             //The delay amount is cut down if the deviation between 
             //the EoD and Start is too big (e.g. when we spend much more a day than the limit)
-            int delay = targetValue <= 100 ? 10
+            int delay = targetValue <= 100
+                ? 10
                 : (int)Math.Max(1, 8 - 10 * Math.Log10(targetValue / 100.0));
             if (delay < 1) delay = 1;
             Console.WriteLine($"Delay: {delay}");
@@ -175,14 +195,14 @@ else
     protected override async Task OnParametersSetAsync()
     {
         if (UserDto == null) return;
-        if(UserDto.AccountIds.Count == 0) return;
+        if (UserDto.AccountIds.Count == 0) return;
         IsLoading = true;
         Today = DateTime.Today;
 
         try
         {
             var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
-            
+
             //TODO: exception helyett...
             var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
             ActivePlan = activePlan ?? null;
@@ -202,8 +222,8 @@ else
         {
             // Non-critical: dialog will just show empty category list
         }
-        
-        if(SelectedPocket != null) await LoadDailyExpense();
+
+        if (SelectedPocket != null) await LoadDailyExpense();
 
         IsLoading = false;
     }
@@ -227,6 +247,14 @@ else
         {
             Snackbar.Add(L["error_load_daily_expense"], Severity.Error);
         }
+    }
+
+    private async Task OnPocketChanged(PocketDTO newPocket)
+    {
+        SelectedPocket = newPocket;
+        _hasAnimated = false;
+        _isDataReady = false;
+        await LoadDailyExpense();
     }
 
     private async Task DeleteExpenditure(ExpenditureDTO expenditure)
@@ -263,6 +291,7 @@ else
         var parameters = new DialogParameters<AddExpenseDialog>
         {
             { x => x.Categories, _categories },
+            { x => x.Pockets, ActivePlan?.Pockets ?? new() },
             { x => x.Currency, ActivePlan?.Account.CurrencyCode }
         };
 
@@ -274,7 +303,8 @@ else
             var payload = (CreateExpenditureDTO)result.Data!;
             try
             {
-                var res = await Http.PostAsJsonAsync($"api/expenditures/{SelectedPocket.Id}", payload);
+                var targetPocketId = payload.PocketId ?? SelectedPocket!.Id;
+                var res = await Http.PostAsJsonAsync($"api/expenditures/{targetPocketId}", payload);
                 if (res.IsSuccessStatusCode)
                 {
                     Snackbar.Add(L["save_success"], Severity.Success);
@@ -292,4 +322,5 @@ else
             }
         }
     }
+
 }

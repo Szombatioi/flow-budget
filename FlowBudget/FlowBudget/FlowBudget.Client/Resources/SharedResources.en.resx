@@ -194,6 +194,12 @@
   <data name="pockets_title" xml:space="preserve">
     <value>Budget Pockets</value>
   </data>
+  <data name="pocket" xml:space="preserve">
+    <value>Pocket</value>
+  </data>
+  <data name="select_pocket" xml:space="preserve">
+    <value>Select pocket</value>
+  </data>
   <data name="no_accounts_yet" xml:space="preserve">
     <value>You don't have any financial accounts registered to your account yet.</value>
   </data>
@@ -463,5 +469,8 @@
   </data>
   <data name="seeded_category_housing" xml:space="preserve">
     <value>Housing</value>
+  </data>
+  <data name="slogan" xml:space="preserve">
+    <value>Some slogan here :)</value>
   </data>
 </root>

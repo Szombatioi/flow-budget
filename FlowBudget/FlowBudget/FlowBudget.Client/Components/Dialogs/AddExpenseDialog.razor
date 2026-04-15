@@ -29,6 +29,16 @@
                              Format="0.##" />
 
             <MudGrid Class="mb-4">
+                @* Pocket *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["pocket"].ToString().ToUpper()</MudText>
+                    <MudSelect @bind-Value="_pocketId" Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter" Class="rounded-lg">
+                        @foreach (var pocket in Pockets)
+                        {
+                            <MudSelectItem Value="@pocket.Id">@pocket.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
                 @* Category *@
                 <MudItem xs="6">
                     <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["category"].ToString().ToUpper()</MudText>
@@ -106,13 +116,22 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
 
     [Parameter] public List<CategoryDTO> Categories { get; set; } = new();
+    [Parameter] public List<PocketDTO> Pockets { get; set; } = new();
     [Parameter] public string? Currency { get; set; }
 
     private decimal _price;
     private string? _categoryId;
+    private string? _pocketId;
     private DateTime? _date = DateTime.Today;
     private string? _name;
     private string? _description;
+
+    protected override void OnParametersSet()
+    {
+        // Pre-select the first pocket if none is set yet
+        if (_pocketId is null && Pockets.Count > 0)
+            _pocketId = Pockets[0].Id;
+    }
 
     private void UploadFiles(InputFileChangeEventArgs e)
     {
@@ -127,6 +146,7 @@
             Description = _description,
             Price = _price,
             CategoryId = _categoryId,
+            PocketId = _pocketId,
             Date = _date,
         };
         MudDialog.Close(DialogResult.Ok(payload));
