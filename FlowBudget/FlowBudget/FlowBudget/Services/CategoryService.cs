@@ -77,6 +77,17 @@ public class CategoryService(ApplicationDbContext db)
         {
             throw new UnauthorizedAccessException();
         }
+        
+        //Set category to null for ALL expenditures that reference this
+        var expenditures = await db.Expenditures
+            .Include(e => e.Category)
+            .Where(e => e.CategoryId == category.Id)
+            .ToListAsync();
+        foreach (var expenditure in expenditures)
+        {
+            expenditure.Category = null;
+            expenditure.CategoryId = null;
+        }
 
         db.Categories.Remove(category);
         await db.SaveChangesAsync();

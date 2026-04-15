@@ -348,7 +348,7 @@
     <value>Delete category?</value>
   </data>
   <data name="delete_category_confirm_description" xml:space="preserve">
-    <value>Are you sure you want to delete this category?</value>
+    <value>Are you sure you want to delete this category? If you delete this category, all expenditures referencing this category will have their category removed!</value>
   </data>
   <data name="system_category" xml:space="preserve">
     <value>Default</value>
