@@ -67,6 +67,11 @@
                     @L["nav_dashboard"]
                 </MudNavLink>
                 <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                            Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                            OnClick="@(() => PageChanged("nav_accounts", "/accounts"))">
+                    @L["nav_accounts"]
+                </MudNavLink>
+                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
                             Icon="@Icons.Material.Filled.SettingsSuggest"
                             OnClick="@(() => PageChanged("nav_planning_and_setup", "/plan"))">
                     @L["nav_planning_and_setup"]

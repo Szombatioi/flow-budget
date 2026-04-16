@@ -473,4 +473,10 @@
   <data name="slogan" xml:space="preserve">
     <value>Some slogan here :)</value>
   </data>
+  <data name="no_expenditures_yet" xml:space="preserve">
+    <value>There are no expenditures yet for today.</value>
+  </data>
+  <data name="nav_accounts" xml:space="preserve">
+    <value>Accounts</value>
+  </data>
 </root>

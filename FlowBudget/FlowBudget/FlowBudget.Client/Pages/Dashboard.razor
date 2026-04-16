@@ -50,10 +50,11 @@ else
         }
     </style>
 
-    <MudGrid Justify="Justify.Center">
+    <MudGrid Justify="Justify.Center" Spacing="0">
 
         @* Pocket selector — full-width row, select constrained to left *@
-        <MudItem xs="12">
+        <MudItem xs="12" Class="justify-center">
+            @* TODO: Add account selector here too. *@
             <MudSelect T="PocketDTO"
                        Value="SelectedPocket"
                        ValueChanged="OnPocketChanged!"
@@ -103,15 +104,19 @@ else
                 <MudText Typo="Typo.h4" Align="Align.Center" Style="justify-self: center">
                     @L["expenditures"]
                 </MudText>
-                <div style="display: flex; justify-content: space-between">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div></div>
+                    @if (DailyExpense.Expenditures.Count == 0)
+                    {
+                        <MudText Typo="Typo.body1" Align="Align.Center">@L["no_expenditures_yet"]</MudText>
+                    }
                     <MudTooltip Text=@(L["add"]) Placement="Placement.Top">
                         <MudIconButton Icon="@Icons.Material.Filled.Add"
                                        OnClick="() => OpenDialog()">
                         </MudIconButton>
                     </MudTooltip>
                 </div>
-
+                
                 @foreach (var e in DailyExpense.Expenditures)
                 {
                     <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure"/>
