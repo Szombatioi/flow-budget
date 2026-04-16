@@ -1,4 +1,5 @@
 @page "/"
+@page "/{DateString?}"
 @using DTO
 @using FlowBudget.Client.Components.DTO
 @using FlowBudget.Client.Components
@@ -17,6 +18,10 @@
     <div class="d-flex justify-center align-center">
         <MudProgressCircular Indeterminate="true"/>
     </div>
+}
+else if (IsError)
+{
+    <MudText Align="Align.Center">@L["page_error"]</MudText>
 }
 else if (UserDto.AccountIds.Count == 0)
 {
@@ -132,6 +137,11 @@ else
 
 
 @code {
+    [Parameter]
+    public string? DateString { get; set; }
+
+    private DateTime SelectedDate { get; set; } = DateTime.Today;
+    
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
     private double[] SeriesData = { 100, 0 };
     private double targetValue = 0;
@@ -144,10 +154,9 @@ else
     private DailyExpenseDTO? DailyExpense { get; set; }
 
     private bool IsLoading { get; set; } = true;
+    private bool IsError { get; set; } = false;
 
     private ChartOptions Options = new ChartOptions();
-
-    private DateTime Today { get; set; }
 
     private List<CategoryDTO> _categories = new();
 
@@ -202,7 +211,25 @@ else
         if (UserDto == null) return;
         if (UserDto.AccountIds.Count == 0) return;
         IsLoading = true;
-        Today = DateTime.Today;
+        IsError = false;
+        
+        //Getting date from the url
+        //If not specified, we use today
+        if (DateString != null)
+        {
+            if (DateTime.TryParse(DateString, out var dt))
+            {
+                SelectedDate = dt;
+            }
+            else
+            {
+                Snackbar.Add(L["error_invalid_date"], Severity.Error);
+                IsLoading = false;
+                IsError = true;
+                return;
+            }
+        }
+        Console.WriteLine($"Date: {SelectedDate}");
 
         try
         {
@@ -216,6 +243,7 @@ else
         catch (Exception)
         {
             Snackbar.Add(L["error_load_active_division_plan"], Severity.Error);
+            return;
         }
 
         try
@@ -239,7 +267,7 @@ else
         try
         {
             if (SelectedPocket == null) throw new Exception(); //Catch below
-            var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={Today.FormatDate()}");
+            var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={SelectedDate.FormatDate()}");
             DailyExpense = res;
 
             var sumOfExpenses = DailyExpense.Expenditures.Sum(ex => ex.Price);

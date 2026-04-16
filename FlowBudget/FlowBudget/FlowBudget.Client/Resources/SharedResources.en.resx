@@ -479,4 +479,10 @@
   <data name="nav_accounts" xml:space="preserve">
     <value>Accounts</value>
   </data>
+  <data name="error_invalid_date" xml:space="preserve">
+    <value>Invalid date selected!</value>
+  </data>
+  <data name="page_error" xml:space="preserve">
+    <value>An error occured.</value>
+  </data>
 </root>
