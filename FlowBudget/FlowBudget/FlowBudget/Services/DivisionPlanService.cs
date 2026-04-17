@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Services;
 
-public class DivisionPlanService(ApplicationDbContext db, IMapper mapper)
+public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyExpenseService dailyExpenseService)
 {
     public async Task Create(string userId, CreateDivisionPlanDTO dto)
     {
@@ -63,42 +63,16 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper)
 
         plan.IsActive = true;
         plan.ActiveFrom = activateFromMonth;
-        
-        //Disable other plans
-        // foreach (var dp in account.DivisionPlans.Where(dp => dp.IsActive).ToList())
-        // {
-        //     dp.IsActive = false;
-        // }
-        
+
         await db.SaveChangesAsync();
-        
-        
-        // if (activateFromMonth > thisMonth)
-        // {
-        //     // Find the plan that was previously active for the activation month
-        //     var supersededPlan = account.DivisionPlans
-        //         .Where(dp => dp.IsActive && dp.Id != planId && dp.ActiveFrom <= activateFromMonth)
-        //         .OrderByDescending(dp => dp.ActiveFrom)
-        //         .FirstOrDefault();
-        //
-        //     if (supersededPlan != null)
-        //     {
-        //         // Collect all pocket IDs (all versions) belonging to the superseded plan
-        //         var supersededPocketIds = await db.Pockets
-        //             .Where(p => p.DivisionPlanId == supersededPlan.Id)
-        //             .Select(p => p.Id)
-        //             .ToListAsync();
-        //         
-        //         if (supersededPocketIds.Any())
-        //         {
-        //             await db.DailyExpenses
-        //                 .Where(de => supersededPocketIds.Contains(de.PocketId)
-        //                              && de.Date.Year == activateFromMonth.Year
-        //                              && de.Date.Month == activateFromMonth.Month)
-        //                 .ExecuteDeleteAsync();
-        //         }
-        //     }
-        // }
+
+        // After activation, recalculate DEs for the activation month in case:
+        // - The plan is activated for the current month (no prior active plan existed)
+        //   and DEs were already generated (e.g. user viewed the tracker today).
+        // - The plan is activated for a future month and DEs were pre-generated for
+        //   its pockets beforehand.
+        // RecalculateAllPocketsForAccount is a no-op when no DEs exist, so this is safe.
+        await dailyExpenseService.RecalculateAllPocketsForAccount(account.Id, activateFromMonth);
     }
 
     public async Task<List<DivisionPlanDTO>> GetAllForAccount(string userId, string accountId)

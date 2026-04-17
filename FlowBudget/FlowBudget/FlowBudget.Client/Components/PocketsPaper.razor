@@ -377,7 +377,7 @@
         if (dateTimeResult.Canceled || dateTimeResult.Data is not DateTime allowFrom) return;
 
         var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o"));
-        var res = await http.PostAsync($"/api/plans/{_selectedPlanId}/activate?allowFrom={allowFromStr}", null);
+        var res = await http.PostAsync($"/api/plans/{_selectedPlanId}/activate?activateFrom={allowFromStr}", null);
         if (res.IsSuccessStatusCode)
         {
             Snackbar.Add(L["plan_activated"], Severity.Success);
@@ -385,7 +385,7 @@
         }
         else
         {
-            Snackbar.Add(L["plan_activate_error"], Severity.Error);
+            Snackbar.Add(L["plan_activate_error"], Severity.Error); //TODO: better explanation...
         }
     }
 

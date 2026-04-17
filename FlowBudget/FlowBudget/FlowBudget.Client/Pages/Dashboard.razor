@@ -330,7 +330,8 @@ else
             { x => x.Categories, _categories },
             { x => x.Pockets, ActivePlan?.Pockets ?? new() },
             { x => x.Currency, ActivePlan?.Account.CurrencyCode },
-            { x => x.Date, SelectedDate }
+            { x => x.Date, SelectedDate },
+            { x => x.DefaultPocketId, SelectedPocket.Id }
         };
 
         var dialog = await DialogService.ShowAsync<AddExpenseDialog>(L["record_new_transaction"], parameters, _standardOptions);

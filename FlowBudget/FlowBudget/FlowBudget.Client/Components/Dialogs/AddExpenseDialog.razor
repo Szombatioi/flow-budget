@@ -119,6 +119,7 @@
     [Parameter] public List<PocketDTO> Pockets { get; set; } = new();
     [Parameter] public string? Currency { get; set; }
     [Parameter] public DateTime? Date { get; set; } = DateTime.Today;
+    [Parameter] public string? DefaultPocketId { get; set; }
 
     private decimal _price;
     private string? _categoryId;
@@ -129,8 +130,11 @@
     protected override void OnParametersSet()
     {
         // Pre-select the first pocket if none is set yet
-        if (_pocketId is null && Pockets.Count > 0)
-            _pocketId = Pockets[0].Id;
+
+        _pocketId = DefaultPocketId ?? Pockets[0].Id;
+
+        // if (_pocketId is null && Pockets.Count > 0)
+        //     _pocketId = Pockets[0].Id;
     }
 
     private void UploadFiles(InputFileChangeEventArgs e)
