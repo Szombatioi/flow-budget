@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FlowBudget.Data.Models;
 
-public class FixedExpense
+public class FixedExpense : Activable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     

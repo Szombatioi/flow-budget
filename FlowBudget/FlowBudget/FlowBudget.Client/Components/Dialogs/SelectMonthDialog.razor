@@ -1,0 +1,52 @@
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">@Description</MudText>
+        }
+        <MudSelect T="DateTime"
+                   @bind-Value="_selectedMonth"
+                   Variant="Variant.Outlined"
+                   Label="@L["month"]"
+                   FullWidth="true"
+                   AnchorOrigin="Origin.BottomCenter">
+            @foreach (var month in _months)
+            {
+                <MudSelectItem Value="@month">@month.ToString("MMMM yyyy")</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">@L["confirm"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    /// <summary>How many months ahead to offer (default 12)</summary>
+    [Parameter] public int MonthCount { get; set; } = 12;
+
+    private DateTime _selectedMonth;
+    private List<DateTime> _months = new();
+
+    protected override void OnInitialized()
+    {
+        var firstOfCurrentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        _months = Enumerable.Range(0, MonthCount)
+            .Select(i => firstOfCurrentMonth.AddMonths(i))
+            .ToList();
+        _selectedMonth = _months[0];
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_selectedMonth));
+    private void Cancel() => MudDialog.Cancel();
+}

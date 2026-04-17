@@ -10,7 +10,7 @@ namespace FlowBudget.Data.Models;
 // So for account 1 the whole income will be 260 USD
 // The splitting of pockets will work with this amount
 
-public class Income
+public class Income : Activable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     

@@ -52,7 +52,7 @@
                 @* Date *@
                 <MudItem xs="6">
                     <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["date"].ToString().ToUpper()</MudText>
-                    <MudDatePicker @bind-Date="_date" Variant="Variant.Filled" Class="rounded-lg" />
+                    <MudDatePicker @bind-Date="Date" Variant="Variant.Filled" Class="rounded-lg" />
                 </MudItem>
             </MudGrid>
 
@@ -118,11 +118,11 @@
     [Parameter] public List<CategoryDTO> Categories { get; set; } = new();
     [Parameter] public List<PocketDTO> Pockets { get; set; } = new();
     [Parameter] public string? Currency { get; set; }
+    [Parameter] public DateTime? Date { get; set; } = DateTime.Today;
 
     private decimal _price;
     private string? _categoryId;
     private string? _pocketId;
-    private DateTime? _date = DateTime.Today;
     private string? _name;
     private string? _description;
 
@@ -147,7 +147,7 @@
             Price = _price,
             CategoryId = _categoryId,
             PocketId = _pocketId,
-            Date = _date,
+            Date = Date,
         };
         MudDialog.Close(DialogResult.Ok(payload));
     }

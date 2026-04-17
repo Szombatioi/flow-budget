@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @using System.Security.Claims
 @using DTO
 @using Microsoft.AspNetCore.Authorization
@@ -139,32 +140,45 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // var authState = await AuthProvider.GetAuthenticationStateAsync();
-        // _currentUser = authState.User;
+        nav.LocationChanged += OnLocationChanged;
+        await LoadUser();
+    }
 
-        // If you need the full DB object (ApplicationUser):
-        // _fullUser = await UserManager.GetUserAsync(_currentUser);
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await LoadUser();
+        StateHasChanged();
+    }
 
+    private async Task LoadUser()
+    {
+        if (AuthStateTask == null) return;
 
-        if (AuthStateTask != null)
+        var authState = await AuthStateTask;
+        if (authState.User.Identity?.IsAuthenticated != true) return;
+
+        try
         {
-            var authState = await AuthStateTask;
-            var user = authState.User;
-
-            if (user.Identity?.IsAuthenticated == true)
-            {
-                // Use a try-catch for the specific API call
-                try
-                {
-                    UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
-                    Console.WriteLine($"User loaded: {UserDto?.Id}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"API Error: {ex.Message}");
-                }
-            }
+            UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
+            Console.WriteLine($"User loaded: {UserDto?.Id}");
         }
+        catch (HttpRequestException ex)
+        {
+            // Cookie is present but the user no longer exists in the DB
+            // (e.g. DB was wiped). Treat as unauthenticated.
+            Console.WriteLine($"api/user failed ({(int?)ex.StatusCode}), redirecting to login.");
+            if (!nav.Uri.Contains("/auth"))
+                nav.NavigateTo("/auth/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"API Error: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        nav.LocationChanged -= OnLocationChanged;
     }
 
     private void PageChanged(string title, string url)

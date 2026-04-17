@@ -1,0 +1,52 @@
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">@Description</MudText>
+        }
+        <MudDatePicker @bind-Date="_selectedDate"
+                       Label="@L["date"]"
+                       Variant="Variant.Outlined"
+                       MinDate="_minDate"
+                       Class="mb-4" />
+        <MudTimePicker @bind-Time="_selectedTime"
+                       Label="@L["time"]"
+                       Variant="Variant.Outlined"
+                       AmPm="false" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="_selectedDate is null"
+                   OnClick="Submit">
+            @L["confirm"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+
+    private readonly DateTime _minDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime? _selectedDate = DateTime.Today;
+    private TimeSpan? _selectedTime = DateTime.Now.TimeOfDay;
+
+    private void Submit()
+    {
+        if (_selectedDate is null) return;
+        var time = _selectedTime ?? TimeSpan.Zero;
+        var result = _selectedDate.Value.Date + time;
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

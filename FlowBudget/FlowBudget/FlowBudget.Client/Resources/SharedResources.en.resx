@@ -152,6 +152,21 @@
   <data name="cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="month" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="select_allow_from_title" xml:space="preserve">
+    <value>Apply from</value>
+  </data>
+  <data name="select_allow_from_description" xml:space="preserve">
+    <value>Select from which month this change should take effect. Choosing the current month will immediately recalculate your daily budgets.</value>
+  </data>
   <data name="field_required" xml:space="preserve">
     <value>This field is required</value>
   </data>

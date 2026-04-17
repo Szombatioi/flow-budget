@@ -15,10 +15,10 @@ namespace FlowBudget.Controllers
         [HttpGet("{did}")]
         public async Task<ActionResult<List<PocketDTO>>> GetPockets(string did)
         {
-            Console.BackgroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("xxxxxxxxxxxx");
-            Console.WriteLine(did);
-            Console.ResetColor();
+            // Console.BackgroundColor = ConsoleColor.Yellow;
+            // Console.WriteLine("xxxxxxxxxxxx");
+            // Console.WriteLine(did);
+            // Console.ResetColor();
             return await _pocketService.GetAllPockets(UserId, did);
         }
 
@@ -30,9 +30,9 @@ namespace FlowBudget.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult> UpdatePocket([FromBody] EditPocketDTO dto)
+        public async Task<ActionResult> UpdatePocket([FromBody] EditPocketDTO dto, [FromQuery] DateTime allowFrom)
         {
-            await _pocketService.UpdatePocket(UserId, dto);
+            await _pocketService.UpdatePocket(UserId, dto, allowFrom);
             return Ok();
         }
 

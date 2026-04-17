@@ -208,8 +208,8 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        if (UserDto == null) return;
-        if (UserDto.AccountIds.Count == 0) return;
+        if (UserDto == null) { IsLoading = false; return; }
+        if (UserDto.AccountIds.Count == 0) { IsLoading = false; return; }
         IsLoading = true;
         IsError = false;
         
@@ -325,7 +325,8 @@ else
         {
             { x => x.Categories, _categories },
             { x => x.Pockets, ActivePlan?.Pockets ?? new() },
-            { x => x.Currency, ActivePlan?.Account.CurrencyCode }
+            { x => x.Currency, ActivePlan?.Account.CurrencyCode },
+            { x => x.Date, SelectedDate }
         };
 
         var dialog = await DialogService.ShowAsync<AddExpenseDialog>(L["record_new_transaction"], parameters, _standardOptions);

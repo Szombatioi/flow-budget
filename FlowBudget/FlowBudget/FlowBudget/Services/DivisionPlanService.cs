@@ -57,8 +57,33 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper)
             throw new NotFoundException();
         }
         
+        var firstDayOfNextMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1);
+
         return account.DivisionPlans
-            .Select(p => _mapper.Map<DivisionPlanDTO>(p))
+            .Select(plan =>
+            {
+                var dto = _mapper.Map<DivisionPlanDTO>(plan);
+
+                // For each lineage (OriginalPocketId), keep only the most recently activated version
+                // that is not in a future month yet.
+                var activePockets = plan.Pockets
+                    .Where(p => p.ActiveFrom < firstDayOfNextMonth)
+                    .GroupBy(p => p.OriginalPocketId ?? p.Id)
+                    .Select(g => g.OrderByDescending(p => p.ActiveFrom).First())
+                    .ToList();
+
+                dto.Pockets = activePockets
+                    .Select(p => new PocketDTO
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Ration = p.Ration,
+                        DivisionPlanId = p.DivisionPlanId,
+                    })
+                    .ToList();
+
+                return dto;
+            })
             .ToList();
     }
 }

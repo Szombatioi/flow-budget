@@ -3,7 +3,7 @@ namespace FlowBudget.Data.Models;
 //Ration: how much % of the whole budget this pocket gets
 //Money: % converted to currency
 //The daily expenses of a month will be calculated based on the Money property
-public class Pocket
+public class Pocket : Activable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     
@@ -13,6 +13,13 @@ public class Pocket
 
     // public string AccountId { get; set; }
     // public virtual Account Account { get; set; } = null!;
+
+    /// <summary>
+    /// Points to the first-ever version of this pocket.
+    /// Null on legacy rows — treat as Id in that case.
+    /// No FK/navigation property to avoid self-referencing FK complications.
+    /// </summary>
+    public string? OriginalPocketId { get; set; }
 
     public string DivisionPlanId { get; set; }
     public virtual DivisionPlan DivisionPlan { get; set; }
