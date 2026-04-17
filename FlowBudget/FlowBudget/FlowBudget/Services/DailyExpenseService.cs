@@ -312,6 +312,50 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         return (remainingMoney * (decimal)ration / 100) / daysInMonth;
     }
 
+    /// <summary>
+    /// Cascades a change in one day's EoD forward through all subsequent started days in the month.
+    /// Call this after adding or removing an expenditure on <paramref name="fromDate"/> once the
+    /// EoDAmount of that day has already been persisted — this method only touches the days AFTER it.
+    ///
+    /// Stops at the last started day: un-started days are intentionally skipped and will be
+    /// corrected naturally when the user opens them (RecalculateDailyExpenses with activate:true).
+    /// </summary>
+    public async Task RecalculateStartedDaysFromDate(string pocketId, DateTime fromDate)
+    {
+        var dailyExpenses = await db.DailyExpenses
+            .Include(de => de.Expenditures)
+            .Where(de => de.PocketId == pocketId
+                         && de.Date.Month == fromDate.Month
+                         && de.Date.Year == fromDate.Year)
+            .OrderBy(de => de.Date)
+            .ToListAsync();
+
+        var fromIndex = dailyExpenses.FindIndex(de => de.Date.Date == fromDate.Date);
+        var lastStartedIndex = dailyExpenses.FindLastIndex(de => de.IsStarted);
+
+        // Nothing to cascade if the affected day is the last started day (or not found)
+        if (fromIndex < 0 || fromIndex >= lastStartedIndex)
+            return;
+
+        var pocket = await db.Pockets
+            .Include(p => p.DivisionPlan)
+            .SingleOrDefaultAsync(p => p.Id == pocketId);
+        if (pocket == null) throw new NotFoundException();
+
+        var dailyAmount = await CalculateDailyExpenseAmount(
+            pocket.DivisionPlan.AccountId, pocket.Ration, GetDaysInMonth(fromDate), fromDate);
+
+        for (int i = fromIndex + 1; i <= lastStartedIndex; i++)
+        {
+            decimal carryover = dailyExpenses[i - 1].IsStarted ? dailyExpenses[i - 1].EoDAmount : 0m;
+            dailyExpenses[i].StartAmount = dailyAmount + carryover;
+            dailyExpenses[i].EoDAmount = dailyExpenses[i].StartAmount
+                                         - dailyExpenses[i].Expenditures.Sum(e => e.Price);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     public int GetDaysInMonth(DateTime date)
     {
         return DateTime.DaysInMonth(date.Year, date.Month);

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Services;
 
-public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
+public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyExpenseService dailyExpenseService)
 {
     public async Task AddExpenditure(string userId, string pocketId, CreateExpenditureDTO dto)
     {
@@ -55,12 +55,17 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
         };
         
         dailyExpense.Expenditures.Add(newExpenditure);
-        
+
         //Update dailyExpense EoD - we sum all expenses in order to ALWAYS fix misconfigurations (e.g. when EoD was not yet updated :))
         var sumExpenses = dailyExpense.Expenditures.Sum(e => e.Price);
         dailyExpense.EoDAmount = dailyExpense.StartAmount - sumExpenses;
-        
+
         await db.SaveChangesAsync();
+
+        // Cascade the EoD change forward through every started day that comes after this one.
+        // Required when the expenditure is added to a past day (e.g. today = Apr 5 but
+        // days up to Apr 20 are already started) — those later days carried over the old EoD.
+        await dailyExpenseService.RecalculateStartedDaysFromDate(pocket.Id, newExpenditure.Date);
     }
 
     public async Task RemoveExpenditure(string userId, string expenditureId)
@@ -90,16 +95,23 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper)
             throw new UnauthorizedAccessException();
         }
         
+        // Capture before removal so we can cascade afterwards
+        var affectedPocketId = expenditure.DailyExpense.PocketId;
+        var affectedDate = expenditure.DailyExpense.Date;
+
         var dailyExpense = await db.DailyExpenses
             .Include(dailyExpense => dailyExpense.Expenditures)
             .SingleAsync(e => e.Id == expenditure.DailyExpense.Id);
-     
+
         //Remove Expense
         dailyExpense.Expenditures.Remove(expenditure);
-        
+
         //Recalculate EoD - reason of recalculating from 0 is to avoid glitches
         dailyExpense.EoDAmount = dailyExpense.StartAmount - dailyExpense.Expenditures.Sum(e => e.Price);
-        
+
         await db.SaveChangesAsync();
+
+        // Cascade the freed-up budget forward through every started day after this one.
+        await dailyExpenseService.RecalculateStartedDaysFromDate(affectedPocketId, affectedDate);
     }
 }
