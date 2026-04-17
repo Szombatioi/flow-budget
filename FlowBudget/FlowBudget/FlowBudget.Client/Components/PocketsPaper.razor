@@ -137,7 +137,7 @@
                             </MudSelectItem>
                         }
 
-                        <MudDivider/>
+                        @* <MudDivider/> *@
                         <MudSelectItem Value="@("CREATE_NEW")">
                             <div class="d-flex align-center">
                                 <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
@@ -147,6 +147,8 @@
                         </MudSelectItem>
                     }
                 </MudSelect>
+                
+                <MudButton OnClick="() => ActivatePlan()" Disabled="_selectedPlanId == _plans.SingleOrDefault(p => p.IsActive)?.Id">@L["activate"]</MudButton>
             </MudContainer>
         }
     </MudPaper>
@@ -269,22 +271,29 @@
         var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["add_pocket"], parameters, _standardOptions);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is PocketDTO newPocket)
+        if (result.Canceled || result.Data is not PocketDTO newPocket) return;
+
+        // Ask from which month the new pocket should be active
+        var monthParameters = new DialogParameters<SelectMonthDialog>
         {
-            var payload = new CreatePocketDTO()
-            {
-                Name = newPocket.Name,
-                // Money = newPocket.Money,
-                Ration = newPocket.Ration
-            };
-            var response = await http.PostAsJsonAsync<CreatePocketDTO>($"api/pockets/{_selectedPlanId}", payload);
-            if (response.IsSuccessStatusCode)
-            {
-                Snackbar.Add(L["save_success"], Severity.Success);
-                await LoadData();
-            }
-            else Snackbar.Add($"{L["save_error_for"]} {newPocket.Name}", Severity.Error);
+            { x => x.Title, L["select_allow_from_title"].ToString() },
+            { x => x.Description, L["select_allow_from_description"].ToString() },
+        };
+
+        var monthDialog = await DialogService.ShowAsync<SelectMonthDialog>(L["select_allow_from_title"], monthParameters, _standardOptions);
+        var monthResult = await monthDialog.Result;
+
+        if (monthResult.Canceled || monthResult.Data is not DateTime allowFrom) return;
+
+        var payload = new CreatePocketDTO { Name = newPocket.Name, Ration = newPocket.Ration };
+        var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o"));
+        var response = await http.PostAsJsonAsync($"api/pockets/{_selectedPlanId}?allowFrom={allowFromStr}", payload);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(L["save_success"], Severity.Success);
+            await LoadData();
         }
+        else Snackbar.Add($"{L["save_error_for"]} {newPocket.Name}", Severity.Error);
     }
 
     private async Task EditPocket(PocketDTO pocket)
@@ -311,12 +320,12 @@
             { x => x.Description, L["select_allow_from_description"].ToString() },
         };
 
-        var monthDialog = await DialogService.ShowAsync<SelectDateTimeDialog>(L["select_allow_from_title"], monthParameters, _standardOptions);
-        var monthResult = await monthDialog.Result;
+        var dateTimeDialog = await DialogService.ShowAsync<SelectDateTimeDialog>(L["select_allow_from_title"], monthParameters, _standardOptions);
+        var dateTimeResult = await dateTimeDialog.Result;
 
-        if (monthResult.Canceled || monthResult.Data is not DateTime allowFrom) return;
+        if (dateTimeResult.Canceled || dateTimeResult.Data is not DateTime allowFrom) return;
 
-        var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o")); // ISO 8601 round-trip format
+        var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o"));
         var response = await http.PutAsJsonAsync($"api/pockets?allowFrom={allowFromStr}", updated);
         if (response.IsSuccessStatusCode)
         {
@@ -348,6 +357,32 @@
                 Snackbar.Add(L["item_deleted"], Severity.Success);
             }
             else Snackbar.Add(L["delete_error"], Severity.Error);
+        }
+    }
+
+    private async Task ActivatePlan()
+    {
+        var dateTimeParameters = new DialogParameters<SelectDateTimeDialog>
+        {
+            { x => x.Title, L["select_allow_from_title"].ToString() },
+            { x => x.Description, L["select_allow_from_description"].ToString() },
+        };
+
+        var dateTimeDialog = await DialogService.ShowAsync<SelectDateTimeDialog>(L["select_allow_from_title"], dateTimeParameters, _standardOptions);
+        var dateTimeResult = await dateTimeDialog.Result;
+
+        if (dateTimeResult.Canceled || dateTimeResult.Data is not DateTime allowFrom) return;
+
+        var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o"));
+        var res = await http.PostAsync($"/api/plans/{_selectedPlanId}/activate?allowFrom={allowFromStr}", null);
+        if (res.IsSuccessStatusCode)
+        {
+            Snackbar.Add(L["plan_activated"], Severity.Success);
+            await LoadData();
+        }
+        else
+        {
+            Snackbar.Add(L["plan_activate_error"], Severity.Error);
         }
     }
 

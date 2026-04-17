@@ -101,7 +101,7 @@ else
             @* Remaining budget alert *@
             <MudAlert Severity="Severity.Info" Class="my-2">
                 @(L["remaining_budget"]):
-                <b>@(DailyExpense.EoDAmount) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
+                <b>@(DailyExpense.EoDAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
             </MudAlert>
 
             @* Expenditure list *@

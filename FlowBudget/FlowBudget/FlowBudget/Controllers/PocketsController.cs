@@ -23,9 +23,9 @@ namespace FlowBudget.Controllers
         }
 
         [HttpPost("{did}")]
-        public async Task<ActionResult> AddPocket(string did, [FromBody] CreatePocketDTO dto)
+        public async Task<ActionResult> AddPocket(string did, [FromBody] CreatePocketDTO dto, [FromQuery] DateTime? allowFrom = null)
         {
-            await _pocketService.AddPocket(UserId, did, dto);
+            await _pocketService.AddPocket(UserId, did, dto, allowFrom);
             return Created();
         }
 

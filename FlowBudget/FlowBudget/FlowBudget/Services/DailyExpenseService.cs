@@ -10,7 +10,6 @@ namespace FlowBudget.Services;
 public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
 {
     //The date's important attributes are only the year and month
-    //If all daily expenses are already created, it throws an exception
     //Flow logic:
         //We handle accounts, since all account has one and only one active divisionPlan
         //Get incomes, sum them
@@ -27,7 +26,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         {
             throw new NotFoundException();
         }
-        
+
         var account = await db.Accounts.SingleOrDefaultAsync(a => a.Id == accountId);
         if (account == null)
         {
@@ -38,59 +37,56 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         {
             throw new UnauthorizedAccessException();
         }
-        
-        //Find active division plan
-        var divisionPlans = await db.DivisionPlans
+
+        // Find the active division plan for the target month.
+        // Among all plans marked IsActive, pick the one with the latest ActiveFrom
+        // that is still on or before the first day of the target month.
+        var firstDayOfTargetMonth = new DateTime(date.Year, date.Month, 1);
+        var divisionPlan = await db.DivisionPlans
             .Include(dp => dp.Pockets)
-            .Where(p => p.AccountId == accountId && p.IsActive)
-            .ToListAsync();
-        if (divisionPlans.Count == 0)
+            .Where(dp => dp.AccountId == accountId && dp.IsActive && dp.ActiveFrom <= firstDayOfTargetMonth)
+            .OrderByDescending(dp => dp.ActiveFrom)
+            .FirstOrDefaultAsync();
+
+        if (divisionPlan == null)
         {
-            throw new InconsistencyException(); //TODO: message
+            throw new InconsistencyException();
         }
 
-        if (divisionPlans.Count > 1)
-        {
-            throw new InconsistencyException(); //TODO: message
-        }
-        var divisionPlan = divisionPlans.Single();
-        
         int daysInMonth = GetDaysInMonth(date);
         var existingDailyExpenses = await db.DailyExpenses
-            .Where(e => e.Date.Date.Month == date.Date.Month && e.Date.Date.Year == date.Date.Year)
+            .Where(e => e.Date.Month == date.Month && e.Date.Year == date.Year)
             .ToListAsync();
-        
+
         //Skip if they are already generated
         if (existingDailyExpenses.Any())
         {
             return;
         }
-        
+
         //Share the remaining pocket money for the days of the month
         var dailyExpenses = new List<DailyExpense>();
-        
-        var today = DateTime.Today;
-        var maxActiveFrom = db.Pockets
-            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom <= today)
-            .Max(p => p.ActiveFrom);
 
-         var possiblePockets = await db.Pockets
-            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom == maxActiveFrom)
+        //Choose those pockets, that are the most active:
+            //They are active already in this month
+            //But they are not active from the next month or so
+        var allPocketsForPlan = await db.Pockets
+            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom <= firstDayOfTargetMonth)
             .ToListAsync();
-         
+
+        var possiblePockets = allPocketsForPlan
+            .GroupBy(p => p.OriginalPocketId ?? p.Id)
+            .Select(g => g.OrderByDescending(p => p.ActiveFrom).First())
+            .ToList();
+
         foreach(var pocket in possiblePockets)
         {
             //Calculate share between days based on pocket ration
             //TODO: what if this amount is not rounded?
-            var dailyExpenseAmount = await CalculateDailyExpenseAmount(divisionPlan.AccountId, pocket.Ration, daysInMonth);
-            // var dailyExpenseAmount = (remainingMoney * (decimal)pocket.Ration / 100) / daysInMonth; //e.g. 300.000 * 0.25
+            var dailyExpenseAmount = await CalculateDailyExpenseAmount(divisionPlan.AccountId, pocket.Ration, daysInMonth, date);
             for (int i = 1; i <= daysInMonth; i++)
             {
-                //Skip if already present
                 var expenseDate = new DateTime(date.Year, date.Month, i);
-                
-                //Check if the daily expense is already generated
-                // if (existingDailyExpenses[i].Date == date) continue;
                 dailyExpenses.Add(new DailyExpense()
                 {
                      Date = expenseDate,
@@ -105,7 +101,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         await db.SaveChangesAsync();
     }
 
-    //Additional logic: If we load a daily expense for a given day, 
+    //Additional logic: If we load a daily expense for a given day,
     //we check if the day is started already.
     //If it is not, find the last started day in this month and start each day between.
     //Starting each day:
@@ -124,7 +120,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         {
             throw new NotFoundException();
         }
-        
+
         var pocket = await db.Pockets
             .Include(pocket => pocket.DivisionPlan)
             .SingleOrDefaultAsync(p => p.Id == pocketId);
@@ -141,7 +137,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         {
             throw new UnauthorizedAccessException();
         }
-        
+
         var dailyExpense = await db.DailyExpenses
             .Include(de => de.Expenditures)
             .Include(de => de.Pocket)
@@ -164,8 +160,13 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         return mapper.Map<DailyExpenseDTO>(dailyExpense);
     }
 
-    //Recalculating all daily expenses (StartAmount and EoD) in a month
-    //Activate bool = should it activate the daily expenses as well?
+    // Recalculates StartAmount and EoDAmount for DailyExpenses in the given month, up to date.Date.
+    // - activate: also marks each processed day as IsStarted.
+    // - recalculateFromStart: begin from day 1 instead of the first un-started day.
+    //
+    // Carryover rule: only propagate EoD from a day that is already IsStarted.
+    // This prevents compounding on un-started future-month days (where every day
+    // would incorrectly accumulate the previous day's EoDAmount as extra budget).
     public async Task RecalculateDailyExpenses(string pocketId, DateTime date, bool activate = false, bool recalculateFromStart = false)
     {
         var dailyExpenses = await db.DailyExpenses
@@ -175,7 +176,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
                          && de.Date.Year == date.Year)
             .OrderBy(de => de.Date)
             .ToListAsync();
-        
+
         var pocket = await db.Pockets
             .Include(p => p.DivisionPlan)
             .ThenInclude(p => p.Account)
@@ -186,59 +187,123 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         }
 
         var lastStartedIndex = dailyExpenses.FindLastIndex(de => de.IsStarted);
-        // if (lastStartedIndex == -1) return;
-
         var requestedDayIndex = dailyExpenses.FindIndex(de => de.Date.Date == date.Date);
-        
-        // When recalculateFromStart is true (pocket ration changed), restart from day 1
-        // so the new ration is reflected in every already-started day's StartAmount
+
+        // When recalculateFromStart is true (ration/income/fixed-expense changed), restart from day 1
+        // so the new amounts are reflected in every already-started day.
         var startIndex = recalculateFromStart ? 0 : lastStartedIndex + 1;
-        
-        var dailyExpenseAmount = await CalculateDailyExpenseAmount(pocket.DivisionPlan.AccountId, pocket.Ration, GetDaysInMonth(date.Date));
-        
+
+        var dailyExpenseAmount = await CalculateDailyExpenseAmount(
+            pocket.DivisionPlan.AccountId, pocket.Ration, GetDaysInMonth(date), date);
+
         for (int i = startIndex; i <= requestedDayIndex; i++)
         {
-            if(activate) dailyExpenses[i].IsStarted = true;
-            
-            //Update: we should find out the ration of the pocket, because PocketService can call this too...
-            //When the rations are modified, all StartAmounts should be recalculated from zero...
+            if (activate) dailyExpenses[i].IsStarted = true;
+
             dailyExpenses[i].StartAmount = dailyExpenseAmount;
 
-            decimal eod = i > 0 ? dailyExpenses[i - 1].EoDAmount : 0;
+            // Only carry EoD from the immediately preceding day if that day has been started
+            // (i.e., it is a settled day). Un-started future days don't carry over, preventing
+            // the StartAmount from compounding across days that haven't happened yet.
+            decimal eod = (i > 0 && dailyExpenses[i - 1].IsStarted)
+                ? dailyExpenses[i - 1].EoDAmount
+                : 0m;
             dailyExpenses[i].StartAmount += eod;
             dailyExpenses[i].EoDAmount = dailyExpenses[i].StartAmount - dailyExpenses[i].Expenditures.Sum(e => e.Price);
         }
 
         await db.SaveChangesAsync();
-
-        // return dailyExpenses[requestedDayIndex];
     }
 
-    public async Task<decimal> CalculateDailyExpenseAmount(string accountId, double ration, int daysInMonth)
+    /// <summary>
+    /// Recalculates all currently-active pockets for an account for the given month.
+    /// Triggers recalculation even for months where no days are started yet (pre-generated future months).
+    /// Called after income, fixed-expense, or pocket ration changes.
+    /// </summary>
+    public async Task RecalculateAllPocketsForAccount(string accountId, DateTime date)
     {
-        //Get incomes, sum them
-        var incomes = await db.Incomes
-            .Where(i => i.AccountId == accountId)
+        var firstDayOfMonth = new DateTime(date.Year, date.Month, 1);
+        var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
+        // Always recalculate up to the last day so all days in the month are covered
+        var lastDayOfMonth = firstDayOfNextMonth.AddDays(-1);
+
+        // Find the active division plan for this month (latest ActiveFrom <= first of month)
+        var divisionPlan = await db.DivisionPlans
+            .Where(dp => dp.AccountId == accountId && dp.IsActive && dp.ActiveFrom <= firstDayOfMonth)
+            .OrderByDescending(dp => dp.ActiveFrom)
+            .FirstOrDefaultAsync();
+
+        if (divisionPlan == null) return; // No active plan, nothing to recalculate
+
+        // Get current version of each pocket lineage for this month
+        var allPockets = await db.Pockets
+            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom <= firstDayOfMonth)
             .ToListAsync();
-        var sumOfIncomes = incomes.Sum(i => i.Amount);
-        
-        //Get fixed expenses, subtract from incomes
-        var fixedExpenses = await db.FixedExpenses
-            .Where(fe => fe.AccountId == accountId)
+
+        var currentPockets = allPockets
+            .GroupBy(p => p.OriginalPocketId ?? p.Id)
+            .Select(g => g.OrderByDescending(p => p.ActiveFrom).First())
+            .ToList();
+
+        foreach (var pocket in currentPockets)
+        {
+            // Recalculate whenever DEs exist for this month — started or not.
+            // This handles both live months (some days started) and pre-generated future months.
+            var hasAnyDEs = await db.DailyExpenses.AnyAsync(de =>
+                de.PocketId == pocket.Id
+                && de.Date.Year == date.Year
+                && de.Date.Month == date.Month);
+
+            if (hasAnyDEs)
+            {
+                await RecalculateDailyExpenses(pocket.Id, lastDayOfMonth, activate: false, recalculateFromStart: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Convenience wrapper: recalculates all DEs for a single pocket for an entire month
+    /// (from day 1 through the last day), without activating any days.
+    /// </summary>
+    public async Task RecalculateFullMonth(string pocketId, int year, int month)
+    {
+        var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+        await RecalculateDailyExpenses(pocketId, lastDay, activate: false, recalculateFromStart: true);
+    }
+
+    /// <summary>
+    /// Calculates the daily budget for a pocket in a specific month.
+    /// Uses the income and fixed-expense versions that were active at the start of <paramref name="forMonth"/>,
+    /// so future-month pre-generation uses the correct scheduled amounts.
+    /// </summary>
+    public async Task<decimal> CalculateDailyExpenseAmount(string accountId, double ration, int daysInMonth, DateTime forMonth)
+    {
+        var firstDayOfTargetMonth = new DateTime(forMonth.Year, forMonth.Month, 1);
+
+        // Resolve the income version active at the start of the target month
+        var allIncomes = await db.Incomes
+            .Where(i => i.AccountId == accountId && i.ActiveFrom <= firstDayOfTargetMonth)
             .ToListAsync();
-        var sumOfFixedExpenses = fixedExpenses.Sum(fe => fe.Amount);
-        
-        //Get pockets of the active division plan, we will create a daily expense for each
-        //var pockets = divisionPlan.Pockets;
-        
+        var sumOfIncomes = allIncomes
+            .GroupBy(i => i.OriginalIncomeId ?? i.Id)
+            .Select(g => g.OrderByDescending(i => i.ActiveFrom).First())
+            .Sum(i => i.Amount);
+
+        // Resolve the fixed-expense version active at the start of the target month
+        var allFixedExpenses = await db.FixedExpenses
+            .Where(fe => fe.AccountId == accountId && fe.ActiveFrom <= firstDayOfTargetMonth)
+            .ToListAsync();
+        var sumOfFixedExpenses = allFixedExpenses
+            .GroupBy(fe => fe.OriginalFixedExpenseId ?? fe.Id)
+            .Select(g => g.OrderByDescending(fe => fe.ActiveFrom).First())
+            .Sum(fe => fe.Amount);
+
         var remainingMoney = sumOfIncomes - sumOfFixedExpenses;
-        
-        return (remainingMoney * (decimal)ration / 100) / daysInMonth; //e.g. 300.000 * 0.25
+        return (remainingMoney * (decimal)ration / 100) / daysInMonth;
     }
 
     public int GetDaysInMonth(DateTime date)
     {
         return DateTime.DaysInMonth(date.Year, date.Month);
     }
-    
 }

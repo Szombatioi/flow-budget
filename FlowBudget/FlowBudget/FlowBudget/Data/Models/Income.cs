@@ -21,4 +21,10 @@ public class Income : Activable
     
     public string AccountId { get; set; }
     public virtual Account Account { get; set; } = null!;
+
+    /// <summary>
+    /// Points to the first-ever version of this income (lineage anchor).
+    /// Null on legacy rows — treat as Id in that case.
+    /// </summary>
+    public string? OriginalIncomeId { get; set; }
 }

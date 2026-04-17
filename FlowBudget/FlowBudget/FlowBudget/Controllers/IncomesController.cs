@@ -26,9 +26,9 @@ namespace FlowBudget.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult> Put([FromBody] EditIncomeDTO dto)
+        public async Task<ActionResult> Put([FromBody] EditIncomeDTO dto, [FromQuery] DateTime allowFrom)
         {
-            await _incomeService.UpdateIncome(UserId, dto);
+            await _incomeService.UpdateIncome(UserId, dto, allowFrom);
             return Ok();
         }
 

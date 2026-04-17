@@ -25,9 +25,9 @@ namespace FlowBudget.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult> Put([FromBody] EditFixedExpenseDTO dto)
+        public async Task<ActionResult> Put([FromBody] EditFixedExpenseDTO dto, [FromQuery] DateTime allowFrom)
         {
-            await _fixedExpenseService.UpdateFixExpenditure(UserId, dto);
+            await _fixedExpenseService.UpdateFixExpenditure(UserId, dto, allowFrom);
             return Ok();
         }
 

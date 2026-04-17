@@ -500,4 +500,13 @@
   <data name="page_error" xml:space="preserve">
     <value>An error occured.</value>
   </data>
+  <data name="activate" xml:space="preserve">
+    <value>Activate</value>
+  </data>
+  <data name="plan_activate_error" xml:space="preserve">
+    <value>There was an error while activating the Division Plan</value>
+  </data>
+  <data name="plan_activated" xml:space="preserve">
+    <value>Division Plan activated</value>
+  </data>
 </root>
