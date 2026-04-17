@@ -155,21 +155,35 @@
         var dialog = await DialogService.ShowAsync<AddFixedExpenseDialog>(L["edit_fixed_expense"], parameters, _standardOptions);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is FixedExpenseDTO updated)
+        if (result.Canceled || result.Data is not FixedExpenseDTO updated) return;
+
+        // Ask when the change should take effect.  The exact date+time is stored so that
+        // two edits in the same month get distinct ActiveFrom values and the latest wins.
+        var dateParameters = new DialogParameters<SelectDateTimeDialog>
         {
-            var payload = new EditFixedExpenseDTO { Id = updated.Id, Name = updated.Name, Amount = updated.Amount };
-            
-            var response = await http.PutAsJsonAsync("api/fixed-expenses", payload);
-            if (response.IsSuccessStatusCode)
-            {
-                fixedExpense.Name = updated.Name;
-                fixedExpense.Amount = updated.Amount;
-                Snackbar.Add(L["save_success"], Severity.Success);
-            }
-            else
-            {
-                Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
-            }
+            { x => x.Title, L["select_allow_from_title"].ToString() },
+            { x => x.Description, L["select_allow_from_description"].ToString() },
+        };
+
+        var dateDialog = await DialogService.ShowAsync<SelectDateTimeDialog>(L["select_allow_from_title"], dateParameters, _standardOptions);
+        var dateResult = await dateDialog.Result;
+
+        if (dateResult.Canceled || dateResult.Data is not DateTime allowFrom) return;
+
+        var allowFromStr = Uri.EscapeDataString(allowFrom.ToString("o"));
+        var payload = new EditFixedExpenseDTO { Id = updated.Id, Name = updated.Name, Amount = updated.Amount };
+
+        var response = await http.PutAsJsonAsync($"api/fixed-expenses?allowFrom={allowFromStr}", payload);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(L["save_success"], Severity.Success);
+            // Reload so the list reflects the new version ID — without this the local
+            // entry still holds the old ID and subsequent edit/delete targets the wrong row.
+            await LoadFixedExpenses();
+        }
+        else
+        {
+            Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
         }
     }
 

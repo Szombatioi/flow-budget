@@ -70,8 +70,12 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
         //Choose those pockets, that are the most active:
             //They are active already in this month
             //But they are not active from the next month or so
+        // Include pocket versions created any time within (or before) the target month.
+        // Using < firstDayOfNextTargetMonth instead of <= firstDayOfTargetMonth so that
+        // mid-month pocket additions/edits (ActiveFrom = e.g. May 15) are included.
+        var firstDayOfNextTargetMonth = firstDayOfTargetMonth.AddMonths(1);
         var allPocketsForPlan = await db.Pockets
-            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom <= firstDayOfTargetMonth)
+            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom < firstDayOfNextTargetMonth)
             .ToListAsync();
 
         var possiblePockets = allPocketsForPlan
@@ -234,10 +238,11 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
             .FirstOrDefaultAsync();
 
         if (divisionPlan == null) return; // No active plan, nothing to recalculate
-
-        // Get current version of each pocket lineage for this month
+        
+        // Get the pocket version active in the target month: any version created
+        // before the start of the following month counts, so mid-month edits are included.
         var allPockets = await db.Pockets
-            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom <= firstDayOfMonth)
+            .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom < firstDayOfNextMonth)
             .ToListAsync();
 
         var currentPockets = allPockets
@@ -279,19 +284,24 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
     public async Task<decimal> CalculateDailyExpenseAmount(string accountId, double ration, int daysInMonth, DateTime forMonth)
     {
         var firstDayOfTargetMonth = new DateTime(forMonth.Year, forMonth.Month, 1);
+        // Use < firstDayOfNextTargetMonth so that mid-month edits (ActiveFrom = e.g. May 15)
+        // are included when calculating for that same month.  This replaces the old
+        // <= firstDayOfTargetMonth which missed any version created after the 1st.
+        var firstDayOfNextTargetMonth = firstDayOfTargetMonth.AddMonths(1);
 
         // Resolve the income version active at the start of the target month
         var allIncomes = await db.Incomes
-            .Where(i => i.AccountId == accountId && i.ActiveFrom <= firstDayOfTargetMonth)
+            .Where(i => i.AccountId == accountId && i.ActiveFrom < firstDayOfNextTargetMonth)
             .ToListAsync();
         var sumOfIncomes = allIncomes
+            .AsEnumerable()
             .GroupBy(i => i.OriginalIncomeId ?? i.Id)
             .Select(g => g.OrderByDescending(i => i.ActiveFrom).First())
             .Sum(i => i.Amount);
 
         // Resolve the fixed-expense version active at the start of the target month
         var allFixedExpenses = await db.FixedExpenses
-            .Where(fe => fe.AccountId == accountId && fe.ActiveFrom <= firstDayOfTargetMonth)
+            .Where(fe => fe.AccountId == accountId && fe.ActiveFrom < firstDayOfNextTargetMonth)
             .ToListAsync();
         var sumOfFixedExpenses = allFixedExpenses
             .GroupBy(fe => fe.OriginalFixedExpenseId ?? fe.Id)

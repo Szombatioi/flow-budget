@@ -64,8 +64,9 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
         if (user.Accounts.All(a => divisionPlan.AccountId != a.Id))
             throw new UnauthorizedAccessException();
 
-        // Allow from the given date or start of this month
-        var effectiveFrom = allowFrom ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        // Use the exact allowFrom datetime so two edits in the same month get distinct ActiveFrom
+        // values and the latest one wins deterministically when versions are compared.
+        var effectiveFrom = allowFrom ?? DateTime.Now;
 
         var pocket = new Pocket
         {

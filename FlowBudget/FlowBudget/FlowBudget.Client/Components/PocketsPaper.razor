@@ -273,14 +273,16 @@
 
         if (result.Canceled || result.Data is not PocketDTO newPocket) return;
 
-        // Ask from which month the new pocket should be active
-        var monthParameters = new DialogParameters<SelectMonthDialog>
+        // Ask from which date+time the new pocket should be active.
+        // SelectDateTimeDialog captures an exact timestamp so that two operations in the
+        // same month never collide on the same ActiveFrom value.
+        var monthParameters = new DialogParameters<SelectDateTimeDialog>
         {
             { x => x.Title, L["select_allow_from_title"].ToString() },
             { x => x.Description, L["select_allow_from_description"].ToString() },
         };
 
-        var monthDialog = await DialogService.ShowAsync<SelectMonthDialog>(L["select_allow_from_title"], monthParameters, _standardOptions);
+        var monthDialog = await DialogService.ShowAsync<SelectDateTimeDialog>(L["select_allow_from_title"], monthParameters, _standardOptions);
         var monthResult = await monthDialog.Result;
 
         if (monthResult.Canceled || monthResult.Data is not DateTime allowFrom) return;
@@ -353,8 +355,9 @@
             var response = await http.DeleteAsync($"api/pockets/{pocket.Id}");
             if (response.IsSuccessStatusCode)
             {
-                _pockets.Remove(pocket);
+                // _pockets.Remove(pocket);
                 Snackbar.Add(L["item_deleted"], Severity.Success);
+                await LoadData();
             }
             else Snackbar.Add(L["delete_error"], Severity.Error);
         }

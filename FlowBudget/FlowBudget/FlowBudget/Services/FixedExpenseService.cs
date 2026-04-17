@@ -81,9 +81,9 @@ public class FixedExpenseService(ApplicationDbContext db, DailyExpenseService da
             return;
         }
 
-        //Create new version
+        //Create new version — store the exact datetime so two edits in the same month
+        //get distinct ActiveFrom values and the latest one wins deterministically.
         var originalId = fixedExpense.OriginalFixedExpenseId ?? fixedExpense.Id;
-        var allowFromMonth = new DateTime(allowFrom.Year, allowFrom.Month, 1);
 
         var newFixedExpense = new FixedExpense
         {
@@ -91,7 +91,7 @@ public class FixedExpenseService(ApplicationDbContext db, DailyExpenseService da
             Name = dto.Name ?? fixedExpense.Name,
             AccountId = fixedExpense.AccountId,
             Account = fixedExpense.Account,
-            ActiveFrom = allowFromMonth,
+            ActiveFrom = allowFrom,
         };
 
         await db.FixedExpenses.AddAsync(newFixedExpense);
@@ -100,7 +100,7 @@ public class FixedExpenseService(ApplicationDbContext db, DailyExpenseService da
         await db.SaveChangesAsync();
 
         var firstDayOfNextMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1);
-        if (allowFromMonth < firstDayOfNextMonth)
+        if (allowFrom < firstDayOfNextMonth)
         {
             // Current or past month: recalculate this month (the new version is already active)
             await dailyExpenseService.RecalculateAllPocketsForAccount(fixedExpense.AccountId, DateTime.Now);
@@ -108,7 +108,7 @@ public class FixedExpenseService(ApplicationDbContext db, DailyExpenseService da
         else
         {
             // Future month: only recalculate if DEs were pre-generated for that month
-            await dailyExpenseService.RecalculateAllPocketsForAccount(fixedExpense.AccountId, allowFromMonth);
+            await dailyExpenseService.RecalculateAllPocketsForAccount(fixedExpense.AccountId, allowFrom);
         }
     }
     

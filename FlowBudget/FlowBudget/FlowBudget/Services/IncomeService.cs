@@ -84,9 +84,9 @@ public class IncomeService(ApplicationDbContext db, DailyExpenseService dailyExp
             return;
         }
 
-        //Create a new version
+        //Create a new version — store the exact datetime so two edits in the same month
+        //get distinct ActiveFrom values and the latest one wins deterministically.
         var originalId = income.OriginalIncomeId ?? income.Id;
-        var allowFromMonth = new DateTime(allowFrom.Year, allowFrom.Month, 1);
 
         var newIncome = new Income
         {
@@ -94,7 +94,7 @@ public class IncomeService(ApplicationDbContext db, DailyExpenseService dailyExp
             Name = dto.Name ?? income.Name,
             AccountId = income.AccountId,
             Account = income.Account,
-            ActiveFrom = allowFromMonth,
+            ActiveFrom = allowFrom,
         };
 
         await db.Incomes.AddAsync(newIncome);
@@ -103,7 +103,7 @@ public class IncomeService(ApplicationDbContext db, DailyExpenseService dailyExp
         await db.SaveChangesAsync();
 
         var firstDayOfNextMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1);
-        if (allowFromMonth < firstDayOfNextMonth)
+        if (allowFrom < firstDayOfNextMonth)
         {
             // Current or past month: recalculate this month (the new version is already active)
             await dailyExpenseService.RecalculateAllPocketsForAccount(income.AccountId, DateTime.Now);
@@ -111,7 +111,7 @@ public class IncomeService(ApplicationDbContext db, DailyExpenseService dailyExp
         else
         {
             // Future month: only recalculate if DEs were pre-generated for that month
-            await dailyExpenseService.RecalculateAllPocketsForAccount(income.AccountId, allowFromMonth);
+            await dailyExpenseService.RecalculateAllPocketsForAccount(income.AccountId, allowFrom);
         }
     }
     
