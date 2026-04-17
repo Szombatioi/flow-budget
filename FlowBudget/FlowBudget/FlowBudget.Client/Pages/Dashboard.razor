@@ -274,9 +274,22 @@ else
             var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={SelectedDate.FormatDate()}");
             DailyExpense = res;
 
-            var sumOfExpenses = DailyExpense.Expenditures.Sum(ex => ex.Price);
-            Console.WriteLine($"sumOfExpenses: {sumOfExpenses}");
-            targetValue = (double)(sumOfExpenses / DailyExpense.StartAmount * 100);
+            var spent = DailyExpense.Expenditures.Sum(ex => ex.Price);
+            var start = DailyExpense.StartAmount;
+
+            if (start <= 0)
+            {
+                // StartAmount is zero or negative — already in debt before spending anything.
+                // A ratio is meaningless here (there is no positive budget to divide against),
+                // so always show 100% (fully red). The exact figures are visible as text.
+                targetValue = 100.0;
+            }
+            else
+            {
+                // Normal case: what fraction of today's allowed budget has been spent.
+                // Can exceed 100 if the user overspent (e.g. 150% = spent 1.5× the budget).
+                targetValue = (double)(spent / start * 100);
+            }
             _isDataReady = true;
             StateHasChanged();
         }
