@@ -133,25 +133,50 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 app.MapControllers();
 
-// Create database schema from the current model.
-// EnsureCreated is used instead of MigrateAsync because EF Core 10 does not
-// reliably discover migration types in Release-published assemblies.
-// On an existing database EnsureCreated is a no-op, so restarts are safe.
+// Apply EF Core migrations at startup so containers always run with the latest schema.
+//
+// Edge-case handled: if the DB was previously created with EnsureCreated() it has no
+// __EFMigrationsHistory table, which would cause MigrateAsync() to fail trying to
+// re-create tables that already exist.  In that case we delete and recreate the DB
+// from scratch using migrations (acceptable for a dev/container environment).
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("Ensuring database schema...");
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    Console.WriteLine("Applying database migrations...");
     try
     {
-        await dbContext.Database.EnsureCreatedAsync();
+        // Check whether the DB was previously bootstrapped with EnsureCreated
+        // (i.e. no __EFMigrationsHistory table exists yet).
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText =
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
+            var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
+
+            if (!hasMigrationTable)
+            {
+                Console.WriteLine(
+                    "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
+                await conn.CloseAsync();
+                await db.Database.EnsureDeletedAsync();
+            }
+            else
+            {
+                await conn.CloseAsync();
+            }
+        }
+
+        await db.Database.MigrateAsync();
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("Database schema ready");
+        Console.WriteLine("Database migrations applied successfully.");
         Console.ResetColor();
     }
     catch (Exception ex)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"Error creating database schema: {ex.Message}");
+        Console.WriteLine($"Error applying migrations: {ex.Message}");
         Console.ResetColor();
         throw;
     }
