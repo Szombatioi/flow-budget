@@ -49,7 +49,10 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies(o =>
     {
-        o.ApplicationCookie?.Configure(c => c.LoginPath = "/auth/login");
+        o.ApplicationCookie?.Configure(c =>
+        {
+            c.LoginPath = "/auth/login";
+        });
     });
 builder.Services.AddAuthorization();
 

@@ -9,9 +9,12 @@ services:
       # Persists the SQLite database across container restarts
       - flowbudget-data:/app/Data
     environment:
-      # Bind HTTP only — UseHttpsRedirection() is a no-op when no HTTPS port is configured
-      - ASPNETCORE_URLS=http://+:5288
+      - ASPNETCORE_URLS=https://+:5288
       - ASPNETCORE_ENVIRONMENT=Production
+      # Point Kestrel at the self-signed cert baked into the image.
+      # To use your own cert, mount it as a volume and override these two vars.
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=FlowBudget_Cert!
     restart: unless-stopped
 
 volumes:
