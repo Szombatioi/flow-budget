@@ -112,7 +112,7 @@
 @code {
     private ClaimsPrincipal? _currentUser;
     [CascadingParameter] private ClaimsPrincipal? User { get; set; }
-    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+    private UserBaseDTO? UserDto { get; set; }
     [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
     private string appBarTitle = "Dashboard"; //TODO: make a dictionary with URL-title pairs and use them here (OnInitializedAsync method)
@@ -177,8 +177,6 @@
         }
         catch (HttpRequestException ex)
         {
-            // Cookie is present but the user no longer exists in the DB
-            // (e.g. DB was wiped). Treat as unauthenticated.
             Console.WriteLine($"api/user failed ({(int?)ex.StatusCode}), redirecting to login.");
             if (!nav.Uri.Contains("/auth"))
                 nav.NavigateTo("/auth/login", forceLoad: true);
