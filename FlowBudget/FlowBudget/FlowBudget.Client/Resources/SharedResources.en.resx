@@ -653,4 +653,7 @@
   <data name="split_unnamed" xml:space="preserve">
     <value>Expense</value>
   </data>
+  <data name="relative_daily_limit" xml:space="preserve">
+    <value>Relative daily limit</value>
+  </data>
 </root>

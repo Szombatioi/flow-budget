@@ -160,9 +160,25 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         {
             await RecalculateDailyExpenses(pocket.Id, date, activate: true);
             var updated = await db.DailyExpenses.SingleOrDefaultAsync(e => e.Date.Date == date.Date && e.PocketId == pocket.Id);
-            return mapper.Map<DailyExpenseDTO>(updated);
+            return await MapWithRelativeAmount(updated!, pocket.Id, date);
         }
-        return mapper.Map<DailyExpenseDTO>(dailyExpense);
+        return await MapWithRelativeAmount(dailyExpense, pocket.Id, date);
+    }
+
+    // Maps a DailyExpense to DTO and fills RelativeDailyAmount from the first day of the month.
+    private async Task<DailyExpenseDTO> MapWithRelativeAmount(DailyExpense entity, string pocketId, DateTime date)
+    {
+        var dto = mapper.Map<DailyExpenseDTO>(entity);
+
+        var firstOfMonth = await db.DailyExpenses
+            .Where(de => de.PocketId == pocketId
+                         && de.Date.Year == date.Year
+                         && de.Date.Month == date.Month)
+            .OrderBy(de => de.Date)
+            .FirstOrDefaultAsync();
+
+        dto.RelativeDailyAmount = firstOfMonth?.StartAmount ?? dto.StartAmount;
+        return dto;
     }
 
     // Recalculates StartAmount and EoDAmount for DailyExpenses in the given month, up to date.Date.

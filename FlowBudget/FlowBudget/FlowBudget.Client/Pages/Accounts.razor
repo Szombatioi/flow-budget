@@ -6,7 +6,6 @@
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient http
 @rendermode InteractiveWebAssembly
-@inject IConfiguration Configuration
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
@@ -18,7 +17,7 @@
 }
 else
 {
-    <MudContainer Class="w-50">
+    <MudContainer Class="w-50 mx-auto">
         <MudPaper Elevation="3" Class="p-4 d-flex flex-column">
             <MudText Align="Align.Center" Typo="Typo.h4">@L["create_account"]</MudText>
             <MudTextField T="string"
@@ -46,7 +45,7 @@ else
         </MudPaper>
     </MudContainer>
 
-    <MudContainer Class="w-50">
+    <MudContainer Class="w-50 mx-auto">
         <MudTable Elevation="3" Items="accounts" Hover="true" Striped="true" Class="mt-4 p-4">
             <HeaderContent>
                 <MudTh>@L["account_name"]</MudTh>
