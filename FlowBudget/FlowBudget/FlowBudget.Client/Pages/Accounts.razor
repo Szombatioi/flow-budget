@@ -93,7 +93,7 @@ else
     {
         //if (!OperatingSystem.IsBrowser()) return; // skip on server/SSR //TODO: uncomment?
 
-        currencies = await http.GetFromJsonAsync<List<CurrencyDTO>>($"{Configuration["ApiSettings:BaseUrl"]}api/currencies") ?? new();
+        currencies = await http.GetFromJsonAsync<List<CurrencyDTO>>("api/currencies") ?? new();
         await GetAccounts();
         
         isLoading = false;
