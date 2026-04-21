@@ -352,25 +352,32 @@ else
 
         if (!result!.Canceled)
         {
-            var payload = (CreateExpenditureDTO)result.Data!;
-            try
+            var payloads = (List<CreateExpenditureDTO>)result.Data!;
+            var savedCount = 0;
+            foreach (var payload in payloads)
             {
-                var targetPocketId = payload.PocketId ?? SelectedPocket!.Id;
-                var res = await Http.PostAsJsonAsync($"api/expenditures/{targetPocketId}", payload);
-                if (res.IsSuccessStatusCode)
+                try
                 {
-                    Snackbar.Add(L["save_success"], Severity.Success);
-                    await LoadDailyExpense();
-                    await AnimateChart();
+                    var targetPocketId = payload.PocketId ?? SelectedPocket!.Id;
+                    var res = await Http.PostAsJsonAsync($"api/expenditures/{targetPocketId}", payload);
+                    if (res.IsSuccessStatusCode)
+                        savedCount++;
+                    else
+                        Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
                 }
-                else
+                catch
                 {
                     Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
                 }
             }
-            catch (Exception)
+
+            if (savedCount > 0)
             {
-                Snackbar.Add($"{L["save_error_for"]} {payload.Name}", Severity.Error);
+                Snackbar.Add(payloads.Count == 1
+                    ? L["save_success"]
+                    : $"{savedCount}/{payloads.Count} {L["items_saved"]}", Severity.Success);
+                await LoadDailyExpense();
+                await AnimateChart();
             }
         }
     }

@@ -12,4 +12,8 @@ public class ApplicationUser : IdentityUser<string>
     }
     public List<Account> Accounts { get; set; }
     public List<Category> Categories { get; set; }
+
+    public string? ApiKey { get; set; } = null;
+    public string? Theme { get; set; } = null;    // "light" | "dark"
+    public string? Language { get; set; } = null; // e.g. "en", "hu"
 }

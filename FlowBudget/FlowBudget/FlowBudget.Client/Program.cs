@@ -1,3 +1,4 @@
+using FlowBudget.Client.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor;
@@ -17,6 +18,7 @@ builder.Services.AddMudServices(config => {
 });
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddSingleton<ThemeService>();
 
 builder.Services.AddScoped(sp =>
 {

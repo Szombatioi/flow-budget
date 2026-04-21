@@ -509,4 +509,148 @@
   <data name="plan_activated" xml:space="preserve">
     <value>Division Plan activated</value>
   </data>
+  <data name="single_expense_tab" xml:space="preserve">
+    <value>Single expense</value>
+  </data>
+  <data name="receipt_expense_tab" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="drop_zone_title" xml:space="preserve">
+    <value>Drop your image here</value>
+  </data>
+  <data name="drop_zone_hint" xml:space="preserve">
+    <value>Drag &amp; drop or click to browse</value>
+  </data>
+  <data name="browse_files" xml:space="preserve">
+    <value>BROWSE FILES</value>
+  </data>
+  <data name="nav_settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="settings_profile_section" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="settings_security_section" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="settings_preferences_section" xml:space="preserve">
+    <value>Preferences</value>
+  </data>
+  <data name="settings_api_key_section" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="settings_display_name" xml:space="preserve">
+    <value>Display name</value>
+  </data>
+  <data name="settings_current_password" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="settings_new_password" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="settings_confirm_password" xml:space="preserve">
+    <value>Confirm new password</value>
+  </data>
+  <data name="settings_change_password" xml:space="preserve">
+    <value>Change password</value>
+  </data>
+  <data name="settings_theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="settings_theme_light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="settings_theme_dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="settings_language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="settings_api_key_label" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="settings_api_key_placeholder" xml:space="preserve">
+    <value>Paste your API key here...</value>
+  </data>
+  <data name="settings_api_key_hint" xml:space="preserve">
+    <value>Your API key is hidden by default. Enter your password to reveal or update it.</value>
+  </data>
+  <data name="settings_enter_password_to_reveal" xml:space="preserve">
+    <value>Enter your password to reveal</value>
+  </data>
+  <data name="settings_confirm_with_password" xml:space="preserve">
+    <value>Confirm with password</value>
+  </data>
+  <data name="settings_reveal" xml:space="preserve">
+    <value>Reveal</value>
+  </data>
+  <data name="settings_hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="settings_profile_saved" xml:space="preserve">
+    <value>Profile saved successfully</value>
+  </data>
+  <data name="settings_password_changed" xml:space="preserve">
+    <value>Password changed successfully</value>
+  </data>
+  <data name="settings_preferences_saved" xml:space="preserve">
+    <value>Preferences saved</value>
+  </data>
+  <data name="settings_api_key_saved" xml:space="preserve">
+    <value>API key saved</value>
+  </data>
+  <data name="settings_password_mismatch" xml:space="preserve">
+    <value>Passwords do not match</value>
+  </data>
+  <data name="saving" xml:space="preserve">
+    <value>Saving...</value>
+  </data>
+  <data name="file_missing" xml:space="preserve">
+    <value>No file selected</value>
+  </data>
+  <data name="no_api_key" xml:space="preserve">
+    <value>No API key is set. Add one in Settings to use receipt scanning.</value>
+  </data>
+  <data name="upload_fail" xml:space="preserve">
+    <value>Receipt scan failed</value>
+  </data>
+  <data name="upload_success" xml:space="preserve">
+    <value>Successfully uploaded</value>
+  </data>
+  <data name="receipt_scanning" xml:space="preserve">
+    <value>Scanning receipt…</value>
+  </data>
+  <data name="receipt_items_found" xml:space="preserve">
+    <value>Items found</value>
+  </data>
+  <data name="receipt_rescan" xml:space="preserve">
+    <value>Rescan</value>
+  </data>
+  <data name="receipt_no_items" xml:space="preserve">
+    <value>No items could be extracted from this receipt. Try rescanning.</value>
+  </data>
+  <data name="items_saved" xml:space="preserve">
+    <value>items saved</value>
+  </data>
+  <data name="error_loading_file" xml:space="preserve">
+    <value>Could not read file</value>
+  </data>
+  <data name="split_across_days" xml:space="preserve">
+    <value>Split across multiple days</value>
+  </data>
+  <data name="split_date_range" xml:space="preserve">
+    <value>Date range</value>
+  </data>
+  <data name="split_preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="split_days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="split_unnamed" xml:space="preserve">
+    <value>Expense</value>
+  </data>
 </root>

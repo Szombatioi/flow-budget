@@ -1,5 +1,6 @@
 using AutoMapper;
 using DTO;
+using FlowBudget.Client.Components.DTO;
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
 using FlowBudget.Services.Exceptions;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Services;
 
-public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
+public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHandler llmHandler)
 {
     //The date's important attributes are only the year and month
     //Flow logic:
@@ -359,5 +360,42 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper)
     public int GetDaysInMonth(DateTime date)
     {
         return DateTime.DaysInMonth(date.Year, date.Month);
+    }
+
+
+    public async Task<List<ExpenditureReceiptItemDTO>> UploadReceipt(string userId, string pocketId, IFormFile file)
+    {
+        var user = await db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.DivisionPlans)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            throw new NotFoundException();
+        }
+        
+        //Get api key for user
+        if (user.ApiKey == null)
+        {
+            throw new UnauthorizedAccessException("no_api_key");
+        }
+        
+        //Get preferred language for user from their settings
+        var language = "English";
+        
+        //Get available categories
+        var categories = await db.Categories
+            .Include(c => c.User)
+            .Where(c => c.UserId == null || c.UserId == userId)
+            .Select(c => new CategoryHeaderDTO()
+            {
+                Id = c.Id,
+                Name = c.Name,
+            })
+            .ToListAsync();
+        
+        //Upload receipt to AI
+        var result = await llmHandler.UploadReceipt<List<ExpenditureReceiptItemDTO>>(language, categories, user.ApiKey, file);
+        return result;
     }
 }

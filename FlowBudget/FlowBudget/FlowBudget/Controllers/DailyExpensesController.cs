@@ -1,4 +1,5 @@
 using DTO;
+using FlowBudget.Client.Components.DTO;
 using FlowBudget.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -23,6 +24,14 @@ namespace FlowBudget.Controllers
         {
             //date is an exact date, including days too
             return await dailyExpenseService.GetDailyExpense(UserId, pocketId, date);
+        }
+
+        [HttpPost("{pid}/receipt")]
+        public async Task<ActionResult<List<ExpenditureReceiptItemDTO>>> UploadReceipt(string pid, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("file_missing.");
+            return await dailyExpenseService.UploadReceipt(UserId, pid, file);
         }
     }
 }

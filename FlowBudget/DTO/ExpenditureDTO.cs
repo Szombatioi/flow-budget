@@ -26,3 +26,20 @@ public class CreateExpenditureDTO
     // (if you upload the data for a previous date, not for today)
     public DateTime? Date { get; set; }
 }
+
+public class ExpenditureReceiptItemDTO
+{
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    // The AI returns the field as "category" containing a category ID
+    [System.Text.Json.Serialization.JsonPropertyName("category")]
+    public string? CategoryId { get; set; }
+}
+
+public class ReceiptRow
+{
+    public bool Include { get; set; } = true;
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public string? CategoryId { get; set; }
+}

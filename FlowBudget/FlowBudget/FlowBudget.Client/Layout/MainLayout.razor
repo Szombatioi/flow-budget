@@ -10,10 +10,11 @@
 @inject IStringLocalizer<SharedResources> L
 @inject NavigationManager nav
 @inject ISnackbar Snackbar
+@inject ThemeService ThemeService
 
 @* Optional: @inject UserManager<ApplicationUser> UserManager *@
 
-<MudThemeProvider Theme="theme"/>
+<MudThemeProvider Theme="theme" IsDarkMode="@ThemeService.IsDarkMode"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
@@ -86,7 +87,12 @@
 
             <div>
                 <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.BarChart"
+                            Icon="@Icons.Material.Filled.Settings"
+                            OnClick="@(() => PageChanged("nav_settings", "/settings"))">
+                    @L["nav_settings"]
+                </MudNavLink>
+                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                            Icon="@Icons.Material.Filled.Logout"
                             OnClick="@(() => Logout())">
                     @L["nav_logout"]
                 </MudNavLink>
@@ -141,7 +147,13 @@
     protected override async Task OnInitializedAsync()
     {
         nav.LocationChanged += OnLocationChanged;
+        ThemeService.OnThemeChanged += OnThemeChanged;
         await LoadUser();
+    }
+
+    private void OnThemeChanged()
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -161,6 +173,7 @@
         {
             UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
             Console.WriteLine($"User loaded: {UserDto?.Id}");
+            ThemeService.SetDarkMode(UserDto?.Theme == "dark");
         }
         catch (HttpRequestException ex)
         {
@@ -179,6 +192,7 @@
     public void Dispose()
     {
         nav.LocationChanged -= OnLocationChanged;
+        ThemeService.OnThemeChanged -= OnThemeChanged;
     }
 
     private void PageChanged(string title, string url)

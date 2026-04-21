@@ -1,0 +1,345 @@
+@page "/settings"
+@using DTO
+@using Microsoft.AspNetCore.Authorization
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject ThemeService ThemeService
+@inject NavigationManager Nav
+@attribute [Authorize]
+
+@if (_settings == null)
+{
+    <div class="d-flex justify-center align-center" style="height: 300px;">
+        <MudProgressCircular Indeterminate="true" />
+    </div>
+}
+else
+{
+    <MudGrid Justify="Justify.Center">
+        <MudItem xs="12" sm="10" md="7" lg="6">
+
+            @* ── Profile ── *@
+            <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_profile_section"]</MudText>
+                <MudTextField @bind-Value="_userName"
+                              Label="@L["settings_display_name"]"
+                              Variant="Variant.Filled"
+                              Class="mb-4" />
+                <MudTextField Value="@_settings.Email"
+                              Label="@L["email"]"
+                              Variant="Variant.Filled"
+                              ReadOnly="true"
+                              Class="mb-4" />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="SaveProfile"
+                           Disabled="_savingProfile"
+                           Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                    @(_savingProfile ? L["saving"] : L["save"])
+                </MudButton>
+            </MudPaper>
+
+            @* ── Security ── *@
+            <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_security_section"]</MudText>
+                <MudTextField @bind-Value="_currentPassword"
+                              Label="@L["settings_current_password"]"
+                              InputType="InputType.Password"
+                              Variant="Variant.Filled"
+                              Class="mb-3" />
+                <MudTextField @bind-Value="_newPassword"
+                              Label="@L["settings_new_password"]"
+                              InputType="InputType.Password"
+                              Variant="Variant.Filled"
+                              Class="mb-3" />
+                <MudTextField @bind-Value="_confirmPassword"
+                              Label="@L["settings_confirm_password"]"
+                              InputType="InputType.Password"
+                              Variant="Variant.Filled"
+                              Class="mb-4" />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="ChangePassword"
+                           Disabled="_savingPassword"
+                           Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                    @(_savingPassword ? L["saving"] : L["settings_change_password"])
+                </MudButton>
+            </MudPaper>
+
+            @* ── Preferences ── *@
+            <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_preferences_section"]</MudText>
+
+                <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="font-weight:700; text-transform:uppercase;">
+                    @L["settings_theme"]
+                </MudText>
+                <div class="d-flex align-center mb-4" style="gap: 8px;">
+                    <MudText Typo="Typo.body2">@L["settings_theme_light"]</MudText>
+                    <MudSwitch T="bool"
+                               Value="@_isDarkMode"
+                               ValueChanged="@OnThemeSwitchChanged"
+                               Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">@L["settings_theme_dark"]</MudText>
+                </div>
+
+                <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="font-weight:700; text-transform:uppercase;">
+                    @L["settings_language"]
+                </MudText>
+                <MudSelect @bind-Value="_selectedLanguage" Variant="Variant.Filled" Class="mb-4" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value=@("en")>English</MudSelectItem>
+                    <MudSelectItem Value=@("hu")>Magyar</MudSelectItem>
+                </MudSelect>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="SavePreferences"
+                           Disabled="_savingPreferences"
+                           Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                    @(_savingPreferences ? L["saving"] : L["save"])
+                </MudButton>
+            </MudPaper>
+
+            @* ── API Key ── *@
+            <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">@L["settings_api_key_section"]</MudText>
+                <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">@L["settings_api_key_hint"]</MudText>
+
+                @if (!_apiKeyRevealed)
+                {
+                    <MudTextField @bind-Value="_apiKeyPassword"
+                                  Label="@L["settings_enter_password_to_reveal"]"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Filled"
+                                  Class="mb-4" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="RevealApiKey"
+                               Disabled="_revealingApiKey"
+                               Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                        @(_revealingApiKey ? L["saving"] : L["settings_reveal"])
+                    </MudButton>
+                }
+                else
+                {
+                    <MudTextField @bind-Value="_apiKeyValue"
+                                  Label="@L["settings_api_key_label"]"
+                                  Placeholder="@L["settings_api_key_placeholder"]"
+                                  Variant="Variant.Filled"
+                                  Class="mb-3" />
+                    <MudTextField @bind-Value="_apiKeySavePassword"
+                                  Label="@L["settings_confirm_with_password"]"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Filled"
+                                  Class="mb-4" />
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="SaveApiKey"
+                                   Disabled="_savingApiKey"
+                                   Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                            @(_savingApiKey ? L["saving"] : L["save"])
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="HideApiKey"
+                                   Style="text-transform:none; border-radius:20px; padding:8px 28px;">
+                            @L["settings_hide"]
+                        </MudButton>
+                    </div>
+                }
+            </MudPaper>
+
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private UserSettingsDTO? _settings;
+
+    // Profile
+    private string _userName = string.Empty;
+    private bool _savingProfile;
+
+    // Security
+    private string _currentPassword = string.Empty;
+    private string _newPassword = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private bool _savingPassword;
+
+    // Preferences
+    private bool _isDarkMode;          // drives the switch; source of truth while on this page
+    private string _selectedTheme => _isDarkMode ? "dark" : "light";
+    private string _selectedLanguage = "en";
+    private bool _savingPreferences;
+
+    // API Key
+    private bool _apiKeyRevealed;
+    private string _apiKeyPassword = string.Empty;      // password used to reveal
+    private string _apiKeySavePassword = string.Empty;  // password used to save
+    private string? _apiKeyValue;
+    private bool _revealingApiKey;
+    private bool _savingApiKey;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        try
+        {
+            _settings = await Http.GetFromJsonAsync<UserSettingsDTO>("api/user/settings");
+            _userName = _settings?.UserName ?? string.Empty;
+            _isDarkMode = (_settings?.Theme ?? "light") == "dark";
+            _selectedLanguage = _settings?.Language ?? "en";
+        }
+        catch
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        _savingProfile = true;
+        try
+        {
+            var res = await Http.PutAsJsonAsync("api/user/profile", new UpdateProfileDTO { UserName = _userName });
+            if (res.IsSuccessStatusCode)
+                Snackbar.Add(L["settings_profile_saved"], Severity.Success);
+            else
+                Snackbar.Add(await res.Content.ReadAsStringAsync(), Severity.Error);
+        }
+        catch { Snackbar.Add(L["something_went_wrong"], Severity.Error); }
+        finally { _savingProfile = false; }
+    }
+
+    private async Task ChangePassword()
+    {
+        if (_newPassword != _confirmPassword)
+        {
+            Snackbar.Add(L["settings_password_mismatch"], Severity.Warning);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_currentPassword) || string.IsNullOrWhiteSpace(_newPassword))
+        {
+            Snackbar.Add(L["field_required"], Severity.Warning);
+            return;
+        }
+        _savingPassword = true;
+        try
+        {
+            var res = await Http.PutAsJsonAsync("api/user/password", new ChangePasswordDTO
+            {
+                CurrentPassword = _currentPassword,
+                NewPassword = _newPassword
+            });
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["settings_password_changed"], Severity.Success);
+                _currentPassword = _newPassword = _confirmPassword = string.Empty;
+            }
+            else
+                Snackbar.Add(await res.Content.ReadAsStringAsync(), Severity.Error);
+        }
+        catch { Snackbar.Add(L["something_went_wrong"], Severity.Error); }
+        finally { _savingPassword = false; }
+    }
+
+    private void OnThemeSwitchChanged(bool isDark)
+    {
+        _isDarkMode = isDark;
+        // Apply the theme live — MainLayout reacts via ThemeService.OnThemeChanged
+        ThemeService.SetDarkMode(isDark);
+    }
+
+    private async Task SavePreferences()
+    {
+        _savingPreferences = true;
+        var previousLanguage = _settings?.Language ?? "en";
+        try
+        {
+            var res = await Http.PutAsJsonAsync("api/user/preferences", new UpdatePreferencesDTO
+            {
+                Theme = _selectedTheme,
+                Language = _selectedLanguage
+            });
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["settings_preferences_saved"], Severity.Success);
+                if (_settings != null)
+                {
+                    _settings.Theme = _selectedTheme;
+                    _settings.Language = _selectedLanguage;
+                }
+
+                // Theme is already live via ThemeService.
+                // Language requires a full reload so the new resource strings take effect.
+                if (_selectedLanguage != previousLanguage)
+                {
+                    Nav.NavigateTo(Nav.Uri, forceLoad: true);
+                }
+            }
+            else
+                Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+        catch { Snackbar.Add(L["something_went_wrong"], Severity.Error); }
+        finally { _savingPreferences = false; }
+    }
+
+    private async Task RevealApiKey()
+    {
+        if (string.IsNullOrWhiteSpace(_apiKeyPassword)) { Snackbar.Add(L["field_required"], Severity.Warning); return; }
+        _revealingApiKey = true;
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/user/api-key/reveal", new RevealApiKeyDTO { Password = _apiKeyPassword });
+            if (res.IsSuccessStatusCode)
+            {
+                _apiKeyValue = await res.Content.ReadAsStringAsync();
+                // The JSON response is a quoted string; deserialize it properly
+                if (_apiKeyValue?.StartsWith("\"") == true)
+                    _apiKeyValue = System.Text.Json.JsonSerializer.Deserialize<string>(_apiKeyValue);
+                _apiKeyRevealed = true;
+                _apiKeyPassword = string.Empty;
+            }
+            else
+                Snackbar.Add(L["invalid_credentials"], Severity.Error);
+        }
+        catch { Snackbar.Add(L["something_went_wrong"], Severity.Error); }
+        finally { _revealingApiKey = false; }
+    }
+
+    private async Task SaveApiKey()
+    {
+        if (string.IsNullOrWhiteSpace(_apiKeySavePassword)) { Snackbar.Add(L["field_required"], Severity.Warning); return; }
+        _savingApiKey = true;
+        try
+        {
+            var res = await Http.PutAsJsonAsync("api/user/api-key", new UpdateApiKeyDTO
+            {
+                Password = _apiKeySavePassword,
+                ApiKey = _apiKeyValue
+            });
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["settings_api_key_saved"], Severity.Success);
+                if (_settings != null) _settings.HasApiKey = !string.IsNullOrWhiteSpace(_apiKeyValue);
+                _apiKeySavePassword = string.Empty;
+            }
+            else
+                Snackbar.Add(L["invalid_credentials"], Severity.Error);
+        }
+        catch { Snackbar.Add(L["something_went_wrong"], Severity.Error); }
+        finally { _savingApiKey = false; }
+    }
+
+    private void HideApiKey()
+    {
+        _apiKeyRevealed = false;
+        _apiKeyValue = null;
+        _apiKeyPassword = string.Empty;
+        _apiKeySavePassword = string.Empty;
+    }
+}

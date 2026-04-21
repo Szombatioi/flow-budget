@@ -37,6 +37,7 @@ builder.Services.AddTransient<DailyExpenseService>();
 builder.Services.AddTransient<ExpenditureService>();
 builder.Services.AddTransient<CategoryService>();
 builder.Services.AddTransient<SeederService>();
+builder.Services.AddTransient<LlmHandler>();
 
 // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); //Note: with this parameter it scans all profiles
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
