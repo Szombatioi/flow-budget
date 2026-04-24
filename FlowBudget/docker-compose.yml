@@ -8,6 +8,8 @@ services:
     volumes:
       # Persists the SQLite database across container restarts
       - flowbudget-data:/app/Data
+      # Persists log files across container restarts
+      - flowbudget-logs:/app/logs
     environment:
       - ASPNETCORE_URLS=https://+:5288
       - ASPNETCORE_ENVIRONMENT=Production
@@ -19,3 +21,4 @@ services:
 
 volumes:
   flowbudget-data:
+  flowbudget-logs:

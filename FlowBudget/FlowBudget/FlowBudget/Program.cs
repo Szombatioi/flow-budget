@@ -5,203 +5,292 @@ using FlowBudget.Components;
 using FlowBudget.Components.Account;
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
+using FlowBudget.Middleware;
 using FlowBudget.Profiles;
 using FlowBudget.Services;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MudBlazor.Services;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
+using System.Text.Json;
 
-var builder = WebApplication.CreateBuilder(args);
+// ── Serilog: bootstrap logger for startup errors, replaced by full logger after Build() ──
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+        theme: AnsiConsoleTheme.Code)
+    .WriteTo.File(
+        path: "logs/flowbudget-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateBootstrapLogger();
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveWebAssemblyComponents()
-    .AddAuthenticationStateSerialization();
-
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<IdentityRedirectManager>();
-
-var baseUrl = builder.Configuration["ApiSettings:BaseUrl"];
-builder.Services.AddHttpClient("APIClient", client =>
+try
 {
-    client.BaseAddress = new Uri(baseUrl);
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-//List of injectable services
-builder.Services.AddTransient<UserService>();
-builder.Services.AddTransient<CurrencyService>();
-builder.Services.AddTransient<AccountService>();
-builder.Services.AddTransient<IncomeService>();
-builder.Services.AddTransient<PocketService>();
-builder.Services.AddTransient<DivisionPlanService>();
-builder.Services.AddTransient<FixedExpenseService>();
-builder.Services.AddTransient<DailyExpenseService>();
-builder.Services.AddTransient<ExpenditureService>();
-builder.Services.AddTransient<CategoryService>();
-builder.Services.AddTransient<SeederService>();
-builder.Services.AddTransient<LlmHandler>();
+    // Replace the default Microsoft logging with Serilog
+    builder.Host.UseSerilog((ctx, services, cfg) => cfg
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", Serilog.Events.LogEventLevel.Information)
+        .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "FlowBudget")
+        .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+        theme: AnsiConsoleTheme.Code)
+        .WriteTo.File(
+            path: "logs/flowbudget-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+        .ReadFrom.Configuration(ctx.Configuration));
 
-// builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); //Note: with this parameter it scans all profiles
-builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
+    // ── Services ──────────────────────────────────────────────────────────────
 
-builder.Services.AddAuthentication(options =>
+    builder.Services.AddRazorComponents()
+        .AddInteractiveWebAssemblyComponents()
+        .AddAuthenticationStateSerialization();
+
+    builder.Services.AddCascadingAuthenticationState();
+    builder.Services.AddScoped<IdentityRedirectManager>();
+
+    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"];
+    builder.Services.AddHttpClient("APIClient", client =>
     {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies(o =>
-    {
-        o.ApplicationCookie?.Configure(c =>
+        client.BaseAddress = new Uri(baseUrl);
+    });
+
+    // List of injectable services
+    builder.Services.AddTransient<UserService>();
+    builder.Services.AddTransient<CurrencyService>();
+    builder.Services.AddTransient<AccountService>();
+    builder.Services.AddTransient<IncomeService>();
+    builder.Services.AddTransient<PocketService>();
+    builder.Services.AddTransient<DivisionPlanService>();
+    builder.Services.AddTransient<FixedExpenseService>();
+    builder.Services.AddTransient<DailyExpenseService>();
+    builder.Services.AddTransient<ExpenditureService>();
+    builder.Services.AddTransient<CategoryService>();
+    builder.Services.AddTransient<SeederService>();
+    builder.Services.AddTransient<LlmHandler>();
+
+    builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
+
+    builder.Services.AddAuthentication(options =>
         {
-            c.LoginPath = "/auth/login";
+            options.DefaultScheme = IdentityConstants.ApplicationScheme;
+            options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+        })
+        .AddIdentityCookies(o =>
+        {
+            o.ApplicationCookie?.Configure(c =>
+            {
+                c.LoginPath = "/auth/login";
+            });
+        });
+    builder.Services.AddAuthorization();
+
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+                           throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(connectionString));
+    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+    builder.Services.AddIdentityCore<ApplicationUser>(options =>
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+            options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddSignInManager()
+        .AddDefaultTokenProviders();
+
+    builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+    builder.Services.AddMudServices();
+    builder.Services.AddControllers();
+
+    builder.Services.AddScoped(sp =>
+        new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
+
+    builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+    var supportedCultures = new[] { "en-US" };
+    var localizationOptions = new RequestLocalizationOptions()
+        .SetDefaultCulture(supportedCultures[0])
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
+
+    builder.Services.Configure<RequestLocalizationOptions>(options =>
+    {
+        options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-EN");
+        options.SupportedCultures = localizationOptions.SupportedCultures;
+        options.SupportedUICultures = localizationOptions.SupportedUICultures;
+    });
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAll", policy =>
+        {
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
         });
     });
-builder.Services.AddAuthorization();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+    // ── Health Checks ─────────────────────────────────────────────────────────
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<ApplicationDbContext>("database",
+            tags: ["ready"]);
 
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    // ── Pipeline ──────────────────────────────────────────────────────────────
+
+    var app = builder.Build();
+
+    // Global exception logger — must be first so it wraps the entire pipeline
+    app.UseMiddleware<ExceptionLoggingMiddleware>();
+
+    // Serilog request logging (logs HTTP method, path, status, elapsed)
+    app.UseSerilogRequestLogging(opts =>
     {
-        options.SignIn.RequireConfirmedAccount = false;
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-
-builder.Services.AddMudServices();
-builder.Services.AddControllers(); 
-
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
-
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-var supportedCultures = new[] { "en-US" }; //Add others here
-var localizationOptions = new RequestLocalizationOptions()
-    .SetDefaultCulture(supportedCultures[0])
-    .AddSupportedCultures(supportedCultures)
-    .AddSupportedUICultures(supportedCultures);
-
-//Choose language based on browser language
-builder.Services.Configure<RequestLocalizationOptions>(options => {
-    options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-EN");
-    options.SupportedCultures = localizationOptions.SupportedCultures;
-    options.SupportedUICultures = localizationOptions.SupportedUICultures;
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0}ms";
     });
-});
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-    app.UseMigrationsEndPoint();
-}
-else
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
-app.UseRequestLocalization();
-
-app.UseRouting();
-app.UseCors("AllowAll");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
-app.MapAdditionalIdentityEndpoints();
-app.MapControllers();
-
-// Apply EF Core migrations at startup so containers always run with the latest schema.
-//
-// Edge-case handled: if the DB was previously created with EnsureCreated() it has no
-// __EFMigrationsHistory table, which would cause MigrateAsync() to fail trying to
-// re-create tables that already exist.  In that case we delete and recreate the DB
-// from scratch using migrations (acceptable for a dev/container environment).
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("Applying database migrations...");
-    try
+    if (app.Environment.IsDevelopment())
     {
-        // Check whether the DB was previously bootstrapped with EnsureCreated
-        // (i.e. no __EFMigrationsHistory table exists yet).
-        var conn = db.Database.GetDbConnection();
-        await conn.OpenAsync();
-        await using (var cmd = conn.CreateCommand())
+        app.UseWebAssemblyDebugging();
+        app.UseMigrationsEndPoint();
+    }
+    else
+    {
+        app.UseHsts();
+    }
+
+    app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+    app.UseHttpsRedirection();
+    app.UseRequestLocalization();
+
+    app.UseRouting();
+    app.UseCors("AllowAll");
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.UseAntiforgery();
+
+    // ── Health endpoints (no auth required — for monitoring tools) ────────────
+    app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        // Simple liveness — returns Healthy as long as the process is up
+        Predicate = _ => false,
+        ResponseWriter = WriteHealthJson
+    }).AllowAnonymous();
+
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        // Readiness — includes DB ping
+        Predicate = check => check.Tags.Contains("ready"),
+        ResponseWriter = WriteHealthJson
+    }).AllowAnonymous();
+
+    // ── Static / Blazor ───────────────────────────────────────────────────────
+    app.MapStaticAssets();
+    app.MapRazorComponents<App>()
+        .AddInteractiveWebAssemblyRenderMode()
+        .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
+    app.MapAdditionalIdentityEndpoints();
+    app.MapControllers();
+
+    // ── DB migrations ─────────────────────────────────────────────────────────
+    // Apply EF Core migrations at startup so containers always run with the latest schema.
+    //
+    // Edge-case handled: if the DB was previously created with EnsureCreated() it has no
+    // __EFMigrationsHistory table, which would cause MigrateAsync() to fail trying to
+    // re-create tables that already exist.  In that case we delete and recreate the DB
+    // from scratch using migrations (acceptable for a dev/container environment).
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Log.Information("Applying database migrations...");
+        try
         {
-            cmd.CommandText =
-                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-            var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
+            var conn = db.Database.GetDbConnection();
+            await conn.OpenAsync();
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText =
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
+                var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
 
-            if (!hasMigrationTable)
-            {
-                Console.WriteLine(
-                    "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
-                await conn.CloseAsync();
-                await db.Database.EnsureDeletedAsync();
+                if (!hasMigrationTable)
+                {
+                    Log.Warning(
+                        "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
+                    await conn.CloseAsync();
+                    await db.Database.EnsureDeletedAsync();
+                }
+                else
+                {
+                    await conn.CloseAsync();
+                }
             }
-            else
-            {
-                await conn.CloseAsync();
-            }
+
+            await db.Database.MigrateAsync();
+            Log.Information("Database migrations applied successfully");
         }
-
-        await db.Database.MigrateAsync();
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("Database migrations applied successfully.");
-        Console.ResetColor();
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to apply database migrations");
+            throw;
+        }
     }
-    catch (Exception ex)
+
+    // ── Seeding ───────────────────────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"Error applying migrations: {ex.Message}");
-        Console.ResetColor();
-        throw;
+        var seederService = scope.ServiceProvider.GetRequiredService<SeederService>();
+
+        Log.Information("Seeding currencies...");
+        await seederService.SeedCurrencies();
+        Log.Information("Currencies seeded");
+
+        Log.Information("Seeding categories...");
+        await seederService.SeedCategories();
+        Log.Information("Categories seeded");
     }
-}
 
-using (var scope = app.Services.CreateScope())
+    await app.RunAsync();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
 {
-    var seederService = scope.ServiceProvider.GetRequiredService<SeederService>();
-    
-    Console.WriteLine("Seeding currencies...");
-    await seederService.SeedCurrencies();
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Currencies seeded successfully");
-    Console.ResetColor();
-    
-    Console.WriteLine("Seeding categories...");
-    await seederService.SeedCategories();
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Categories seeded successfully");
-    Console.ResetColor();
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
 }
 
-// Add additional endpoints required by the Identity /Account Razor components.
-
-app.Run();
+// ── Health check JSON response writer ─────────────────────────────────────────
+static Task WriteHealthJson(HttpContext ctx, Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport report)
+{
+    ctx.Response.ContentType = "application/json";
+    var result = JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString(),
+        duration = report.TotalDuration.TotalMilliseconds.ToString("F1") + "ms",
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            description = e.Value.Description,
+            duration = e.Value.Duration.TotalMilliseconds.ToString("F1") + "ms",
+            error = e.Value.Exception?.Message
+        })
+    }, new JsonSerializerOptions { WriteIndented = true });
+    return ctx.Response.WriteAsync(result);
+}
