@@ -4,10 +4,7 @@ using System.Text.Json;
 
 namespace FlowBudget.Middleware;
 
-/// <summary>
-/// Catches unhandled exceptions, logs them via Serilog, and returns a structured JSON error response.
-/// Place this as the first middleware so it wraps the entire pipeline.
-/// </summary>
+// Catching unhandled exceptions, logs them, then returns a HTTP response
 public class ExceptionLoggingMiddleware(RequestDelegate next, ILogger<ExceptionLoggingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
@@ -19,7 +16,7 @@ public class ExceptionLoggingMiddleware(RequestDelegate next, ILogger<ExceptionL
         catch (NotFoundException ex)
         {
             logger.LogWarning(ex, "Resource not found. Path: {Path}", context.Request.Path);
-            await WriteErrorResponse(context, HttpStatusCode.NotFound, "Resource not found.");
+            await WriteErrorResponse(context, HttpStatusCode.NotFound, string.IsNullOrEmpty(ex.Message) ? "Resource not found." : ex.Message);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -30,13 +27,13 @@ public class ExceptionLoggingMiddleware(RequestDelegate next, ILogger<ExceptionL
         catch (InconsistencyException ex)
         {
             logger.LogError(ex, "Data inconsistency detected. Path: {Path}", context.Request.Path);
-            await WriteErrorResponse(context, HttpStatusCode.Conflict, "Data inconsistency detected.");
+            await WriteErrorResponse(context, HttpStatusCode.Conflict, string.IsNullOrEmpty(ex.Message) ? "Data inconsistency detected." : ex.Message);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception. Path: {Path} Method: {Method}",
                 context.Request.Path, context.Request.Method);
-            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
+            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, string.IsNullOrEmpty(ex.Message) ? "An unexpected error occurred." : ex.Message);
         }
     }
 

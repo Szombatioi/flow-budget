@@ -22,8 +22,11 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# Directory for the SQLite database file (mounted as a volume)
+# Directory for the SQLite database and changelog — mounted as a volume.
+# Copy the default changelog.json so the RSS feed works on first run
+# even before the volume is populated.
 RUN mkdir -p Data
+COPY FlowBudget/FlowBudget/Data/changelog.json Data/changelog.json
 
 # Generate a self-signed TLS certificate so the container can serve HTTPS.
 # The certificate lives inside the image (fine for a local/university deployment).

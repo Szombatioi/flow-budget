@@ -1,0 +1,11 @@
+{
+  "entries": [
+    {
+      "id": "v1.0.0",
+      "title": "[v1.0.0] Initial Release",
+      "description": "First release of FlowBudget. Core features: account management, income and fixed expense tracking, pocket-based daily budgeting, and expenditure logging.",
+      "date": "2026-04-24T00:00:00Z",
+      "category": "release"
+    }
+  ]
+}
