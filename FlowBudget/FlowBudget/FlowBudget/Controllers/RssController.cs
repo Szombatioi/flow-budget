@@ -1,20 +1,17 @@
+using FlowBudget.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace FlowBudget.Controllers;
 
 [AllowAnonymous]
 [Route("rss")]
 [ApiController]
-public class RssController(IWebHostEnvironment env, ILogger<RssController> logger) : ControllerBase
+public class RssController(ILogger<RssController> logger) : ControllerBase
 {
-    // changelog.json lives in the Data/ directory (same Docker volume as the DB)
-    // so entries can be added without rebuilding the image.
-    private static readonly string ChangelogPath =
-        Path.Combine("Data", "changelog.json");
+    internal static readonly string ChangelogPath = Path.Combine("Data", "changelog.json");
 
     [HttpGet]
     public async Task<IActionResult> GetFeed()
@@ -23,9 +20,7 @@ public class RssController(IWebHostEnvironment env, ILogger<RssController> logge
 
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var feedUrl = $"{baseUrl}/rss";
-        var lastBuild = entries.Count > 0
-            ? entries.Max(e => e.Date)
-            : DateTime.UtcNow;
+        var lastBuild = entries.Count > 0 ? entries.Max(e => e.Date) : DateTime.UtcNow;
 
         var sb = new StringBuilder();
         sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -56,11 +51,11 @@ public class RssController(IWebHostEnvironment env, ILogger<RssController> logge
         return Content(sb.ToString(), "application/rss+xml", Encoding.UTF8);
     }
 
-    private async Task<List<ChangelogEntry>> LoadEntries()
+    internal static async Task<List<ChangelogEntry>> LoadEntries(ILogger? logger = null)
     {
         if (!System.IO.File.Exists(ChangelogPath))
         {
-            logger.LogWarning("changelog.json not found at {Path} — serving empty feed", ChangelogPath);
+            logger?.LogWarning("changelog.json not found at {Path} — serving empty feed", ChangelogPath);
             return [];
         }
 
@@ -73,7 +68,7 @@ public class RssController(IWebHostEnvironment env, ILogger<RssController> logge
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to parse changelog.json");
+            logger?.LogError(ex, "Failed to parse changelog.json");
             return [];
         }
     }
@@ -84,20 +79,4 @@ public class RssController(IWebHostEnvironment env, ILogger<RssController> logge
             .Replace("<", "&lt;")
             .Replace(">", "&gt;")
             .Replace("\"", "&quot;");
-
-    private sealed class ChangelogFile
-    {
-        public List<ChangelogEntry> Entries { get; set; } = [];
-    }
-
-    private sealed class ChangelogEntry
-    {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public DateTime Date { get; set; }
-
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public string Category { get; set; } = "release";
-    }
 }

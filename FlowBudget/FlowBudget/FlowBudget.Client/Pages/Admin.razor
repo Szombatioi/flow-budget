@@ -1,0 +1,122 @@
+@page "/admin"
+@using DTO
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "AdminOnly")]
+@rendermode InteractiveWebAssembly
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12" sm="10" md="7" lg="6">
+
+        <MudText Typo="Typo.h5" Class="mb-6" Style="font-weight:700;">Admin Panel</MudText>
+
+        @* ── RSS Entry Form ── *@
+        <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+            <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">Publish RSS Update</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+                This will prepend a new entry to the RSS feed at <code>/rss</code>.
+            </MudText>
+
+            <MudTextField @bind-Value="_entry.Id"
+                          Label="Version / ID"
+                          Placeholder="e.g. v1.2.0 or hotfix-2026-05-04"
+                          Variant="Variant.Filled"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_entry.Title"
+                          Label="Title *"
+                          Placeholder="e.g. [v1.2.0] Receipt scanning"
+                          Variant="Variant.Filled"
+                          Required
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_entry.Description"
+                          Label="Description *"
+                          Placeholder="What changed, what was fixed, or current status…"
+                          Variant="Variant.Filled"
+                          Lines="4"
+                          Required
+                          Class="mb-3" />
+
+            <MudDatePicker @bind-Date="_pickedDate"
+                           Label="Date"
+                           Variant="Variant.Filled"
+                           Class="mb-3"
+                           DateFormat="yyyy-MM-dd" />
+
+            <MudSelect @bind-Value="_entry.Category"
+                       Label="Category"
+                       Variant="Variant.Filled"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Class="mb-5">
+                <MudSelectItem Value=@("release")>Release</MudSelectItem>
+                <MudSelectItem Value=@("hotfix")>Hotfix</MudSelectItem>
+                <MudSelectItem Value=@("status")>Status</MudSelectItem>
+                <MudSelectItem Value=@("maintenance")>Maintenance</MudSelectItem>
+            </MudSelect>
+
+            <div class="d-flex align-center gap-3">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Publish"
+                           OnClick="Submit"
+                           Disabled="_submitting"
+                           Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
+                    @(_submitting ? "Publishing…" : "Publish")
+                </MudButton>
+                <MudButton Variant="Variant.Text"
+                           Href="/rss"
+                           Target="_blank"
+                           StartIcon="@Icons.Material.Filled.RssFeed"
+                           Style="text-transform:none;">
+                    Preview feed
+                </MudButton>
+            </div>
+        </MudPaper>
+
+    </MudItem>
+</MudGrid>
+
+@code {
+    private RssEntryDTO _entry = new() { Category = "release", Date = DateTime.UtcNow };
+    private DateTime? _pickedDate = DateTime.UtcNow;
+    private bool _submitting;
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_entry.Title) || string.IsNullOrWhiteSpace(_entry.Description))
+        {
+            Snackbar.Add("Title and Description are required.", Severity.Warning);
+            return;
+        }
+
+        _entry.Date = _pickedDate?.ToUniversalTime() ?? DateTime.UtcNow;
+
+        _submitting = true;
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/admin/rss", _entry);
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add("RSS entry published successfully.", Severity.Success);
+                _entry = new RssEntryDTO { Category = "release", Date = DateTime.UtcNow };
+                _pickedDate = DateTime.UtcNow;
+            }
+            else
+            {
+                var error = await res.Content.ReadAsStringAsync();
+                Snackbar.Add($"Failed: {error}", Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Something went wrong.", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+}

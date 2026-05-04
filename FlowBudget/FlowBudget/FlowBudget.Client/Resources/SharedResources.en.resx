@@ -530,6 +530,18 @@
   <data name="nav_settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="nav_admin" xml:space="preserve">
+    <value>Admin</value>
+  </data>
+  <data name="settings_rss_section" xml:space="preserve">
+    <value>RSS Feed</value>
+  </data>
+  <data name="settings_rss_hint" xml:space="preserve">
+    <value>Subscribe to stay updated on app releases and status changes.</value>
+  </data>
+  <data name="settings_rss_button" xml:space="preserve">
+    <value>Open RSS Feed</value>
+  </data>
   <data name="settings_profile_section" xml:space="preserve">
     <value>Profile</value>
   </data>

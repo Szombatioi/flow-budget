@@ -66,8 +66,7 @@ else
                     @(_savingPassword ? L["saving"] : L["settings_change_password"])
                 </MudButton>
             </MudPaper>
-
-            @* ── Preferences ── *@
+            
             <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
                 <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_preferences_section"]</MudText>
 
@@ -99,8 +98,7 @@ else
                     @(_savingPreferences ? L["saving"] : L["save"])
                 </MudButton>
             </MudPaper>
-
-            @* ── API Key ── *@
+            
             <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
                 <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">@L["settings_api_key_section"]</MudText>
                 <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">@L["settings_api_key_hint"]</MudText>
@@ -148,6 +146,18 @@ else
                     </div>
                 }
             </MudPaper>
+            
+            <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">@L["settings_rss_section"]</MudText>
+                <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">@L["settings_rss_hint"]</MudText>
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.RssFeed"
+                           Href="/rss"
+                           Target="_blank"
+                           Style="text-transform:none; border-radius:20px; padding:8px 28px;">
+                    @L["settings_rss_button"]
+                </MudButton>
+            </MudPaper>
 
         </MudItem>
     </MudGrid>
@@ -155,27 +165,23 @@ else
 
 @code {
     private UserSettingsDTO? _settings;
-
-    // Profile
+    
     private string _userName = string.Empty;
     private bool _savingProfile;
-
-    // Security
+    
     private string _currentPassword = string.Empty;
     private string _newPassword = string.Empty;
     private string _confirmPassword = string.Empty;
     private bool _savingPassword;
-
-    // Preferences
-    private bool _isDarkMode;          // drives the switch; source of truth while on this page
-    private string _selectedTheme => _isDarkMode ? "dark" : "light";
+    
+    private bool _isDarkMode;
+    private string SelectedTheme => _isDarkMode ? "dark" : "light";
     private string _selectedLanguage = "en";
     private bool _savingPreferences;
-
-    // API Key
+    
     private bool _apiKeyRevealed;
-    private string _apiKeyPassword = string.Empty;      // password used to reveal
-    private string _apiKeySavePassword = string.Empty;  // password used to save
+    private string _apiKeyPassword = string.Empty;
+    private string _apiKeySavePassword = string.Empty;
     private string? _apiKeyValue;
     private bool _revealingApiKey;
     private bool _savingApiKey;
@@ -250,7 +256,6 @@ else
     private void OnThemeSwitchChanged(bool isDark)
     {
         _isDarkMode = isDark;
-        // Apply the theme live — MainLayout reacts via ThemeService.OnThemeChanged
         ThemeService.SetDarkMode(isDark);
     }
 
@@ -262,7 +267,7 @@ else
         {
             var res = await Http.PutAsJsonAsync("api/user/preferences", new UpdatePreferencesDTO
             {
-                Theme = _selectedTheme,
+                Theme = SelectedTheme,
                 Language = _selectedLanguage
             });
             if (res.IsSuccessStatusCode)
@@ -270,7 +275,7 @@ else
                 Snackbar.Add(L["settings_preferences_saved"], Severity.Success);
                 if (_settings != null)
                 {
-                    _settings.Theme = _selectedTheme;
+                    _settings.Theme = SelectedTheme;
                     _settings.Language = _selectedLanguage;
                 }
 

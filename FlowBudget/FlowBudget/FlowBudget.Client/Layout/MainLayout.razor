@@ -83,6 +83,14 @@
                             OnClick="@(() => PageChanged("nav_statistics", "/statistics"))">
                     @L["nav_statistics"]
                 </MudNavLink>
+                @if (_isAdmin)
+                {
+                    <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                OnClick="@(() => PageChanged("nav_admin", "/admin"))">
+                        @L["nav_admin"]
+                    </MudNavLink>
+                }
             </div>
 
             <div>
@@ -117,6 +125,7 @@
 
     private string appBarTitle = "Dashboard"; //TODO: make a dictionary with URL-title pairs and use them here (OnInitializedAsync method)
     private bool _open = true;
+    private bool _isAdmin;
     private readonly bool _overlayAutoClose = false;
 
     private void ToggleDrawer()
@@ -168,6 +177,8 @@
 
         var authState = await AuthStateTask;
         if (authState.User.Identity?.IsAuthenticated != true) return;
+
+        _isAdmin = authState.User.HasClaim("admin", "true");
 
         try
         {

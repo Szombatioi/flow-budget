@@ -55,7 +55,10 @@ try
 
     builder.Services.AddRazorComponents()
         .AddInteractiveWebAssemblyComponents()
-        .AddAuthenticationStateSerialization();
+        // SerializeAllClaims: include custom claims (e.g. "admin") in the state
+        // that is passed from the server to the Blazor WASM client.
+        // Without this, only standard name/role claims are forwarded.
+        .AddAuthenticationStateSerialization(o => o.SerializeAllClaims = true);
 
     builder.Services.AddCascadingAuthenticationState();
     builder.Services.AddScoped<IdentityRedirectManager>();
@@ -94,7 +97,10 @@ try
                 c.LoginPath = "/auth/login";
             });
         });
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin", "true"));
+    });
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -106,6 +112,11 @@ try
         {
             options.SignIn.RequireConfirmedAccount = false;
             options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+            // Relaxed so the seeded admin account can use the simple "admin" password.
+            options.Password.RequireDigit = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 4;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddSignInManager()
@@ -204,7 +215,10 @@ try
         .AddInteractiveWebAssemblyRenderMode()
         .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
     app.MapAdditionalIdentityEndpoints();
-    app.MapControllers();
+    // DisableAntiforgery: Blazor's antiforgery middleware applies globally and would
+    // otherwise block API controller requests (including anonymous GET endpoints like /rss).
+    // Controllers handle their own authorization via [Authorize]/[AllowAnonymous].
+    app.MapControllers().DisableAntiforgery();
 
     // ── DB migrations ─────────────────────────────────────────────────────────
     // Apply EF Core migrations at startup so containers always run with the latest schema.
@@ -262,6 +276,10 @@ try
         Log.Information("Seeding categories...");
         await seederService.SeedCategories();
         Log.Information("Categories seeded");
+
+        Log.Information("Seeding admin user...");
+        await seederService.SeedAdminUser();
+        Log.Information("Admin user seeded");
     }
 
     await app.RunAsync();
