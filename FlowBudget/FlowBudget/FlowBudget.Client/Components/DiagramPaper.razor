@@ -1,0 +1,103 @@
+@using FlowBudget.Client.Components.Diagrams
+@using FlowBudget.Client.Components.Helpers
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+@if (DiagramType != null)
+{
+    <MudPaper Elevation="4" Class="py-2 px-4 d-flex flex-column"
+              Style="height: 100%; max-height: 100%; width: 100%; border-radius: 16px; overflow: hidden;">
+        <div class="flex-grow-1 d-flex justify-center align-center" style="min-height: 0;">
+            <DynamicComponent Type="DiagramType" Parameters="DiagramParameters"/>
+        </div>
+        
+        <MudDivider Class="my-4" />
+        <MudStack Row="true" Spacing="4" Class="flex-grow-0 mt-auto" AlignItems="AlignItems.Center">
+
+            @* Pocket selector *@
+            <MudSelect T="PocketDTO" Label="Pocket" @bind-Value="SelectedPocket" Variant="Variant.Outlined" Dense="true">
+                @foreach (var pocket in Pockets)
+                {
+                    <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* ViewMode *@
+            <MudSelect T="ChartViewMode" Label="@(L["view_mode"])" @bind-Value="ViewMode" Variant="Variant.Outlined" Dense="true">
+                @foreach (ChartViewMode item in Enum.GetValues(typeof(ChartViewMode)))
+                {
+                    <MudSelectItem Value="@item">@item.ToTitle(L)</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Date *@
+            <MudDatePicker Label="@(L["date"])" @bind-Date="SelectedDate" Variant="Variant.Outlined" Editable="true" Dense="true" />
+
+        </MudStack>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public required List<PocketDTO> Pockets { get; set; }
+    [Parameter] public Type? DiagramType { get; set; }
+    // [Parameter] 
+    public IDictionary<string, object>? DiagramParameters { get; set; }
+    
+    private PocketDTO? _selectedPocket;
+    public PocketDTO? SelectedPocket 
+    { 
+        get => _selectedPocket; 
+        set 
+        { 
+            if (_selectedPocket == value) return;
+            _selectedPocket = value;
+            UpdateParameters(); // Refresh dict when pocket changes
+        } 
+    }
+    
+    private ChartViewMode _viewMode = ChartViewMode.Weekly;
+    public ChartViewMode ViewMode
+    {
+        get => _viewMode;
+        set
+        {
+            if (_viewMode == value) return;
+            _viewMode = value;
+            UpdateParameters();
+        }
+    }
+
+    private DateTime? _selectedDate = DateTime.Today;
+    public DateTime? SelectedDate
+    {
+        get => _selectedDate;
+        set
+        {
+            if (_selectedDate == value) return;
+            _selectedDate = value;
+            UpdateParameters();
+        }
+    }
+    
+    
+
+    protected override void OnParametersSet()
+    {
+        if (SelectedPocket == null && Pockets?.Any() == true)
+        {
+            SelectedPocket = Pockets[0];
+        }
+        
+        UpdateParameters();
+    }
+    
+    private void UpdateParameters()
+    {
+        if (SelectedPocket == null || _selectedDate == null) return;
+
+        DiagramParameters = new Dictionary<string, object> {
+            { "PocketId", SelectedPocket.Id },
+            { "ViewMode", _viewMode },
+            { "Date", _selectedDate.Value },
+        };
+    }
+}

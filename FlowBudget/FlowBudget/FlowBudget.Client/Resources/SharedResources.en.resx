@@ -533,6 +533,18 @@
   <data name="nav_admin" xml:space="preserve">
     <value>Admin</value>
   </data>
+  <data name="chart_daily_spending" xml:space="preserve">
+    <value>Daily Spending</value>
+  </data>
+  <data name="chart_no_data" xml:space="preserve">
+    <value>No data for this period</value>
+  </data>
+  <data name="chart_uncategorized" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
+  <data name="chart_category_breakdown" xml:space="preserve">
+    <value>Category Breakdown</value>
+  </data>
   <data name="settings_rss_section" xml:space="preserve">
     <value>RSS Feed</value>
   </data>
@@ -667,5 +679,20 @@
   </data>
   <data name="relative_daily_limit" xml:space="preserve">
     <value>Relative daily limit</value>
+  </data>
+  <data name="pocket_empty_error" xml:space="preserve">
+    <value>You must provide a pocket!</value>
+  </data>
+  <data name="diagram_invalid_view_mode_error" xml:space="preserve">
+    <value>Invalid ViewMode selected!</value>
+  </data>
+  <data name="view_mode_weekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="view_mode_monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="view_mode" xml:space="preserve">
+    <value>View mode</value>
   </data>
 </root>

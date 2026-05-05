@@ -1,0 +1,91 @@
+@using global::DTO
+@using FlowBudget.Client.Components.Helpers
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+
+<div style="width: 100%; padding: 16px;">
+    @if (_hasData)
+    {
+        <MudChart T="double" ChartType="ChartType.Donut"
+                  ChartSeries="@_series"
+                  ChartLabels="@_labels"
+                  ChartOptions="_chartOptions"
+                  Width="100%" Height="280px" />
+    }
+    else if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <MudText Align="Align.Center" Typo="Typo.body2" Class="pa-8 mud-text-secondary">
+            @L["chart_no_data"]
+        </MudText>
+    }
+</div>
+
+@code {
+
+    [Parameter] public ChartViewMode ViewMode { get; set; } = ChartViewMode.Weekly;
+    [Parameter] public DateTime Date { get; set; } = DateTime.Today;
+    [Parameter] public string PocketId { get; set; } = "";
+
+    private bool _loading = true;
+    private bool _hasData;
+    private List<ChartSeries<double>> _series = [];
+    private string[] _labels = [];
+
+    private readonly DonutChartOptions _chartOptions = new()
+    {
+        ShowLegend = true,
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrEmpty(PocketId)) return;
+
+        _loading = true;
+        _hasData = false;
+
+        DateTime firstDay, lastDay;
+
+        if (ViewMode == ChartViewMode.Weekly)
+        {
+            var diff = (7 + (Date.DayOfWeek - DayOfWeek.Monday)) % 7;
+            firstDay = Date.AddDays(-diff).Date;
+            lastDay = firstDay.AddDays(6);
+        }
+        else if(ViewMode == ChartViewMode.Monthly)
+        {
+            firstDay = new DateTime(Date.Year, Date.Month, 1);
+            lastDay = firstDay.AddMonths(1).AddDays(-1);
+        }
+        else
+        {
+            Snackbar.Add(L["diagram_invalid_view_mode_error"], Severity.Error);
+            return;
+        }
+
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<TimeSeriesItemDTO>>(
+                $"api/daily-expenses/{PocketId}/time-series?from={firstDay:yyyy-MM-dd}&to={lastDay:yyyy-MM-dd}") ?? [];
+
+            var (labels, values) = TimeSeriesAggregator.AggregateByCategory(res, L["chart_uncategorized"]);
+
+            _labels = labels;
+            // Single series holds all slice values; ChartLabels maps each index to a label
+            _series =
+            [
+                new ChartSeries<double> { Name = L["chart_category_breakdown"], Data = values }
+            ];
+
+            _hasData = values.Length > 0;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

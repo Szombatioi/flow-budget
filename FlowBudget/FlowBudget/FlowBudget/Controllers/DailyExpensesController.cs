@@ -33,5 +33,11 @@ namespace FlowBudget.Controllers
                 return BadRequest("file_missing.");
             return await dailyExpenseService.UploadReceipt(UserId, pid, file);
         }
+
+        [HttpGet("{pid}/time-series")]
+        public async Task<ActionResult<List<TimeSeriesItemDTO>>> GetTimeSeries(string pid, [FromQuery] DateTime from, [FromQuery] DateTime to)
+        {
+            return await dailyExpenseService.GetTimeSeries(UserId, pid, from, to);
+        }
     }
 }

@@ -379,6 +379,46 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
     }
 
 
+    public async Task<List<TimeSeriesItemDTO>> GetTimeSeries(string userId, string pocketId, DateTime from, DateTime to)
+    {
+        var pocket = await db.Pockets
+            .Include(p => p.DivisionPlan)
+            .SingleOrDefaultAsync(p => p.Id == pocketId);
+        if (pocket == null) throw new NotFoundException();
+
+        var user = await db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.DivisionPlans)
+            .ThenInclude(dp => dp.Pockets)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null) throw new NotFoundException();
+
+        if (user.Accounts.All(a => a.DivisionPlans.All(dp => dp.Pockets.All(p => p.Id != pocketId))))
+            throw new UnauthorizedAccessException();
+        
+        // Materialize first to avoid SQLite APPLY limitation:
+        // accessing the parent `de.Date` inside SelectMany's inner selector
+        // forces EF Core to generate a CROSS APPLY, which SQLite doesn't support.
+        var dailyExpenses = await db.DailyExpenses
+            .Where(de => de.PocketId == pocketId
+                         && de.Date.Date >= from.Date
+                         && de.Date.Date <= to.Date)
+            .Include(de => de.Expenditures)
+            .ThenInclude(e => e.Category)
+            .ToListAsync();
+
+        return dailyExpenses
+            .SelectMany(de => de.Expenditures.Select(e => new TimeSeriesItemDTO
+            {
+                Name     = e.Name,
+                Price    = e.Price,
+                Category = e.Category?.Name,
+                Date     = de.Date
+            }))
+            .OrderBy(x => x.Date)
+            .ToList();
+    }
+
     public async Task<List<ExpenditureReceiptItemDTO>> UploadReceipt(string userId, string pocketId, IFormFile file)
     {
         var user = await db.Users

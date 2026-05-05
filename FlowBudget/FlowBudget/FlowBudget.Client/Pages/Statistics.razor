@@ -1,0 +1,57 @@
+@page "/statistics"
+@using DTO
+@using FlowBudget.Client.Components.Diagrams
+@using Microsoft.AspNetCore.Authorization
+@using FlowBudget.Client.Components
+@attribute [Authorize]
+@rendermode InteractiveWebAssembly
+@inject HttpClient Http
+
+@if (!_loaded)
+{
+    <MudProgressCircular Indeterminate="true"/>
+}
+else if (ActivePlan is not null)
+{
+    // TODO: Account selector
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            @* <MudPaper Elevation="2" Style="border-radius: 12px;"> *@
+            <DiagramPaper
+                DiagramType="typeof(BarChart)"
+                Pockets="@(ActivePlan.Pockets)"
+            />
+            @* <BarChart PocketId="@SelectedPocket.Id"/> *@
+            @* </MudPaper> *@
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <DiagramPaper
+                DiagramType="typeof(DonutChart)"
+                Pockets="@(ActivePlan.Pockets)"
+            />
+        </MudItem>
+        <MudItem xs="12">
+            <LineChartPaper Pockets="@ActivePlan.Pockets" />
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+    private DivisionPlanDTO? ActivePlan { get; set; }
+    private PocketDTO? SelectedPocket { get; set; }
+
+    private bool _loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded || UserDto is null) return;
+        _loaded = true;
+
+        var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
+        var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
+        ActivePlan = activePlan ?? null;
+        SelectedPocket = ActivePlan?.Pockets[0] ?? null;
+    }
+
+}

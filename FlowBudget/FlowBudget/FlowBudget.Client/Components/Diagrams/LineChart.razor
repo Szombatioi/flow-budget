@@ -1,0 +1,79 @@
+@using global::DTO
+@using FlowBudget.Client.Components.Helpers
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+
+<div style="width: 100%; padding: 16px;">
+    @if (_hasData)
+    {
+        <MudChart T="double" ChartType="ChartType.Line" ChartSeries="@_series"
+                  ChartLabels="@_xAxisLabels" ChartOptions="_chartOptions"
+                  Width="100%" Height="100%"
+                  MatchBoundsToSize="true"/>
+    }
+    else
+    {
+        <MudText Align="Align.Center" Typo="Typo.body2" Class="pa-8 mud-text-secondary">
+            @L["chart_no_data"]
+        </MudText>
+    }
+</div>
+
+@code {
+    [Parameter] public List<PocketDTO> Pockets { get; set; } = [];
+    [Parameter] public ChartViewMode ViewMode { get; set; } = ChartViewMode.Weekly;
+    [Parameter] public DateTime Date { get; set; } = DateTime.Today;
+
+    private bool _hasData;
+    private string[] _xAxisLabels = [];
+    private List<ChartSeries<double>> _series = [];
+    private readonly LineChartOptions _chartOptions = new() { ShowDataMarkers = true };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Pockets.Count == 0) return;
+
+        DateTime firstDay, lastDay;
+        List<DateTime> days;
+
+        if (ViewMode == ChartViewMode.Weekly)
+        {
+            var diff = (7 + (Date.DayOfWeek - DayOfWeek.Monday)) % 7;
+            firstDay = Date.AddDays(-diff).Date;
+            lastDay = firstDay.AddDays(6);
+            days = GetDaysInRange(firstDay, lastDay);
+            _xAxisLabels = days.Select(d => d.DayOfWeek.ToString()).ToArray();
+        }
+        else
+        {
+            firstDay = new DateTime(Date.Year, Date.Month, 1);
+            lastDay = firstDay.AddMonths(1).AddDays(-1);
+            days = GetDaysInRange(firstDay, lastDay);
+            _xAxisLabels = days.Select(d => d.ToString("MM.dd")).ToArray();
+        }
+
+        var fetchTasks = Pockets.Select(async pocket =>
+        {
+            var res = await Http.GetFromJsonAsync<List<TimeSeriesItemDTO>>(
+                $"api/daily-expenses/{pocket.Id}/time-series?from={firstDay:yyyy-MM-dd}&to={lastDay:yyyy-MM-dd}") ?? [];
+
+            return new ChartSeries<double>
+            {
+                Name = pocket.Name,
+                Data = TimeSeriesAggregator.AggregateByDay(res, days)
+            };
+        });
+
+        _series = (await Task.WhenAll(fetchTasks)).ToList();
+        _hasData = _series.Any(s => s.Data.Any(v => v > 0));
+    }
+
+    private List<DateTime> GetDaysInRange(DateTime start, DateTime end)
+    {
+        return Enumerable.Range(0, (end - start).Days + 1)
+            .Select(day => start.AddDays(day))
+            .ToList();
+    }
+
+}
