@@ -417,6 +417,31 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             .ToList();
     }
 
+    public async Task<List<DailyBudgetDTO>> GetBudgetSeries(string userId, string pocketId, DateTime from, DateTime to)
+    {
+        var pocket = await db.Pockets
+            .SingleOrDefaultAsync(p => p.Id == pocketId);
+        if (pocket == null) throw new NotFoundException();
+
+        var user = await db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.DivisionPlans)
+            .ThenInclude(dp => dp.Pockets)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null) throw new NotFoundException();
+
+        if (user.Accounts.All(a => a.DivisionPlans.All(dp => dp.Pockets.All(p => p.Id != pocketId))))
+            throw new UnauthorizedAccessException();
+
+        return await db.DailyExpenses
+            .Where(de => de.PocketId == pocketId
+                         && de.Date.Date >= from.Date
+                         && de.Date.Date <= to.Date)
+            .OrderBy(de => de.Date)
+            .Select(de => new DailyBudgetDTO { Date = de.Date, Amount = de.RelativeBudget })
+            .ToListAsync();
+    }
+
     public async Task<List<ExpenditureReceiptItemDTO>> UploadReceipt(string userId, string pocketId, IFormFile file)
     {
         var user = await db.Users

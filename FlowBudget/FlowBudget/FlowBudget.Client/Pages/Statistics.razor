@@ -14,7 +14,7 @@
 else if (ActivePlan is not null)
 {
     // TODO: Account selector
-    <MudGrid Class="p-4">
+    <MudGrid Class="p-2">
         <MudItem xs="12" md="6">
             @* <MudPaper Elevation="2" Style="border-radius: 12px;"> *@
             <DiagramPaper
@@ -31,7 +31,10 @@ else if (ActivePlan is not null)
             />
         </MudItem>
         <MudItem xs="12">
-            <LineChartPaper Pockets="@ActivePlan.Pockets" />
+            <LineChartPaper Pockets="@ActivePlan.Pockets"/>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <DiagramPaper DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets" />
         </MudItem>
     </MudGrid>
 }

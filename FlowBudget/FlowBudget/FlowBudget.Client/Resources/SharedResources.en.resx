@@ -545,6 +545,12 @@
   <data name="chart_category_breakdown" xml:space="preserve">
     <value>Category Breakdown</value>
   </data>
+  <data name="chart_budget_expected" xml:space="preserve">
+    <value>Expected (budget)</value>
+  </data>
+  <data name="chart_actual_spending" xml:space="preserve">
+    <value>Actual spending</value>
+  </data>
   <data name="settings_rss_section" xml:space="preserve">
     <value>RSS Feed</value>
   </data>

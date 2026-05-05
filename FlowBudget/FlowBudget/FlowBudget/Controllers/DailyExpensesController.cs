@@ -39,5 +39,11 @@ namespace FlowBudget.Controllers
         {
             return await dailyExpenseService.GetTimeSeries(UserId, pid, from, to);
         }
+
+        [HttpGet("{pid}/budget-series")]
+        public async Task<ActionResult<List<DailyBudgetDTO>>> GetBudgetSeries(string pid, [FromQuery] DateTime from, [FromQuery] DateTime to)
+        {
+            return await dailyExpenseService.GetBudgetSeries(UserId, pid, from, to);
+        }
     }
 }

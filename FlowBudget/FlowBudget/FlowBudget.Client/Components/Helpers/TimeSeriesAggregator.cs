@@ -2,6 +2,7 @@ using DTO;
 
 namespace FlowBudget.Client.Components.Helpers;
 
+
 public static class TimeSeriesAggregator
 {
     /// <summary>
@@ -59,5 +60,41 @@ public static class TimeSeriesAggregator
             groups.Select(g => g.Label ?? "").ToArray(),
             groups.Select(g => g.Value).ToArray()
         );
+    }
+
+    /// <summary>
+    /// Produces two cumulative series for a burndown chart:
+    /// - CumulativeBudget: running total of the daily relative budget (the "expected" line)
+    /// - CumulativeActual: running total of actual spending per day
+    /// Both are aligned to <paramref name="days"/> with zero-fill for missing days.
+    /// </summary>
+    public static (double[] CumulativeBudget, double[] CumulativeActual) AggregateBurndown(
+        IEnumerable<TimeSeriesItemDTO> expenditures,
+        IEnumerable<DailyBudgetDTO> budgets,
+        IEnumerable<DateTime> days)
+    {
+        var spendByDay = expenditures
+            .GroupBy(x => x.Date.Date)
+            .ToDictionary(g => g.Key, g => (double)g.Sum(x => x.Price));
+
+        var budgetByDay = budgets
+            .ToDictionary(b => b.Date.Date, b => (double)b.Amount);
+
+        var dayList = days.Select(d => d.Date).OrderBy(d => d).ToList();
+        var cumulativeBudget = new double[dayList.Count];
+        var cumulativeActual = new double[dayList.Count];
+
+        double runningBudget = 0;
+        double runningActual = 0;
+
+        for (int i = 0; i < dayList.Count; i++)
+        {
+            runningBudget += budgetByDay.TryGetValue(dayList[i], out var budget) ? budget : 0;
+            runningActual += spendByDay.TryGetValue(dayList[i], out var spend) ? spend : 0;
+            cumulativeBudget[i] = runningBudget;
+            cumulativeActual[i] = runningActual;
+        }
+
+        return (cumulativeBudget, cumulativeActual);
     }
 }
