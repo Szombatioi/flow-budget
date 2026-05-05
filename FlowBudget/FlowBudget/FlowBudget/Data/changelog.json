@@ -1,11 +1,18 @@
 {
-  "entries": [
+  "Entries": [
     {
-      "id": "v1.0.0",
-      "title": "[v1.0.0] Initial Release",
-      "description": "First release of FlowBudget. Core features: account management, income and fixed expense tracking, pocket-based daily budgeting, and expenditure logging.",
-      "date": "2026-04-24T00:00:00Z",
-      "category": "release"
+      "Id": "db-update",
+      "Title": "Switching from SQLite to MSSQL",
+      "Description": "The application will use Hangfire to schedule repeating jobs, so we had to move to MSSQL",
+      "Date": "2026-05-05T19:08:49.581Z",
+      "Category": "status"
+    },
+    {
+      "Id": "v1.0.0",
+      "Title": "[v1.0.0] Initial Release",
+      "Description": "First release of FlowBudget. Core features: account management, income and fixed expense tracking, pocket-based daily budgeting, and expenditure logging.",
+      "Date": "2026-04-24T00:00:00Z",
+      "Category": "release"
     }
   ]
 }

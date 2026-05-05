@@ -6,11 +6,12 @@
 {
     <MudPaper Elevation="4" Class="py-2 px-4 d-flex flex-column"
               Style="height: 100%; max-height: 100%; width: 100%; border-radius: 16px; overflow: hidden;">
+        @* <MudText Typo="Typo.h6" Align="Align.Center">@Title</MudText> *@
         <div class="flex-grow-1 d-flex justify-center align-center" style="min-height: 0;">
             <DynamicComponent Type="DiagramType" Parameters="DiagramParameters"/>
         </div>
-        
-        <MudDivider Class="my-4" />
+
+        <MudDivider Class="my-4"/>
         <MudStack Row="true" Spacing="4" Class="flex-grow-0 mt-auto" AlignItems="AlignItems.Center">
 
             @* Pocket selector *@
@@ -30,13 +31,14 @@
             </MudSelect>
 
             @* Date *@
-            <MudDatePicker Label="@(L["date"])" @bind-Date="SelectedDate" Variant="Variant.Outlined" Editable="true" Dense="true" />
+            <MudDatePicker Label="@(L["date"])" @bind-Date="SelectedDate" Variant="Variant.Outlined" Editable="true" Dense="true"/>
 
         </MudStack>
     </MudPaper>
 }
 
 @code {
+    // [Parameter] public required string Title { get; set; }
     [Parameter] public required List<PocketDTO> Pockets { get; set; }
     [Parameter] public Type? DiagramType { get; set; }
     // [Parameter] 

@@ -71,9 +71,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         //Choose those pockets, that are the most active:
             //They are active already in this month
             //But they are not active from the next month or so
-        // Include pocket versions created any time within (or before) the target month.
-        // Using < firstDayOfNextTargetMonth instead of <= firstDayOfTargetMonth so that
-        // mid-month pocket additions/edits (ActiveFrom = e.g. May 15) are included.
+        
         var firstDayOfNextTargetMonth = firstDayOfTargetMonth.AddMonths(1);
         var allPocketsForPlan = await db.Pockets
             .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom < firstDayOfNextTargetMonth)
@@ -97,6 +95,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
                      Date = expenseDate,
                      StartAmount = dailyExpenseAmount,
                      EoDAmount = dailyExpenseAmount,
+                     RelativeBudget = dailyExpenseAmount,
                      PocketId = pocket.Id,
                      Pocket = pocket,
                 });
@@ -176,8 +175,6 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
                          && de.Date.Month == date.Month)
             .OrderBy(de => de.Date)
             .FirstOrDefaultAsync();
-
-        dto.RelativeDailyAmount = firstOfMonth?.StartAmount ?? dto.StartAmount;
         return dto;
     }
 
@@ -222,6 +219,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             if (activate) dailyExpenses[i].IsStarted = true;
 
             dailyExpenses[i].StartAmount = dailyExpenseAmount;
+            dailyExpenses[i].RelativeBudget = dailyExpenseAmount;
 
             // Only carry EoD from the immediately preceding day if that day has been started
             // (i.e., it is a settled day). Un-started future days don't carry over, preventing
