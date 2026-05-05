@@ -6,11 +6,11 @@ using System.Security.Claims;
 
 namespace FlowBudget.Services;
 
-public class SeederService(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+public class SeederService(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IConfiguration config)
 {
-    private const string AdminUsername = "admin";
-    private const string AdminEmail    = "admin@flowbudget.local";
-    private const string AdminPassword = "admin";
+    private string AdminUsername => config["Seeder:AdminUsername"]!;
+    private string AdminEmail    => config["Seeder:AdminEmail"]!;
+    private string AdminPassword => config["Seeder:AdminPassword"]!;
 
     public async Task SeedAdminUser()
     {

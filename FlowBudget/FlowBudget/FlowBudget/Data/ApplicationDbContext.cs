@@ -63,7 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasOne(e => e.DailyExpense)
             .WithMany(de => de.Expenditures)
             .HasForeignKey(e => e.DailyExpenseId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Expenditure>()
             .HasOne(e => e.Category)

@@ -13,6 +13,7 @@ using MudBlazor.Services;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Text.Json;
+using Hangfire;
 
 // ── Serilog: bootstrap logger for startup errors, replaced by full logger after Build() ──
 Log.Logger = new LoggerConfiguration()
@@ -105,7 +106,7 @@ try
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(connectionString));
+        options.UseSqlServer(connectionString));
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
     builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -159,6 +160,14 @@ try
         .AddDbContextCheck<ApplicationDbContext>("database",
             tags: ["ready"]);
 
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    builder.Services.AddHangfireServer();
+    
     // ── Pipeline ──────────────────────────────────────────────────────────────
 
     var app = builder.Build();
@@ -227,42 +236,42 @@ try
     // __EFMigrationsHistory table, which would cause MigrateAsync() to fail trying to
     // re-create tables that already exist.  In that case we delete and recreate the DB
     // from scratch using migrations (acceptable for a dev/container environment).
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Log.Information("Applying database migrations...");
-        try
-        {
-            var conn = db.Database.GetDbConnection();
-            await conn.OpenAsync();
-            await using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText =
-                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-                var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
-
-                if (!hasMigrationTable)
-                {
-                    Log.Warning(
-                        "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
-                    await conn.CloseAsync();
-                    await db.Database.EnsureDeletedAsync();
-                }
-                else
-                {
-                    await conn.CloseAsync();
-                }
-            }
-
-            await db.Database.MigrateAsync();
-            Log.Information("Database migrations applied successfully");
-        }
-        catch (Exception ex)
-        {
-            Log.Fatal(ex, "Failed to apply database migrations");
-            throw;
-        }
-    }
+    // using (var scope = app.Services.CreateScope())
+    // {
+    //     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    //     Log.Information("Applying database migrations...");
+    //     try
+    //     {
+    //         var conn = db.Database.GetDbConnection();
+    //         await conn.OpenAsync();
+    //         await using (var cmd = conn.CreateCommand())
+    //         {
+    //             cmd.CommandText =
+    //                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
+    //             var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
+    //
+    //             if (!hasMigrationTable)
+    //             {
+    //                 Log.Warning(
+    //                     "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
+    //                 await conn.CloseAsync();
+    //                 await db.Database.EnsureDeletedAsync();
+    //             }
+    //             else
+    //             {
+    //                 await conn.CloseAsync();
+    //             }
+    //         }
+    //
+    //         await db.Database.MigrateAsync();
+    //         Log.Information("Database migrations applied successfully");
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Log.Fatal(ex, "Failed to apply database migrations");
+    //         throw;
+    //     }
+    // }
 
     // ── Seeding ───────────────────────────────────────────────────────────────
     using (var scope = app.Services.CreateScope())
