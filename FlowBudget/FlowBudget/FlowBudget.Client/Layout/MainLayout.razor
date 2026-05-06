@@ -60,52 +60,63 @@
                 <MudText Typo="Typo.subtitle1">@L["slogan"]</MudText>
             </MudHidden>
         </MudDrawerHeader>
-        <MudNavMenu Class="mt-4 h-100 d-flex flex-column justify-space-between"
-                    Style="background: transparent;">
-            <div>
-                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.Dashboard"
-                            OnClick="@(() => PageChanged("nav_dashboard", "/"))">
-                    @L["nav_dashboard"]
-                </MudNavLink>
-                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.AccountBalanceWallet"
-                            OnClick="@(() => PageChanged("nav_accounts", "/accounts"))">
-                    @L["nav_accounts"]
-                </MudNavLink>
-                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.SettingsSuggest"
-                            OnClick="@(() => PageChanged("nav_planning_and_setup", "/plan"))">
-                    @L["nav_planning_and_setup"]
-                </MudNavLink>
-                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.BarChart"
-                            OnClick="@(() => PageChanged("nav_statistics", "/statistics"))">
-                    @L["nav_statistics"]
-                </MudNavLink>
-            </div>
+        <AuthorizeView>
+            <Authorized>
+                <MudNavMenu Class="mt-4 h-100 d-flex flex-column justify-space-between"
+                            Style="background: transparent;">
+                    <div>
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Dashboard"
+                                    OnClick="@(() => PageChanged("nav_dashboard", "/"))">
+                            @L["nav_dashboard"]
+                        </MudNavLink>
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                                    OnClick="@(() => PageChanged("nav_accounts", "/accounts"))">
+                            @L["nav_accounts"]
+                        </MudNavLink>
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.SettingsSuggest"
+                                    OnClick="@(() => PageChanged("nav_planning_and_setup", "/plan"))">
+                            @L["nav_planning_and_setup"]
+                        </MudNavLink>
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.BarChart"
+                                    OnClick="@(() => PageChanged("nav_statistics", "/statistics"))">
+                            @L["nav_statistics"]
+                        </MudNavLink>
+                    </div>
 
-            <div>
-                @if (_isAdmin)
-                {
-                    <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                                Icon="@Icons.Material.Filled.AdminPanelSettings"
-                                OnClick="@(() => PageChanged("nav_admin", "/admin"))">
-                        @L["nav_admin"]
-                    </MudNavLink>
-                }
+                    <div>
+                        @if (_isAdmin)
+                        {
+                            <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                        Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                        OnClick="@(() => PageChanged("nav_admin", "/admin"))">
+                                @L["nav_admin"]
+                            </MudNavLink>
+                        }
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Settings"
+                                    OnClick="@(() => PageChanged("nav_settings", "/settings"))">
+                            @L["nav_settings"]
+                        </MudNavLink>
+                        <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
+                                    Icon="@Icons.Material.Filled.Logout"
+                                    OnClick="@(() => Logout())">
+                            @L["nav_logout"]
+                        </MudNavLink>
+                    </div>
+                </MudNavMenu>
+            </Authorized>
+            <NotAuthorized>
                 <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
                             Icon="@Icons.Material.Filled.Settings"
-                            OnClick="@(() => PageChanged("nav_settings", "/settings"))">
-                    @L["nav_settings"]
+                            OnClick="@(() => PageChanged("nav_login", "/auth/login"))">
+                    @L["nav_login"]
                 </MudNavLink>
-                <MudNavLink Class="p-1 ml-1" Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Filled.Logout"
-                            OnClick="@(() => Logout())">
-                    @L["nav_logout"]
-                </MudNavLink>
-            </div>
-        </MudNavMenu>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudDrawer>
 
     <MudMainContent>

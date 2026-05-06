@@ -14,6 +14,8 @@ using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Text.Json;
 using Hangfire;
+using Hangfire.Common;
+using Hangfire.States;
 
 // ── Serilog: bootstrap logger for startup errors, replaced by full logger after Build() ──
 Log.Logger = new LoggerConfiguration()
@@ -43,13 +45,14 @@ try
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "FlowBudget")
         .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-        theme: AnsiConsoleTheme.Code)
+            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+            theme: AnsiConsoleTheme.Code)
         .WriteTo.File(
             path: "logs/flowbudget-.log",
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 30,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+            outputTemplate:
+            "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
         .ReadFrom.Configuration(ctx.Configuration));
 
     // ── Services ──────────────────────────────────────────────────────────────
@@ -65,10 +68,7 @@ try
     builder.Services.AddScoped<IdentityRedirectManager>();
 
     var baseUrl = builder.Configuration["ApiSettings:BaseUrl"];
-    builder.Services.AddHttpClient("APIClient", client =>
-    {
-        client.BaseAddress = new Uri(baseUrl);
-    });
+    builder.Services.AddHttpClient("APIClient", client => { client.BaseAddress = new Uri(baseUrl); });
 
     // List of injectable services
     builder.Services.AddTransient<UserService>();
@@ -83,6 +83,7 @@ try
     builder.Services.AddTransient<CategoryService>();
     builder.Services.AddTransient<SeederService>();
     builder.Services.AddTransient<LlmHandler>();
+    builder.Services.AddTransient<EmailService>();
 
     builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
@@ -91,13 +92,7 @@ try
             options.DefaultScheme = IdentityConstants.ApplicationScheme;
             options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
         })
-        .AddIdentityCookies(o =>
-        {
-            o.ApplicationCookie?.Configure(c =>
-            {
-                c.LoginPath = "/auth/login";
-            });
-        });
+        .AddIdentityCookies(o => { o.ApplicationCookie?.Configure(c => { c.LoginPath = "/auth/login"; }); });
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin", "true"));
@@ -154,8 +149,7 @@ try
                 .AllowAnyHeader();
         });
     });
-
-    // ── Health Checks ─────────────────────────────────────────────────────────
+    
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>("database",
             tags: ["ready"]);
@@ -167,9 +161,8 @@ try
         .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddHangfireServer();
+    builder.Services.AddHostedService<HangfireJobRegistrationService>();
     
-    // ── Pipeline ──────────────────────────────────────────────────────────────
-
     var app = builder.Build();
 
     // Global exception logger — must be first so it wraps the entire pipeline
@@ -202,31 +195,24 @@ try
     app.UseAuthorization();
 
     app.UseAntiforgery();
-
-    // ── Health endpoints (no auth required — for monitoring tools) ────────────
+    
     app.MapHealthChecks("/health", new HealthCheckOptions
     {
-        // Simple liveness — returns Healthy as long as the process is up
         Predicate = _ => false,
         ResponseWriter = WriteHealthJson
     }).AllowAnonymous();
 
     app.MapHealthChecks("/health/ready", new HealthCheckOptions
     {
-        // Readiness — includes DB ping
         Predicate = check => check.Tags.Contains("ready"),
         ResponseWriter = WriteHealthJson
     }).AllowAnonymous();
-
-    // ── Static / Blazor ───────────────────────────────────────────────────────
+    
     app.MapStaticAssets();
     app.MapRazorComponents<App>()
         .AddInteractiveWebAssemblyRenderMode()
         .AddAdditionalAssemblies(typeof(FlowBudget.Client._Imports).Assembly);
     app.MapAdditionalIdentityEndpoints();
-    // DisableAntiforgery: Blazor's antiforgery middleware applies globally and would
-    // otherwise block API controller requests (including anonymous GET endpoints like /rss).
-    // Controllers handle their own authorization via [Authorize]/[AllowAnonymous].
     app.MapControllers().DisableAntiforgery();
 
     // ── DB migrations ─────────────────────────────────────────────────────────
@@ -273,7 +259,7 @@ try
     //     }
     // }
 
-    // ── Seeding ───────────────────────────────────────────────────────────────
+    // Seeding
     using (var scope = app.Services.CreateScope())
     {
         var seederService = scope.ServiceProvider.GetRequiredService<SeederService>();
@@ -291,6 +277,8 @@ try
         Log.Information("Admin user seeded");
     }
 
+    app.MapHangfireDashboard("/hangfire");
+    
     await app.RunAsync();
 }
 catch (Exception ex) when (ex is not HostAbortedException)
@@ -302,7 +290,7 @@ finally
     await Log.CloseAndFlushAsync();
 }
 
-// ── Health check JSON response writer ─────────────────────────────────────────
+// Health check JSON response writer
 static Task WriteHealthJson(HttpContext ctx, Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport report)
 {
     ctx.Response.ContentType = "application/json";

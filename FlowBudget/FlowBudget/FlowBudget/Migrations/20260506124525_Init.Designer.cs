@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlowBudget.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260505184947_InitialSQLServer")]
-    partial class InitialSQLServer
+    [Migration("20260506124525_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,6 +63,9 @@ namespace FlowBudget.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("NotificationsEnabled")
+                        .HasColumnType("bit");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
@@ -186,6 +189,9 @@ namespace FlowBudget.Migrations
                     b.Property<string>("PocketId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("RelativeBudget")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("StartAmount")
                         .HasColumnType("decimal(18,2)");

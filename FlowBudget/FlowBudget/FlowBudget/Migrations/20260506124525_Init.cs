@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FlowBudget.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSQLServer : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,6 +33,7 @@ namespace FlowBudget.Migrations
                     ApiKey = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Theme = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Language = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NotificationsEnabled = table.Column<bool>(type: "bit", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -331,6 +332,7 @@ namespace FlowBudget.Migrations
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
                     StartAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     EoDAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    RelativeBudget = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PocketId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     IsStarted = table.Column<bool>(type: "bit", nullable: false)
                 },
