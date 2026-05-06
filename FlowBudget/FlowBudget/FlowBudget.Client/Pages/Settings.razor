@@ -31,6 +31,7 @@ else
                               Variant="Variant.Filled"
                               ReadOnly="true"
                               Class="mb-4" />
+                <MudSwitch T="bool" Label="@(L["enable_notifications"])" @bind-Value="notificationsEnabled"/>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            OnClick="SaveProfile"
@@ -167,6 +168,7 @@ else
     private UserSettingsDTO? _settings;
     
     private string _userName = string.Empty;
+    private bool notificationsEnabled;
     private bool _savingProfile;
     
     private string _currentPassword = string.Empty;
@@ -197,6 +199,8 @@ else
         {
             _settings = await Http.GetFromJsonAsync<UserSettingsDTO>("api/user/settings");
             _userName = _settings?.UserName ?? string.Empty;
+            notificationsEnabled = _settings?.NotificationsEnabled ?? false;
+            Console.WriteLine($"Notifications: {_settings?.NotificationsEnabled}");
             _isDarkMode = (_settings?.Theme ?? "light") == "dark";
             _selectedLanguage = _settings?.Language ?? "en";
         }
@@ -211,7 +215,7 @@ else
         _savingProfile = true;
         try
         {
-            var res = await Http.PutAsJsonAsync("api/user/profile", new UpdateProfileDTO { UserName = _userName });
+            var res = await Http.PutAsJsonAsync("api/user/profile", new UpdateProfileDTO { UserName = _userName, NotificationsEnabled = notificationsEnabled});
             if (res.IsSuccessStatusCode)
                 Snackbar.Add(L["settings_profile_saved"], Severity.Success);
             else

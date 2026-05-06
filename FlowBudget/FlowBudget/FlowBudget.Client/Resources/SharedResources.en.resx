@@ -701,4 +701,7 @@
   <data name="view_mode" xml:space="preserve">
     <value>View mode</value>
   </data>
+  <data name="enable_notifications" xml:space="preserve">
+    <value>Enable email notifications</value>
+  </data>
 </root>

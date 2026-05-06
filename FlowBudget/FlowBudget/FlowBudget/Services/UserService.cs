@@ -36,6 +36,7 @@ public class UserService(ApplicationDbContext db, UserManager<ApplicationUser> u
         return new UserSettingsDTO
         {
             UserName = user.UserName ?? string.Empty,
+            NotificationsEnabled = user.NotificationsEnabled,
             Email = user.Email ?? string.Empty,
             Theme = user.Theme,
             Language = user.Language,
@@ -48,12 +49,22 @@ public class UserService(ApplicationDbContext db, UserManager<ApplicationUser> u
         var user = await userManager.FindByIdAsync(userId);
         if (user == null) throw new NotFoundException();
 
-        var result = await userManager.SetUserNameAsync(user, dto.UserName);
-        if (!result.Succeeded)
+        if (dto.UserName != null && dto.UserName != user.UserName)
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException(errors);
+            var result = await userManager.SetUserNameAsync(user, dto.UserName);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException(errors);
+            }
         }
+
+        if (dto.NotificationsEnabled != null)
+        {
+            user.NotificationsEnabled = dto.NotificationsEnabled.Value;
+            await db.SaveChangesAsync();
+        }
+
     }
 
     public async Task ChangePassword(string userId, ChangePasswordDTO dto)
