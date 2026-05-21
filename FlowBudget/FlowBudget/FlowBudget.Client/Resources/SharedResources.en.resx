@@ -704,4 +704,7 @@
   <data name="enable_notifications" xml:space="preserve">
     <value>Enable email notifications</value>
   </data>
+  <data name="nav_login" xml:space="preserve">
+    <value>Login</value>
+  </data>
 </root>
