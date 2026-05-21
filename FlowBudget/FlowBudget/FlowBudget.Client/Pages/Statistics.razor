@@ -40,16 +40,16 @@ else
         else if (ActivePlan is not null)
         {
             <MudItem xs="12" md="6">
-                <DiagramPaper DiagramType="typeof(BarChart)" Pockets="@(ActivePlan.Pockets)"/>
+                <DiagramPaper DiagramTitle="@(L["diagram_title_bar"])" DiagramType="typeof(BarChart)" Pockets="@(ActivePlan.Pockets)"/>
             </MudItem>
             <MudItem xs="12" md="6">
-                <DiagramPaper DiagramType="typeof(DonutChart)" Pockets="@(ActivePlan.Pockets)"/>
+                <DiagramPaper DiagramTitle="@(L["diagram_title_donut"])" DiagramType="typeof(DonutChart)" Pockets="@(ActivePlan.Pockets)"/>
             </MudItem>
             <MudItem xs="12">
-                <LineChartPaper Pockets="@ActivePlan.Pockets"/>
+                <LineChartPaper DiagramTitle="@(L["diagram_title_line"])" Pockets="@ActivePlan.Pockets"/>
             </MudItem>
             <MudItem xs="12" md="6">
-                <DiagramPaper DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets"/>
+                <DiagramPaper DiagramTitle="@(L["diagram_title_burndown"])" DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets"/>
             </MudItem>
         }
         else

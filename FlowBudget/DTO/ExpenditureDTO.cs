@@ -11,6 +11,7 @@ public class ExpenditureDTO
     public string? Description { get; set; }
     // public string
     public string Currency { get; set; }
+    public CategoryDTO? Category { get; set; }
 }
 
 public class CreateExpenditureDTO

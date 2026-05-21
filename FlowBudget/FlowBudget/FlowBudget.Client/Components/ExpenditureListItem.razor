@@ -1,8 +1,13 @@
 @using FlowBudget.Client.Components.DTO
 
-<div class="py-2" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+<div class="py-2"
+     style="@RowStyle"
+     @onclick="@(() => OnClick.InvokeAsync(Expenditure))"
+     @onmouseover="@(() => _hovered = true)"
+     @onmouseout="@(() => _hovered = false)">
     <MudText Typo="Typo.h6">@Expenditure.Name</MudText>
-    <div style="display: flex; align-items: center; gap: 4px;">
+    <div style="display: flex; align-items: center; gap: 4px;"
+         @onclick:stopPropagation="true">
         <MudText Typo="Typo.h6">@Expenditure.Price @Expenditure.Currency</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                        Size="Size.Small"
@@ -18,4 +23,10 @@
     [Parameter] public ExpenditureDTO Expenditure { get; set; } = default!;
     [Parameter] public EventCallback<ExpenditureDTO> OnDelete { get; set; }
     [Parameter] public EventCallback<ExpenditureDTO> OnEdit { get; set; }
+    [Parameter] public EventCallback<ExpenditureDTO> OnClick { get; set; }
+
+    private bool _hovered;
+
+    private string RowStyle =>
+        $"display: flex; flex-direction: row; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 6px; padding: 4px 8px; background-color: {(_hovered ? "rgba(0,0,0,0.04)" : "transparent")};";
 }

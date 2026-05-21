@@ -113,7 +113,8 @@ else
         @*      *@
         @* </MudItem> *@
 
-        @* Chart + alert + expenditures — centred *@
+        @* Chart + alert + expenditures — centered *@
+        @* TODO can this be narrower to fit the two diagrams next to them? *@
         <MudItem xs="12" sm="8">
             <MudPaper Elevation="0" Class="no-hover-chart d-flex justify-center pa-2 mb-2">
                 <MudChart T="double"
@@ -161,7 +162,10 @@ else
                 
                 @foreach (var e in DailyExpense.Expenditures)
                 {
-                    <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure" OnEdit="EditExpenditure"/>
+                    <ExpenditureListItem Expenditure=e
+                                         OnDelete="DeleteExpenditure"
+                                         OnEdit="EditExpenditure"
+                                         OnClick="ShowExpenditureDetails"/>
                     if (DailyExpense.Expenditures.Last().Id != e.Id)
                     {
                         <MudDivider/>
@@ -390,6 +394,15 @@ else
         _hasAnimated = false;
         _isDataReady = false;
         await LoadDailyExpense();
+    }
+
+    private async Task ShowExpenditureDetails(ExpenditureDTO expenditure)
+    {
+        var parameters = new DialogParameters<ExpenditureDetailsDialog>
+        {
+            { x => x.Expenditure, expenditure }
+        };
+        await DialogService.ShowAsync<ExpenditureDetailsDialog>(L["expenditure_details"], parameters, _standardOptions);
     }
 
     private async Task EditExpenditure(ExpenditureDTO expenditure)

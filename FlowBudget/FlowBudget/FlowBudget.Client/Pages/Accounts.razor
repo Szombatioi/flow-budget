@@ -108,9 +108,29 @@ else
             c.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void EditAccount(AccountDTO account)
+    private async Task EditAccount(AccountDTO account)
     {
-        // TODO: open edit dialog or navigate to edit page
+        var parameters = new DialogParameters<EditAccountDialog>
+        {
+            { x => x.Account, account }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditAccountDialog>(L["edit_account"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result!.Canceled) return;
+
+        var payload = (UpdateAccountDTO)result.Data!;
+        var res = await http.PutAsJsonAsync($"api/accounts/{account.Id}", payload);
+        if (res.IsSuccessStatusCode)
+        {
+            account.Name = payload.Name;
+            Snackbar.Add(L["save_success"], Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(L["save_error"], Severity.Error);
+        }
     }
 
     private async Task DeleteAccount(AccountDTO account)

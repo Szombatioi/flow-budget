@@ -25,6 +25,13 @@ namespace FlowBudget.Controllers
             return await _accountService.GetAccounts(UserId);
         }
 
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateAccount(string id, [FromBody] UpdateAccountDTO dto)
+        {
+            await _accountService.UpdateAccount(UserId, id, dto);
+            return NoContent();
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteAccount(string id)
         {

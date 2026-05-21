@@ -1,0 +1,62 @@
+@using FlowBudget.Client.Components.DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5"><b>@L["expenditure_details"]</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudList T="string" Dense="true">
+            <MudListItem T="string">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["name"]</MudText>
+                <MudText Typo="Typo.body1">@Expenditure.Name</MudText>
+            </MudListItem>
+            <MudDivider />
+            <MudListItem T="string">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["amount"]</MudText>
+                <MudText Typo="Typo.body1">@Expenditure.Price.ToString("0.##") @Expenditure.Currency</MudText>
+            </MudListItem>
+            <MudDivider />
+            <MudListItem T="string">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["date"]</MudText>
+                <MudText Typo="Typo.body1">@Expenditure.Date.ToString("yyyy-MM-dd")</MudText>
+            </MudListItem>
+            <MudDivider />
+            <MudListItem T="string">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["category"]</MudText>
+                <MudText Typo="Typo.body1">
+                    @if (Expenditure.Category is null)
+                    {
+                        @L["chart_uncategorized"]
+                    }
+                    else if (Expenditure.Category.IsSystem)
+                    {
+                        @L[Expenditure.Category.DisplayName]
+                    }
+                    else
+                    {
+                        @Expenditure.Category.DisplayName
+                    }
+                </MudText>
+            </MudListItem>
+            <MudDivider />
+            <MudListItem T="string">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["description"]</MudText>
+                <MudText Typo="Typo.body1">
+                    @(string.IsNullOrWhiteSpace(Expenditure.Description) ? L["no_description"] : Expenditure.Description)
+                </MudText>
+            </MudListItem>
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">@L["close"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public ExpenditureDTO Expenditure { get; set; } = default!;
+
+    private void Close() => MudDialog.Close();
+}

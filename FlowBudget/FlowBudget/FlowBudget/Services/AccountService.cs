@@ -65,6 +65,23 @@ public class AccountService
             }).ToList();
     }
 
+    public async Task UpdateAccount(string UserId, string AccountId, UpdateAccountDTO dto)
+    {
+        var user = await _db.Users
+            .Include(u => u.Accounts)
+            .SingleOrDefaultAsync(u => u.Id == UserId);
+        if (user == null) throw new NotFoundException();
+
+        var account = user.Accounts.SingleOrDefault(a => a.Id == AccountId);
+        if (account == null) throw new NotFoundException();
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new InvalidOperationException("name_required");
+
+        account.Name = dto.Name.Trim();
+        await _db.SaveChangesAsync();
+    }
+
     public async Task DeleteAccount(string UserId, string AccountId)
     {
         var  user = await _db.Users

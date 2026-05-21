@@ -13,7 +13,7 @@
         <EditForm Model="@_model" OnValidSubmit="HandleLogin">
             <DataAnnotationsValidator />
 
-            <MudTextField Label="@L["email"]" @bind-Value="_model.Email" 
+            <MudTextField Label="@L["username_or_email"]" @bind-Value="_model.UsernameOrEmail"
                           Variant="Variant.Outlined" Class="mb-4" />
 
             <MudTextField Label="@L["password"]" @bind-Value="_model.Password" InputType="InputType.Password"

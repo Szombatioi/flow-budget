@@ -19,23 +19,33 @@ namespace FlowBudget.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDTO model)
         {
-            // 1. PasswordSignInAsync handles hashing, lockout, and cookie creation
+            // Resolve the user: first by username, falling back to email so the user
+            // can sign in with either identifier. PasswordSignInAsync itself only
+            // looks up by UserName, so we resolve the right UserName up front.
+            var user = await _userManager.FindByNameAsync(model.UsernameOrEmail)
+                       ?? await _userManager.FindByEmailAsync(model.UsernameOrEmail);
+
+            if (user?.UserName == null)
+            {
+                return Unauthorized("Invalid login attempt.");
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
-                model.Email, 
-                model.Password, 
-                model.RememberMe, 
+                user.UserName,
+                model.Password,
+                model.RememberMe,
                 lockoutOnFailure: false);
-    
+
             if (result.Succeeded)
             {
                 return Ok(new { Message = "Logged in successfully" });
             }
-    
+
             if (result.IsLockedOut)
             {
                 return BadRequest("Account locked.");
             }
-    
+
             return Unauthorized("Invalid login attempt.");
         }
 

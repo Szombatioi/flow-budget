@@ -41,24 +41,21 @@
 <MudLayout>
     @* Elevation 0 removes the bottom shadow that separates it from the drawer *@
     <MudAppBar Elevation="0" Class="border-b">
-        @* <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" *@
-        @*                Edge="Edge.Start" OnClick="ToggleDrawer"/> *@
-        @* <MudText Typo="Typo.h6" Class="ml-3"><b>FlowBudget</b></MudText> *@
-        @* <MudSpacer /> *@
-        <MudText Typo="Typo.h4">@appBarTitle</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit"
+                       Edge="Edge.Start" OnClick="ToggleDrawer"
+                       aria-label="@L["toggle_navigation"]" />
+        <MudText Typo="Typo.h4" Class="ml-3">@appBarTitle</MudText>
     </MudAppBar>
 
     @* ClipMode.Always ensures the AppBar stays 'above' the Drawer visually *@
     <MudDrawer @bind-Open="@_open"
-               Variant="@DrawerVariant.Mini"
+               Variant="@DrawerVariant.Temporary"
                ClipMode="DrawerClipMode.Never"
-               Overlay="false"
+               Overlay="true"
                Elevation="0">
         <MudDrawerHeader Class="d-flex flex-column">
-            <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                <MudText Typo="Typo.h5">FlowBudget</MudText>
-                <MudText Typo="Typo.subtitle1">@L["slogan"]</MudText>
-            </MudHidden>
+            <MudText Typo="Typo.h5">FlowBudget</MudText>
+            <MudText Typo="Typo.subtitle1">@L["slogan"]</MudText>
         </MudDrawerHeader>
         <AuthorizeView>
             <Authorized>
@@ -135,14 +132,11 @@
     [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
 
     private string appBarTitle = "Dashboard"; //TODO: make a dictionary with URL-title pairs and use them here (OnInitializedAsync method)
-    private bool _open = true;
+    private bool _open;
     private bool _isAdmin;
     private readonly bool _overlayAutoClose = false;
 
-    private void ToggleDrawer()
-    {
-        // _open = !_open;
-    }
+    private void ToggleDrawer() => _open = !_open;
 
     private const string LightPaletteGrey = "#F0F1F2";
 
@@ -218,6 +212,7 @@
     private void PageChanged(string title, string url)
     {
         appBarTitle = L[title];
+        _open = false;
         nav.NavigateTo(url);
         StateHasChanged();
     }

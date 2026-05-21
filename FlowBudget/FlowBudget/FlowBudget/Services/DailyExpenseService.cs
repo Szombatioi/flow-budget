@@ -144,6 +144,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
         var dailyExpense = await db.DailyExpenses
             .Include(de => de.Expenditures)
+            .ThenInclude(e => e.Category)
             .Include(de => de.Pocket)
             .ThenInclude(p => p.DivisionPlan)
             .ThenInclude(p => p.Account)
@@ -158,7 +159,13 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         if (!dailyExpense.IsStarted)
         {
             await RecalculateDailyExpenses(pocket.Id, date, activate: true);
-            var updated = await db.DailyExpenses.SingleOrDefaultAsync(e => e.Date.Date == date.Date && e.PocketId == pocket.Id);
+            var updated = await db.DailyExpenses
+                .Include(de => de.Expenditures)
+                .ThenInclude(e => e.Category)
+                .Include(de => de.Pocket)
+                .ThenInclude(p => p.DivisionPlan)
+                .ThenInclude(p => p.Account)
+                .SingleOrDefaultAsync(e => e.Date.Date == date.Date && e.PocketId == pocket.Id);
             return await MapWithRelativeAmount(updated!, pocket.Id, date);
         }
         return await MapWithRelativeAmount(dailyExpense, pocket.Id, date);
