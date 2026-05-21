@@ -129,6 +129,9 @@
     <value>Delete expenditure</value>
     <comment/>
   </data>
+  <data name="edit_expenditure" xml:space="preserve">
+    <value>Edit expenditure</value>
+  </data>
   <data name="delete_expenditure_confirm_description" xml:space="preserve">
     <value>Are you sure you want to delete this expenditure? This action cannot be undone.</value>
     <comment/>
@@ -214,6 +217,9 @@
   </data>
   <data name="select_pocket" xml:space="preserve">
     <value>Select pocket</value>
+  </data>
+  <data name="select_account" xml:space="preserve">
+    <value>Select account</value>
   </data>
   <data name="no_accounts_yet" xml:space="preserve">
     <value>You don't have any financial accounts registered to your account yet.</value>
@@ -410,6 +416,12 @@
   <data name="date" xml:space="preserve">
     <value>Date</value>
   </data>
+  <data name="previous_day" xml:space="preserve">
+    <value>Previous day</value>
+  </data>
+  <data name="next_day" xml:space="preserve">
+    <value>Next day</value>
+  </data>
   <data name="save_error" xml:space="preserve">
     <value>Could not save</value>
   </data>
@@ -448,6 +460,12 @@
   </data>
   <data name="password" xml:space="preserve">
     <value>Password</value>
+  </data>
+  <data name="repeat_password" xml:space="preserve">
+    <value>Repeat password</value>
+  </data>
+  <data name="password_mismatch" xml:space="preserve">
+    <value>Passwords do not match</value>
   </data>
   <data name="remember_me" xml:space="preserve">
     <value>Remember me</value>
@@ -644,6 +662,9 @@
   <data name="no_api_key" xml:space="preserve">
     <value>No API key is set. Add one in Settings to use receipt scanning.</value>
   </data>
+  <data name="receipt_requires_api_key" xml:space="preserve">
+    <value>Add an API key in Settings to use receipt scanning.</value>
+  </data>
   <data name="upload_fail" xml:space="preserve">
     <value>Receipt scan failed</value>
   </data>
@@ -706,5 +727,8 @@
   </data>
   <data name="nav_login" xml:space="preserve">
     <value>Login</value>
+  </data>
+  <data name="today" xml:space="preserve">
+    <value>Today</value>
   </data>
 </root>

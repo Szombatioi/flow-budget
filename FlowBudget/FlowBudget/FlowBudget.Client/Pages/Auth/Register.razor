@@ -1,4 +1,5 @@
 @page "/auth/register"
+@layout EmptyLayout
 @using System.ComponentModel.DataAnnotations
 @using FlowBudget.Client.Components.DTO
 @using DTO
@@ -28,18 +29,26 @@
                           Variant="Variant.Outlined" 
                           Class="mb-4" />
 
-            <MudTextField Label="@L["password"]" 
-                          @bind-Value="_model.Password" 
+            <MudTextField Label="@L["password"]"
+                          @bind-Value="_model.Password"
                           InputType="InputType.Password"
-                          For="@(() => _model.Password)" 
-                          Variant="Variant.Outlined" 
+                          For="@(() => _model.Password)"
+                          Variant="Variant.Outlined"
+                          Class="mb-4" />
+
+            <MudTextField Label="@L["repeat_password"]"
+                          @bind-Value="_repeatPassword"
+                          InputType="InputType.Password"
+                          Variant="Variant.Outlined"
+                          Error="@_passwordMismatch"
+                          ErrorText="@L["password_mismatch"]"
                           Class="mb-6" />
 
-            <MudButton ButtonType="ButtonType.Submit" 
-                       Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       FullWidth="true" 
-                       Size="Size.Large" 
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
                        Disabled="_loading">
                 @if (_loading) 
                 { 
@@ -57,12 +66,21 @@
 
 @code {
     private RegisterDTO _model = new();
+    private string _repeatPassword = string.Empty;
+    private bool _passwordMismatch;
     private bool _loading;
 
     private async Task HandleRegister()
     {
+        _passwordMismatch = _model.Password != _repeatPassword;
+        if (_passwordMismatch)
+        {
+            Snackbar.Add(L["password_mismatch"], Severity.Warning);
+            return;
+        }
+
         _loading = true;
-        try 
+        try
         {
             var response = await Http.PostAsJsonAsync("api/auth/register", _model);
             

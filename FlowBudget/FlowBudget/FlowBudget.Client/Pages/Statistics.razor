@@ -6,55 +6,114 @@
 @attribute [Authorize]
 @rendermode InteractiveWebAssembly
 @inject HttpClient Http
+@inject IStringLocalizer<SharedResources> L
+@inject ISnackbar Snackbar
 
 @if (!_loaded)
 {
     <MudProgressCircular Indeterminate="true"/>
 }
-else if (ActivePlan is not null)
+else
 {
-    // TODO: Account selector
     <MudGrid Class="p-2">
-        <MudItem xs="12" md="6">
-            @* <MudPaper Elevation="2" Style="border-radius: 12px;"> *@
-            <DiagramPaper
-                DiagramType="typeof(BarChart)"
-                Pockets="@(ActivePlan.Pockets)"
-            />
-            @* <BarChart PocketId="@SelectedPocket.Id"/> *@
-            @* </MudPaper> *@
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <DiagramPaper
-                DiagramType="typeof(DonutChart)"
-                Pockets="@(ActivePlan.Pockets)"
-            />
-        </MudItem>
         <MudItem xs="12">
-            <LineChartPaper Pockets="@ActivePlan.Pockets"/>
+            <MudSelect T="AccountDTO"
+                       Value="SelectedAccount"
+                       ValueChanged="OnAccountChanged!"
+                       Label="@L["select_account"]"
+                       Variant="Variant.Outlined"
+                       ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Dense="true"
+                       Style="max-width: 200px;">
+                @foreach (var account in _accounts)
+                {
+                    <MudSelectItem Value="@account">@account.Name</MudSelectItem>
+                }
+            </MudSelect>
         </MudItem>
-        <MudItem xs="12" md="6">
-            <DiagramPaper DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets" />
-        </MudItem>
+
+        @if (_planLoading)
+        {
+            <MudItem xs="12"><MudProgressCircular Indeterminate="true"/></MudItem>
+        }
+        else if (ActivePlan is not null)
+        {
+            <MudItem xs="12" md="6">
+                <DiagramPaper DiagramType="typeof(BarChart)" Pockets="@(ActivePlan.Pockets)"/>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <DiagramPaper DiagramType="typeof(DonutChart)" Pockets="@(ActivePlan.Pockets)"/>
+            </MudItem>
+            <MudItem xs="12">
+                <LineChartPaper Pockets="@ActivePlan.Pockets"/>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <DiagramPaper DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets"/>
+            </MudItem>
+        }
+        else
+        {
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Info">@L["no_plans_yet"]</MudAlert>
+            </MudItem>
+        }
     </MudGrid>
 }
 
 @code {
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? SelectedAccount { get; set; }
     private DivisionPlanDTO? ActivePlan { get; set; }
-    private PocketDTO? SelectedPocket { get; set; }
 
     private bool _loaded;
+    private bool _planLoading;
 
     protected override async Task OnParametersSetAsync()
     {
         if (_loaded || UserDto is null) return;
         _loaded = true;
 
-        var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
-        var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
-        ActivePlan = activePlan ?? null;
-        SelectedPocket = ActivePlan?.Pockets[0] ?? null;
+        try
+        {
+            _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            SelectedAccount = _accounts.FirstOrDefault();
+        }
+        catch
+        {
+            Snackbar.Add(L["error_loading_accounts"], Severity.Error);
+            return;
+        }
+
+        if (SelectedAccount != null)
+            await LoadPlan(SelectedAccount.Id);
     }
 
+    private async Task LoadPlan(string accountId)
+    {
+        _planLoading = true;
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}");
+            ActivePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
+        }
+        catch
+        {
+            Snackbar.Add(L["error_load_active_division_plan"], Severity.Error);
+            ActivePlan = null;
+        }
+        finally
+        {
+            _planLoading = false;
+        }
+    }
+
+    private async Task OnAccountChanged(AccountDTO newAccount)
+    {
+        SelectedAccount = newAccount;
+        ActivePlan = null;
+        await LoadPlan(newAccount.Id);
+    }
 }

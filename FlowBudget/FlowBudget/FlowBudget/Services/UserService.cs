@@ -25,6 +25,7 @@ public class UserService(ApplicationDbContext db, UserManager<ApplicationUser> u
             AccountIds = user.Accounts.Select(a => a.Id).ToList(),
             Theme = user.Theme,
             Language = user.Language,
+            HasApiKey = !string.IsNullOrWhiteSpace(user.ApiKey),
         };
     }
 

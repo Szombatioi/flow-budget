@@ -10,8 +10,8 @@
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject NavigationManager Nav
 @attribute [Authorize]
-@* TODO: add account selection Select element *@
 
 @if (UserDto is null || IsLoading)
 {
@@ -57,24 +57,61 @@ else
 
     <MudGrid Justify="Justify.Center" Spacing="0">
 
-        @* Pocket selector — full-width row, select constrained to left *@
-        <MudItem xs="12" Class="justify-center">
-            @* TODO: Add account selector here too. *@
-            <MudSelect T="PocketDTO"
-                       Value="SelectedPocket"
-                       ValueChanged="OnPocketChanged!"
-                       Label="@L["select_pocket"]"
-                       Variant="Variant.Outlined"
-                       ToStringFunc="@(p => p?.Name ?? string.Empty)"
-                       AnchorOrigin="Origin.BottomCenter"
-                       Dense="true"
-                       Style="max-width: 200px;">
-                @foreach (var pocket in ActivePlan!.Pockets)
-                {
-                    <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
-                }
-            </MudSelect>
+        @* Date navigation *@
+        <MudItem xs="12" Class="align-center mb-2" Style="display: flex;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+                <MudSelect T="AccountDTO"
+                           Value="SelectedAccount"
+                           ValueChanged="OnAccountChanged!"
+                           Label="@L["select_account"]"
+                           Variant="Variant.Outlined"
+                           ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                           AnchorOrigin="Origin.BottomCenter"
+                           Dense="true"
+                           Style="max-width: 200px;">
+                    @foreach (var account in _accounts)
+                    {
+                        <MudSelectItem Value="@account">@account.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudSelect T="PocketDTO"
+                           Value="SelectedPocket"
+                           ValueChanged="OnPocketChanged!"
+                           Label="@L["select_pocket"]"
+                           Variant="Variant.Outlined"
+                           ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                           AnchorOrigin="Origin.BottomCenter"
+                           Dense="true"
+                           Style="max-width: 200px;">
+                    @foreach (var pocket in ActivePlan!.Pockets)
+                    {
+                        <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <div style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; align-items: center;">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                                   OnClick="@(() => NavigateToDay(SelectedDate.AddDays(-1)))"
+                                   Size="Size.Medium"
+                                   aria-label="@L["previous_day"]"/>
+                    <MudText Typo="Typo.h6" Style="min-width: 140px; text-align: center;">
+                        @SelectedDate.ToString("yyyy-MM-dd")
+                    </MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                                   OnClick="@(() => NavigateToDay(SelectedDate.AddDays(1)))"
+                                   Size="Size.Medium"
+                                   aria-label="@L["next_day"]"/>
+                </div>
+                <MudButton OnClick="@(() => NavigateToDay(DateTime.Today))">@(L["today"])</MudButton>
+            </div>
+            <div style="flex: 1;"></div>
         </MudItem>
+
+        @* Account + Pocket selectors *@
+        @* <MudItem xs="12" Class="justify-center d-flex flex-column" Style="gap: 12px; border-color:  red; border-width: 1px"> *@
+        @*      *@
+        @* </MudItem> *@
 
         @* Chart + alert + expenditures — centred *@
         <MudItem xs="12" sm="8">
@@ -124,7 +161,7 @@ else
                 
                 @foreach (var e in DailyExpense.Expenditures)
                 {
-                    <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure"/>
+                    <ExpenditureListItem Expenditure=e OnDelete="DeleteExpenditure" OnEdit="EditExpenditure"/>
                     if (DailyExpense.Expenditures.Last().Id != e.Id)
                     {
                         <MudDivider/>
@@ -149,6 +186,8 @@ else
     private bool _hasAnimated = false;
     private bool _isDataReady = false;
 
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? SelectedAccount { get; set; }
     private DivisionPlanDTO? ActivePlan { get; set; }
     private PocketDTO? SelectedPocket { get; set; }
     private DailyExpenseDTO? DailyExpense { get; set; }
@@ -212,6 +251,14 @@ else
         if (UserDto.AccountIds.Count == 0) { IsLoading = false; return; }
         IsLoading = true;
         IsError = false;
+
+        // Reset chart animation state so a new date re-runs the donut animation
+        // instead of keeping the previously rendered value.
+        _hasAnimated = false;
+        _isDataReady = false;
+        currentDisplayValue = 0;
+        targetValue = 0;
+        SeriesData = new double[] { 100, 0 };
         
         //Getting date from the url
         //If not specified, we use today
@@ -237,18 +284,24 @@ else
 
         try
         {
-            var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{UserDto.AccountIds[0]}");
-
-            //TODO: exception helyett...
-            var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
-            ActivePlan = activePlan ?? null;
-            SelectedPocket = ActivePlan?.Pockets[0] ?? null;
+            _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            SelectedAccount ??= _accounts.FirstOrDefault();
         }
         catch (Exception)
         {
-            Snackbar.Add(L["error_load_active_division_plan"], Severity.Error);
+            Snackbar.Add(L["error_loading_accounts"], Severity.Error);
+            IsLoading = false;
+            IsError = true;
             return;
         }
+
+        if (SelectedAccount == null)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        await LoadPlanForAccount(SelectedAccount.Id);
 
         try
         {
@@ -263,6 +316,38 @@ else
         if (SelectedPocket != null) await LoadDailyExpense();
 
         IsLoading = false;
+    }
+
+    private async Task LoadPlanForAccount(string accountId)
+    {
+        try
+        {
+            var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}");
+            var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
+            ActivePlan = activePlan;
+            SelectedPocket = ActivePlan?.Pockets.FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add(L["error_load_active_division_plan"], Severity.Error);
+            ActivePlan = null;
+            SelectedPocket = null;
+        }
+    }
+
+    private void NavigateToDay(DateTime date)
+    {
+        Nav.NavigateTo(date.Date == DateTime.Today ? "/" : $"/{date.FormatDate()}");
+    }
+
+    private async Task OnAccountChanged(AccountDTO newAccount)
+    {
+        SelectedAccount = newAccount;
+        _hasAnimated = false;
+        _isDataReady = false;
+        DailyExpense = null;
+        await LoadPlanForAccount(newAccount.Id);
+        if (SelectedPocket != null) await LoadDailyExpense();
     }
 
     private async Task LoadDailyExpense()
@@ -307,6 +392,33 @@ else
         await LoadDailyExpense();
     }
 
+    private async Task EditExpenditure(ExpenditureDTO expenditure)
+    {
+        var parameters = new DialogParameters<EditExpenditureDialog>
+        {
+            { x => x.Expenditure, expenditure },
+            { x => x.Currency, ActivePlan?.Account.CurrencyCode }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditExpenditureDialog>(L["edit_expenditure"], parameters, _standardOptions);
+        var result = await dialog.Result;
+
+        if (result!.Canceled) return;
+
+        var payload = (UpdateExpenditureDTO)result.Data!;
+        var response = await Http.PutAsJsonAsync($"api/expenditures/{expenditure.Id}", payload);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(L["save_success"], Severity.Success);
+            await LoadDailyExpense();
+            await AnimateChart();
+        }
+        else
+        {
+            Snackbar.Add(L["save_error"], Severity.Error);
+        }
+    }
+
     private async Task DeleteExpenditure(ExpenditureDTO expenditure)
     {
         var parameters = new DialogParameters<ConfirmDialog>
@@ -344,7 +456,8 @@ else
             { x => x.Pockets, ActivePlan?.Pockets ?? new() },
             { x => x.Currency, ActivePlan?.Account.CurrencyCode },
             { x => x.Date, SelectedDate },
-            { x => x.DefaultPocketId, SelectedPocket.Id }
+            { x => x.DefaultPocketId, SelectedPocket.Id },
+            { x => x.HasApiKey, UserDto?.HasApiKey ?? false }
         };
 
         var dialog = await DialogService.ShowAsync<AddExpenseDialog>(L["record_new_transaction"], parameters, _standardOptions);

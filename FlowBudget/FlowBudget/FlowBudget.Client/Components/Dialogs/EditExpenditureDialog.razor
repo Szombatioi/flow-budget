@@ -1,0 +1,79 @@
+@using FlowBudget.Client.Components.DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5"><b>@L["edit_expenditure"]</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudTextField T="string"
+                          Label="@L["name"]"
+                          @bind-Value="_name"
+                          Required="true"
+                          RequiredError="@L["field_required"]"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal" />
+
+            <MudNumericField T="decimal"
+                             Label="@L["amount"]"
+                             @bind-Value="_price"
+                             Required="true"
+                             RequiredError="@L["field_required"]"
+                             Adornment="Adornment.End"
+                             AdornmentText="@(Currency ?? "HUF")"
+                             HideSpinButtons="true"
+                             Format="0.##"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Normal" />
+
+            <MudTextField T="string"
+                          Label="@L["description"]"
+                          @bind-Value="_description"
+                          Variant="Variant.Outlined"
+                          Lines="2"
+                          Margin="Margin.Normal" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["cancel"]</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!_isValid)"
+                   OnClick="Submit">@L["save"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public ExpenditureDTO Expenditure { get; set; } = default!;
+    [Parameter] public string? Currency { get; set; }
+
+    private MudForm _form = null!;
+    private bool _isValid;
+
+    private string _name = string.Empty;
+    private decimal _price;
+    private string? _description;
+
+    protected override void OnInitialized()
+    {
+        _name = Expenditure.Name;
+        _price = Expenditure.Price;
+        _description = Expenditure.Description;
+    }
+
+    private void Submit()
+    {
+        var payload = new UpdateExpenditureDTO
+        {
+            Name = _name,
+            Price = _price,
+            Description = _description
+        };
+        MudDialog.Close(DialogResult.Ok(payload));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -27,6 +27,13 @@ public class CreateExpenditureDTO
     public DateTime? Date { get; set; }
 }
 
+public class UpdateExpenditureDTO
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public string? Description { get; set; }
+}
+
 public class ExpenditureReceiptItemDTO
 {
     public string Name { get; set; }

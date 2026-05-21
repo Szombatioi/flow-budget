@@ -158,6 +158,10 @@ else
             //TODO: snackbar
             Console.WriteLine("Account saved");
             await GetAccounts();
+            accountName = string.Empty;
+            selectedCurrency = null;
+            accountNameError = false;
+            currencyError = false;
         }
 
         isLoading = false;
