@@ -1,5 +1,5 @@
 @page "/"
-@page "/{DateString?}"
+@page "/{Date:datetime?}"
 @using DTO
 @using FlowBudget.Client.Components.DTO
 @using FlowBudget.Client.Components
@@ -179,7 +179,7 @@ else
 
 @code {
     [Parameter]
-    public string? DateString { get; set; }
+    public DateTime? Date { get; set; }
 
     private DateTime SelectedDate { get; set; } = DateTime.Today;
     
@@ -264,27 +264,9 @@ else
         targetValue = 0;
         SeriesData = new double[] { 100, 0 };
         
-        //Getting date from the url
-        //If not specified, we use today
-        if (DateString != null)
-        {
-            if (DateTime.TryParse(DateString, out var dt))
-            {
-                SelectedDate = dt;
-            }
-            else
-            {
-                Snackbar.Add(L["error_invalid_date"], Severity.Error);
-                IsLoading = false;
-                IsError = true;
-                return;
-            }
-        }
-        else
-        {
-            SelectedDate = DateTime.Today;
-        }
-        Console.WriteLine($"Date: {SelectedDate}");
+        // URL route enforces the :datetime constraint, so non-date segments fall
+        // through to the Router's NotFoundPage and never reach here.
+        SelectedDate = Date ?? DateTime.Today;
 
         try
         {
