@@ -1,0 +1,372 @@
+@page "/expenses"
+@using global::DTO
+@using FlowBudget.Client.Components.DTO
+@using FlowBudget.Client.Layout
+@using Microsoft.AspNetCore.Authorization
+@using System.Text.Json.Serialization
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudPaper Elevation="0" Class="pa-4 mb-6" Style=@($"background-color: {CustomColors.GreyPaper}; border-radius: 16px;")>
+    <MudGrid AlignItems="Center.Center">
+        @* Search bar + Search by select field (e.g. search by category, description, pocket etc.) *@
+        <MudItem xs="12" md="6">
+            <MudTextField T="string"
+                          @bind-Value="_search"
+                          @bind-Value:after="OnFilterChanged"
+                          DebounceInterval="350"
+                          Immediate="true"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Placeholder="@L["expenses_search_placeholder"]"
+                          Variant="Variant.Filled" />
+        </MudItem>
+
+        @* Categories and date selector *@
+        <MudItem xs="12" md="6">
+            <div class="d-flex" style="gap: 12px;">
+                <MudSelect T="string"
+                           Value="_categoryId"
+                           ValueChanged="OnCategoryChanged"
+                           Label="@L["category"]"
+                           Variant="Variant.Filled"
+                           Dense="true"
+                           Clearable="true"
+                           Style="flex: 1;">
+                    <MudSelectItem T="string" Value="@(null)">@L["all_categories"]</MudSelectItem>
+                    @foreach (var cat in _categories)
+                    {
+                        <MudSelectItem T="string" Value="@cat.Id">
+                            @(cat.IsSystem ? L[cat.DisplayName].ToString() : cat.DisplayName)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSelect T="DateRangePreset"
+                           Value="_datePreset"
+                           ValueChanged="OnDatePresetChanged"
+                           Label="@L["date"]"
+                           Variant="Variant.Filled"
+                           Dense="true"
+                           Style="flex: 1;">
+                    <MudSelectItem Value="DateRangePreset.Last30">@L["expenses_last_30_days"]</MudSelectItem>
+                    <MudSelectItem Value="DateRangePreset.LastQuarter">@L["expenses_last_quarter"]</MudSelectItem>
+                    <MudSelectItem Value="DateRangePreset.YearToDate">@L["expenses_year_to_date"]</MudSelectItem>
+                    <MudSelectItem Value="DateRangePreset.AllTime">@L["expenses_all_time"]</MudSelectItem>
+                </MudSelect>
+            </div>
+        </MudItem>
+
+        @* Pockets *@
+        <MudItem xs="12" md="4">
+            <div class="d-flex flex-wrap" style="gap: 8px;">
+                <MudButton Variant="@(_pocketFilter == null ? Variant.Filled : Variant.Outlined)"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           OnClick="@(() => SetPocketFilter(null))">
+                    @L["all"]
+                </MudButton>
+                @foreach (var pocketName in _pocketNames)
+                {
+                    <MudButton Variant="@(_pocketFilter == pocketName ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="@(() => SetPocketFilter(pocketName))">
+                        @pocketName
+                    </MudButton>
+                }
+            </div>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@* Here comes the table of expenses:
+HEADER: Date, Category, Description, Pocket, Amount
+TABLE: rows of the fetched expenses
+FOOTER:
+    left side: "Showing x - y of z expenses
+    right side: (pagination) < 1  2  3 ... >
+*@
+<MudPaper Elevation="2" Class="mb-6" Style="border-radius: 16px; overflow: hidden;">
+    <MudTable T="ExpenditureDTO" Items="@_expenses" Loading="_loading" Hover="true" Dense="false">
+        <HeaderContent>
+            <MudTh>@L["date"]</MudTh>
+            <MudTh>@L["category"]</MudTh>
+            <MudTh>@L["description"]</MudTh>
+            <MudTh>@L["pocket"]</MudTh>
+            <MudTh Style="text-align: right;">@L["amount"]</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.Date.ToString("MMM dd, yyyy")</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@context.Date.ToString("HH:mm")</MudText>
+            </MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small"
+                         Style=@($"background-color: {CustomColors.GreyPaper}; font-weight: 500;")>
+                    @CategoryLabel(context.Category)
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudText Typo="Typo.body2" Style="font-weight: 700;">@context.Name</MudText>
+                @if (!string.IsNullOrWhiteSpace(context.Description))
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@context.Description</MudText>
+                }
+            </MudTd>
+            <MudTd>
+                <MudText Typo="Typo.caption" Style="font-weight: 700;">@context.PocketName</MudText>
+            </MudTd>
+            <MudTd Style="text-align: right;">
+                <MudText Typo="Typo.body2" Style="font-weight: 800;">
+                    -@context.Price.ToString("N2") @context.Currency
+                </MudText>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="pa-4">@L["no_expenditures_found"]</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText Class="pa-4">@L["loading"]</MudText>
+        </LoadingContent>
+    </MudTable>
+
+    <div class="d-flex justify-space-between align-center pa-4"
+         style=@($"background-color: {CustomColors.GreyPaper};")>
+        <MudText Typo="Typo.caption">
+            @string.Format(L["expenses_pagination_summary"].ToString(), From, To, _total)
+        </MudText>
+        
+        <div>
+            <MudButton>Export data</MudButton>
+
+            <MudPagination Color="Color.Primary"
+                           Count="PageCount"
+                           Selected="_page"
+                           SelectedChanged="OnPageChanged" />
+        </div>
+    </div>
+</MudPaper>
+
+@* Here comes the bottom of the page:
+Monthly spend summary card (e.g. 123 412 HUF)
+Weekly spend summary card
+*@
+<MudGrid>
+    <MudItem xs="12" md="3">
+        <MudPaper Elevation="0" Class="pa-6"
+                  Style="background-color: #333; color: #fff; border-radius: 16px; aspect-ratio: 16/9;">
+            <MudText Typo="Typo.overline" Style="opacity: 0.6; letter-spacing: 0.2em; font-weight: 700;">
+                @L["expenses_monthly_spend"]
+            </MudText>
+            <MudText Typo="Typo.h4" Style="font-weight: 900; margin-top: 8px;">
+                @FormatAmount(_stats?.Monthly)
+            </MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="3">
+        <MudPaper Elevation="0" Class="pa-6"
+                  Style="background-color: #333; color: #fff; border-radius: 16px; aspect-ratio: 16/9;">
+            <MudText Typo="Typo.overline" Style="opacity: 0.6; letter-spacing: 0.2em; font-weight: 700;">
+                @L["expenses_weekly_spend"]
+            </MudText>
+            <MudText Typo="Typo.h4" Style="font-weight: 900; margin-top: 8px;">
+                @FormatAmount(_stats?.Weekly)
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private enum DateRangePreset { Last30, LastQuarter, YearToDate, AllTime }
+
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+
+    private List<ExpenditureDTO> _expenses = new();
+    private List<CategoryDTO> _categories = new();
+    private List<string> _pocketNames = new();
+    private ExpenditureStatsDTO? _stats;
+
+    private string _search = string.Empty;
+    private string? _categoryId;
+    private DateRangePreset _datePreset = DateRangePreset.Last30;
+    private string? _pocketFilter;
+    private int _page = 1;
+    private const int PageSize = 10;
+    private int _total;
+    private bool _loading;
+    private bool _initialized;
+
+    private int From => _total == 0 ? 0 : (_page - 1) * PageSize + 1;
+    private int To => Math.Min(_page * PageSize, _total);
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(_total / (double)PageSize));
+
+    // Matches the { count, value } wrapper the controller returns.
+    private class PagedResult<T>
+    {
+        [JsonPropertyName("count")] public long Count { get; set; }
+        [JsonPropertyName("value")] public List<T> Value { get; set; } = new();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_initialized || UserDto is null) return;
+        _initialized = true;
+
+        await LoadCategoriesAndPockets();
+        await LoadExpensesAsync();
+        await LoadStatsAsync();
+    }
+
+    private async Task LoadCategoriesAndPockets()
+    {
+        try
+        {
+            _categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories") ?? new();
+
+            // Gather unique pocket names across all the user's accounts/plans so
+            // the toggle buttons reflect the user's own pocket naming.
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var accId in UserDto?.AccountIds ?? new List<string>())
+            {
+                var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accId}") ?? new();
+                foreach (var pocket in plans.SelectMany(p => p.Pockets))
+                {
+                    if (seen.Add(pocket.Name))
+                        _pocketNames.Add(pocket.Name);
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task LoadExpensesAsync()
+    {
+        _loading = true;
+        try
+        {
+            var url = BuildODataUrl();
+            var res = await Http.GetFromJsonAsync<PagedResult<ExpenditureDTO>>(url);
+            _expenses = res?.Value ?? new();
+            _total = (int)(res?.Count ?? 0);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+            Console.WriteLine(ex);
+            _expenses = new();
+            _total = 0;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadStatsAsync()
+    {
+        try
+        {
+            _stats = await Http.GetFromJsonAsync<ExpenditureStatsDTO>("api/expenditures/stats");
+        }
+        catch
+        {
+            _stats = null;
+        }
+    }
+
+    private string BuildODataUrl()
+    {
+        var filters = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var q = _search.Replace("'", "''");
+            filters.Add($"(contains(Name,'{q}') or contains(Description,'{q}'))");
+        }
+        if (!string.IsNullOrWhiteSpace(_categoryId))
+        {
+            filters.Add($"Category/Id eq '{_categoryId}'");
+        }
+        if (!string.IsNullOrWhiteSpace(_pocketFilter))
+        {
+            var p = _pocketFilter.Replace("'", "''");
+            filters.Add($"PocketName eq '{p}'");
+        }
+
+        DateTime? from = _datePreset switch
+        {
+            DateRangePreset.Last30 => DateTime.Today.AddDays(-30),
+            DateRangePreset.LastQuarter => DateTime.Today.AddMonths(-3),
+            DateRangePreset.YearToDate => new DateTime(DateTime.Today.Year, 1, 1),
+            DateRangePreset.AllTime => null,
+            _ => null
+        };
+        if (from is not null)
+            filters.Add($"Date ge {from.Value:yyyy-MM-dd}T00:00:00Z");
+
+        var skip = (_page - 1) * PageSize;
+        var parts = new List<string>
+        {
+            $"$top={PageSize}",
+            $"$skip={skip}",
+            "$orderby=Date desc"
+        };
+        if (filters.Count > 0)
+            parts.Add($"$filter={Uri.EscapeDataString(string.Join(" and ", filters))}");
+
+        return "api/expenditures?" + string.Join("&", parts);
+    }
+
+    private string CategoryLabel(CategoryDTO? cat)
+    {
+        if (cat is null) return L["chart_uncategorized"];
+        return cat.IsSystem ? L[cat.DisplayName].ToString() : cat.DisplayName;
+    }
+
+    private string FormatAmount(decimal? amount)
+    {
+        if (amount is null) return "—";
+        var currency = _expenses.FirstOrDefault()?.Currency ?? string.Empty;
+        return $"{amount.Value:N2} {currency}".TrimEnd();
+    }
+
+    private async Task OnFilterChanged()
+    {
+        _page = 1;
+        await LoadExpensesAsync();
+    }
+
+    private async Task OnCategoryChanged(string? value)
+    {
+        _categoryId = value;
+        _page = 1;
+        await LoadExpensesAsync();
+    }
+
+    private async Task OnDatePresetChanged(DateRangePreset value)
+    {
+        _datePreset = value;
+        _page = 1;
+        await LoadExpensesAsync();
+    }
+
+    private async Task SetPocketFilter(string? pocketName)
+    {
+        _pocketFilter = pocketName;
+        _page = 1;
+        await LoadExpensesAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await LoadExpensesAsync();
+    }
+}

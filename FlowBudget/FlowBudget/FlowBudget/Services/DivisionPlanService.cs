@@ -24,6 +24,7 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyE
         {
             Account = account,
             AccountId = account.Id,
+            ActiveFrom = new DateTime(1,1,1) //Starting early..
         };
 
         await db.DivisionPlans.AddAsync(dp);

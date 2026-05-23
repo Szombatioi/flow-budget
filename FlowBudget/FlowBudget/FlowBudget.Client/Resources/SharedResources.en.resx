@@ -135,6 +135,42 @@
   <data name="expenditure_details" xml:space="preserve">
     <value>Expenditure details</value>
   </data>
+  <data name="all" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="all_categories" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="no_expenditures_found" xml:space="preserve">
+    <value>No expenditures found</value>
+  </data>
+  <data name="expenses_search_placeholder" xml:space="preserve">
+    <value>Search by description or vendor…</value>
+  </data>
+  <data name="expenses_last_30_days" xml:space="preserve">
+    <value>Last 30 days</value>
+  </data>
+  <data name="expenses_last_quarter" xml:space="preserve">
+    <value>Last quarter</value>
+  </data>
+  <data name="expenses_year_to_date" xml:space="preserve">
+    <value>Year to date</value>
+  </data>
+  <data name="expenses_all_time" xml:space="preserve">
+    <value>All time</value>
+  </data>
+  <data name="expenses_pagination_summary" xml:space="preserve">
+    <value>Showing {0} - {1} of {2} expenses</value>
+  </data>
+  <data name="expenses_monthly_spend" xml:space="preserve">
+    <value>Monthly spend</value>
+  </data>
+  <data name="expenses_weekly_spend" xml:space="preserve">
+    <value>Weekly spend</value>
+  </data>
   <data name="no_description" xml:space="preserve">
     <value>(no description)</value>
   </data>
@@ -769,5 +805,8 @@
   </data>
   <data name="page_not_found_description" xml:space="preserve">
     <value>Sorry, the requested page is not found. Please check the requested URL.</value>
+  </data>
+  <data name="category" xml:space="preserve">
+    <value>Category</value>
   </data>
 </root>

@@ -16,6 +16,7 @@ using System.Text.Json;
 using Hangfire;
 using Hangfire.Common;
 using Hangfire.States;
+using Microsoft.AspNetCore.OData;
 
 // ── Serilog: bootstrap logger for startup errors, replaced by full logger after Build() ──
 Log.Logger = new LoggerConfiguration()
@@ -121,7 +122,8 @@ try
     builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
     builder.Services.AddMudServices();
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddOData(options => options.Select().Filter().OrderBy().Count().SetMaxTop(100));
 
     builder.Services.AddScoped(sp =>
         new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
@@ -139,6 +141,8 @@ try
         options.SupportedCultures = localizationOptions.SupportedCultures;
         options.SupportedUICultures = localizationOptions.SupportedUICultures;
     });
+    
+
 
     builder.Services.AddCors(options =>
     {

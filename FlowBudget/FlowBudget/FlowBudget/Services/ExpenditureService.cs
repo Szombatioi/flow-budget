@@ -1,4 +1,5 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using FlowBudget.Client.Components.DTO;
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
@@ -147,5 +148,33 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
 
         // Cascade the freed-up budget forward through every started day after this one.
         await dailyExpenseService.RecalculateStartedDaysFromDate(affectedPocketId, affectedDate);
+    }
+    
+    public IQueryable<ExpenditureDTO> QueryForUser(string userId)
+        => db.Expenditures
+            .Where(e => e.DailyExpense.Pocket.DivisionPlan.Account.UserId == userId)
+            .ProjectTo<ExpenditureDTO>(mapper.ConfigurationProvider);
+
+    public async Task<ExpenditureStatsDTO> GetStats(string userId)
+    {
+        var today = DateTime.Today;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+
+        // Week starts on Monday in this app.
+        var dow = ((int)today.DayOfWeek + 6) % 7;
+        var weekStart = today.AddDays(-dow);
+
+        var query = db.Expenditures
+            .Where(e => e.DailyExpense.Pocket.DivisionPlan.Account.UserId == userId);
+
+        var monthly = await query
+            .Where(e => e.Date >= monthStart)
+            .SumAsync(e => (decimal?)e.Price) ?? 0m;
+
+        var weekly = await query
+            .Where(e => e.Date >= weekStart)
+            .SumAsync(e => (decimal?)e.Price) ?? 0m;
+
+        return new ExpenditureStatsDTO { Monthly = monthly, Weekly = weekly };
     }
 }

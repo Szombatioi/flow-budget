@@ -12,6 +12,13 @@ public class ExpenditureDTO
     // public string
     public string Currency { get; set; }
     public CategoryDTO? Category { get; set; }
+    public string PocketName { get; set; } = string.Empty;
+}
+
+public class ExpenditureStatsDTO
+{
+    public decimal Monthly { get; set; }
+    public decimal Weekly { get; set; }
 }
 
 public class CreateExpenditureDTO

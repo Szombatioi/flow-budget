@@ -19,6 +19,8 @@ public class MappingProfile : Profile
         CreateMap<Expenditure, ExpenditureDTO>()
             .ForMember(dest => dest.Currency, opt => opt.MapFrom(src =>
                 src.DailyExpense.Pocket.DivisionPlan.Account.CurrencyCode))
+            .ForMember(dest => dest.PocketName, opt => opt.MapFrom(src =>
+                src.DailyExpense.Pocket.Name))
             .ReverseMap();
     }
 }
