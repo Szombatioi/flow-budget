@@ -815,4 +815,49 @@
   <data name="expenses_page_title" xml:space="preserve">
     <value>List expenses</value>
   </data>
+  <data name="export_page_description" xml:space="preserve">
+    <value>Export your expenditures into commonly used file formats .</value>
+  </data>
+  <data name="export_data_button" xml:space="preserve">
+    <value>Export data</value>
+  </data>
+  <data name="export_this_quarter" xml:space="preserve">
+    <value>This quarter</value>
+  </data>
+  <data name="export_last_year" xml:space="preserve">
+    <value>Last year</value>
+  </data>
+  <data name="export_started" xml:space="preserve">
+    <value>Export started</value>
+  </data>
+  <data name="from" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="to" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="export_format" xml:space="preserve">
+    <value>Exporting format</value>
+  </data>
+  <data name="export_csv_description" xml:space="preserve">
+    <value>Universal spreadsheets &amp; data analysis tools.</value>
+  </data>
+  <data name="export_json_description" xml:space="preserve">
+    <value>Developer integration &amp; automated pipelines.</value>
+  </data>
+  <data name="export_excel_description" xml:space="preserve">
+    <value>Rich formatting &amp; financial modeling.</value>
+  </data>
+  <data name="export_txt_description" xml:space="preserve">
+    <value>Simplified plain-text ledger archives.</value>
+  </data>
+  <data name="separator" xml:space="preserve">
+    <value>Separator</value>
+  </data>
+  <data name="define_separator" xml:space="preserve">
+    <value>Declare column separator</value>
+  </data>
+  <data name="select_at_least_one_pocket" xml:space="preserve">
+    <value>Please select at least one pocket!</value>
+  </data>
 </root>

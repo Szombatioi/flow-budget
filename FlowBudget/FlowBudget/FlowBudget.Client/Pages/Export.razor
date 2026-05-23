@@ -1,12 +1,316 @@
 @page "/export"
+@using global::DTO
 @using Microsoft.AspNetCore.Authorization
+@using FlowBudget.Client.Components
 @attribute [Authorize]
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h3">@L["export_page_title"]</MudText>
+<div class="pa-4">
+    <MudText Typo="Typo.h3">@L["export_page_title"]</MudText>
+    <MudText Typo="Typo.body1">@L["export_page_description"]</MudText>
+</div>
+
+@* Settings *@
+<div class="w-100 d-flex justify-center align-center">
+    <MudPaper Class="pa-4" MaxWidth="75%" Elevation="0">
+        <MudGrid Spacing="2">
+            @* Categories *@
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["category"]</MudText>
+                <div class="d-flex flex-wrap pa-2" style="gap: 8px;">
+                    <MudChip T="string"
+                             Color="@(_allCategories ? Color.Primary : Color.Default)"
+                             Variant="@(_allCategories ? Variant.Filled : Variant.Outlined)"
+                             OnClick="ToggleAllCategories">
+                        @L["all"]
+                    </MudChip>
+                    @foreach (var cat in _categories)
+                    {
+                        var selected = !_allCategories && _selectedCategoryIds.Contains(cat.Id);
+                        <MudChip T="string"
+                                 Color="@(selected ? Color.Primary : Color.Default)"
+                                 Variant="@(selected ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => ToggleCategory(cat.Id))">
+                            @(cat.IsSystem ? L[cat.DisplayName].ToString() : cat.DisplayName)
+                        </MudChip>
+                    }
+                </div>
+            </MudItem>
+
+            @* Pockets *@
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["pocket"]</MudText>
+                <div class="d-flex flex-wrap pa-2" style="gap: 8px;">
+                    @foreach (var name in _pocketNames)
+                    {
+                        var selected = _selectedPocketNames.Contains(name);
+                        <MudChip T="string"
+                                 Color="@(selected ? Color.Primary : Color.Default)"
+                                 Variant="@(selected ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => TogglePocket(name))">
+                            @name
+                        </MudChip>
+                    }
+                </div>
+            </MudItem>
+
+            @* Date range *@
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["date"]</MudText>
+                <div class="d-flex justify-space-between align-center flex-wrap pa-2" style="gap: 12px;">
+                    <div class="d-flex" style="gap: 12px;">
+                        <MudDatePicker Label="@L["from"]"
+                                       @bind-Date="_fromDate"
+                                       Variant="Variant.Outlined"
+                                       PickerVariant="PickerVariant.Inline"/>
+                        <MudDatePicker Label="@L["to"]"
+                                       @bind-Date="_toDate"
+                                       Variant="Variant.Outlined"
+                                       PickerVariant="PickerVariant.Inline"/>
+                    </div>
+                    <div>
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="@(() => ApplyDatePreset(DatePreset.Last30Days))">
+                            @L["expenses_last_30_days"]
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="@(() => ApplyDatePreset(DatePreset.ThisQuarter))">
+                            @L["export_this_quarter"]
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="@(() => ApplyDatePreset(DatePreset.LastYear))">
+                            @L["export_last_year"]
+                        </MudButton>
+                    </div>
+                </div>
+            </MudItem>
+
+            @if (_selectedFormat == "TXT")
+            {
+                @* TODO: when .txt is selected, add separator option *@
+                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["separator"]</MudText>
+                <MudItem xs="12">
+                    @L["define_separator"]
+                </MudItem>
+            }
+        </MudGrid>
+    </MudPaper>
+</div>
+
+@* Format *@
+<div style="width: 100%;" class="d-flex flex-column justify-center align-center">
+    <div style="max-width: 75%; align-self: start;">
+        <MudText Typo="Typo.h6" Class="pt-4 pb-2">@L["export_format"]</MudText>
+    </div>
+    <MudGrid Class="pa-4" Style="max-width: 75%;" Spacing="2">
+        @foreach (var export in ExportFormats)
+        {
+            <MudItem xs="6" md="3">
+                <SelectablePaper Title="@export.Title"
+                                 Icon="@export.Icon"
+                                 Description="@L[$"export_{export.Title.ToLower()}_description"]"
+                                 IsSelected="@(_selectedFormat == export.Title)"
+                                 OnSelected="OnFormatSelected"/>
+            </MudItem>
+        }
+    </MudGrid>
+</div>
+
+<div class="d-flex justify-center align-center pa-6">
+    @if (_exporting)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+    }
+    else
+    {
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Class="px-8 py-6"
+                   Style="border-radius: 8px"
+                   Disabled="@(_selectedFormat is null || _exporting)"
+                   OnClick="ExportData">
+
+            @L["export_data_button"]
+        </MudButton>
+    }
+</div>
 
 @code {
-    
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+
+    private string? _selectedFormat;
+
+    private List<CategoryDTO> _categories = new();
+    private HashSet<string> _selectedCategoryIds = new();
+    private bool _allCategories = true;
+
+    private List<string> _pocketNames = new();
+    private HashSet<string> _selectedPocketNames = new(StringComparer.OrdinalIgnoreCase);
+
+    private DateTime? _fromDate = DateTime.Today.AddDays(-30);
+    private DateTime? _toDate = DateTime.Today;
+
+    private bool _exporting;
+    private bool _initialized;
+
+    private string? _separator { get; set; }
+
+
+    private enum DatePreset
+    {
+        Last30Days,
+        ThisQuarter,
+        LastYear
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_initialized || UserDto is null) return;
+        _initialized = true;
+        await LoadFilters();
+    }
+
+    private async Task LoadFilters()
+    {
+        try
+        {
+            _categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories") ?? new();
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var accId in UserDto?.AccountIds ?? new List<string>())
+            {
+                var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accId}") ?? new();
+                foreach (var pocket in plans.SelectMany(p => p.Pockets))
+                {
+                    if (seen.Add(pocket.Name))
+                        _pocketNames.Add(pocket.Name);
+                }
+            }
+
+            // Pockets: pre-select all per spec.
+            _selectedPocketNames = new HashSet<string>(_pocketNames, StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+    }
+
+    private void OnFormatSelected(string title) => _selectedFormat = title;
+
+    private void ToggleAllCategories()
+    {
+        _allCategories = true;
+        _selectedCategoryIds.Clear();
+    }
+
+    private void ToggleCategory(string id)
+    {
+        // Selecting an individual category drops out of the "All" mode.
+        _allCategories = false;
+        if (!_selectedCategoryIds.Add(id))
+            _selectedCategoryIds.Remove(id);
+
+        // If nothing remains selected, snap back to All so the export is never empty by accident.
+        if (_selectedCategoryIds.Count == 0)
+            _allCategories = true;
+    }
+
+    private void TogglePocket(string name)
+    {
+        if (!_selectedPocketNames.Add(name))
+            _selectedPocketNames.Remove(name);
+    }
+
+    private void ApplyDatePreset(DatePreset preset)
+    {
+        var today = DateTime.Today;
+        switch (preset)
+        {
+            case DatePreset.Last30Days:
+                _fromDate = today.AddDays(-30);
+                _toDate = today;
+                break;
+            case DatePreset.ThisQuarter:
+                var qStartMonth = ((today.Month - 1) / 3) * 3 + 1;
+                _fromDate = new DateTime(today.Year, qStartMonth, 1);
+                _toDate = today;
+                break;
+            case DatePreset.LastYear:
+                _fromDate = new DateTime(today.Year - 1, 1, 1);
+                _toDate = new DateTime(today.Year - 1, 12, 31);
+                break;
+        }
+    }
+
+    // Backend not implemented yet; this is the prepared call shape.
+    // Expected response: a file stream the browser can download.
+    private async Task ExportData()
+    {
+        if (_selectedFormat is null) return;
+        if (_selectedPocketNames.Count == 0)
+        {
+            Snackbar.Add(L["select_at_least_one_pocket"], Severity.Warning);
+            return;
+        }
+
+    _exporting = true;
+        try
+        {
+            var payload = new ExportRequestDTO
+            {
+                Format = _selectedFormat,
+                CategoryIds = _allCategories ? null : _selectedCategoryIds.ToList(),
+                PocketNames = _selectedPocketNames.ToList(),
+                From = _fromDate,
+                To = _toDate
+            };
+
+            var res = await Http.PostAsJsonAsync("api/expenditures/export", payload);
+            if (!res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["something_went_wrong"], Severity.Error);
+                return;
+            }
+
+            // When the backend exists it will return a file. For now we just
+            // surface a success snackbar so the wiring is exercised end-to-end.
+            Snackbar.Add(L["export_started"], Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+
+    private record ExportFormat
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+    }
+
+    private List<ExportFormat> ExportFormats = new()
+    {
+        new() { Title = "TXT", Icon = Icons.Material.Filled.Code },
+        new() { Title = "JSON", Icon = Icons.Material.Filled.Code },
+        new() { Title = "CSV", Icon = Icons.Material.Filled.TableChart },
+        new() { Title = "EXCEL", Icon = Icons.Material.Filled.TableChart },
+    };
+
+    // Local DTO mirroring what the future backend endpoint will accept.
+    private class ExportRequestDTO
+    {
+        public string Format { get; set; } = string.Empty;
+        public List<string>? CategoryIds { get; set; }
+        public List<string> PocketNames { get; set; } = new();
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+    }
+
 }
