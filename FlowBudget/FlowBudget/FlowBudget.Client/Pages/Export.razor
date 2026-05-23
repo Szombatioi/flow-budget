@@ -1,0 +1,12 @@
+@page "/export"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h3">@L["export_page_title"]</MudText>
+
+@code {
+    
+}

@@ -809,4 +809,10 @@
   <data name="category" xml:space="preserve">
     <value>Category</value>
   </data>
+  <data name="export_page_title" xml:space="preserve">
+    <value>Export expenses</value>
+  </data>
+  <data name="expenses_page_title" xml:space="preserve">
+    <value>List expenses</value>
+  </data>
 </root>

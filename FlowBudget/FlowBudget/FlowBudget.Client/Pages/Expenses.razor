@@ -8,8 +8,11 @@
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
+@inject NavigationManager Nav
 
-<MudPaper Elevation="0" Class="pa-4 mb-6" Style=@($"background-color: {CustomColors.GreyPaper}; border-radius: 16px;")>
+<MudText Typo="Typo.h3">@L["expenses_page_title"]</MudText>
+
+<MudPaper Elevation="0" Class="pa-6 mb-6" Style=@($"background-color: {CustomColors.LightPaper}; border-radius: 16px;")>
     <MudGrid AlignItems="Center.Center">
         @* Search bar + Search by select field (e.g. search by category, description, pocket etc.) *@
         <MudItem xs="12" md="6">
@@ -105,7 +108,7 @@ FOOTER:
             </MudTd>
             <MudTd>
                 <MudChip T="string" Size="Size.Small"
-                         Style=@($"background-color: {CustomColors.GreyPaper}; font-weight: 500;")>
+                         Style=@($"background-color: {CustomColors.LightPaper}; font-weight: 500;")>
                     @CategoryLabel(context.Category)
                 </MudChip>
             </MudTd>
@@ -132,15 +135,15 @@ FOOTER:
             <MudText Class="pa-4">@L["loading"]</MudText>
         </LoadingContent>
     </MudTable>
-
+    <MudDivider />
     <div class="d-flex justify-space-between align-center pa-4"
-         style=@($"background-color: {CustomColors.GreyPaper};")>
+         style=@($"background-color: {CustomColors.LightPaper};")>
         <MudText Typo="Typo.caption">
             @string.Format(L["expenses_pagination_summary"].ToString(), From, To, _total)
         </MudText>
         
         <div>
-            <MudButton>Export data</MudButton>
+            <MudButton OnClick="() => {@(Nav.NavigateTo("/export"))}">Export data</MudButton>
 
             <MudPagination Color="Color.Primary"
                            Count="PageCount"
@@ -157,7 +160,7 @@ Weekly spend summary card
 <MudGrid>
     <MudItem xs="12" md="3">
         <MudPaper Elevation="0" Class="pa-6"
-                  Style="background-color: #333; color: #fff; border-radius: 16px; aspect-ratio: 16/9;">
+                  Style="background-color: #333; color: #fff; border-radius: 16px;">
             <MudText Typo="Typo.overline" Style="opacity: 0.6; letter-spacing: 0.2em; font-weight: 700;">
                 @L["expenses_monthly_spend"]
             </MudText>
@@ -168,7 +171,7 @@ Weekly spend summary card
     </MudItem>
     <MudItem xs="12" md="3">
         <MudPaper Elevation="0" Class="pa-6"
-                  Style="background-color: #333; color: #fff; border-radius: 16px; aspect-ratio: 16/9;">
+                  Style="background-color: #333; color: #fff; border-radius: 16px;">
             <MudText Typo="Typo.overline" Style="opacity: 0.6; letter-spacing: 0.2em; font-weight: 700;">
                 @L["expenses_weekly_spend"]
             </MudText>
