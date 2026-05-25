@@ -821,6 +821,9 @@
   <data name="export_data_button" xml:space="preserve">
     <value>Export data</value>
   </data>
+  <data name="account" xml:space="preserve">
+    <value>Account</value>
+  </data>
   <data name="export_this_quarter" xml:space="preserve">
     <value>This quarter</value>
   </data>

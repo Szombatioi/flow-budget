@@ -1,11 +1,13 @@
 @page "/export"
 @using global::DTO
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @using FlowBudget.Client.Components
 @attribute [Authorize]
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <div class="pa-4">
     <MudText Typo="Typo.h3">@L["export_page_title"]</MudText>
@@ -16,6 +18,25 @@
 <div class="w-100 d-flex justify-center align-center">
     <MudPaper Class="pa-4" MaxWidth="75%" Elevation="0">
         <MudGrid Spacing="2">
+            @* Account selection *@
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["account"]</MudText>
+                <MudSelect T="AccountDTO"
+                           Value="_selectedAccount"
+                           ValueChanged="OnAccountChanged"
+                           Label="@L["select_account"]"
+                           Variant="Variant.Outlined"
+                           ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                           AnchorOrigin="Origin.BottomCenter"
+                           Dense="true"
+                           Style="max-width: 240px;">
+                    @foreach (var account in _accounts)
+                    {
+                        <MudSelectItem Value="@account">@account.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
             @* Categories *@
             <MudItem xs="12" md="6">
                 <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["category"]</MudText>
@@ -28,11 +49,11 @@
                     </MudChip>
                     @foreach (var cat in _categories)
                     {
-                        var selected = !_allCategories && _selectedCategoryIds.Contains(cat.Id);
+                        var selected = !_allCategories && _selectedCategories.ContainsKey(cat.Id);
                         <MudChip T="string"
                                  Color="@(selected ? Color.Primary : Color.Default)"
                                  Variant="@(selected ? Variant.Filled : Variant.Outlined)"
-                                 OnClick="@(() => ToggleCategory(cat.Id))">
+                                 OnClick="@(() => ToggleCategory(cat))">
                             @(cat.IsSystem ? L[cat.DisplayName].ToString() : cat.DisplayName)
                         </MudChip>
                     }
@@ -43,14 +64,14 @@
             <MudItem xs="12" md="6">
                 <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["pocket"]</MudText>
                 <div class="d-flex flex-wrap pa-2" style="gap: 8px;">
-                    @foreach (var name in _pocketNames)
+                    @foreach (var pocket in _pockets)
                     {
-                        var selected = _selectedPocketNames.Contains(name);
+                        var selected = _selectedPockets.ContainsKey(pocket.Id);
                         <MudChip T="string"
                                  Color="@(selected ? Color.Primary : Color.Default)"
                                  Variant="@(selected ? Variant.Filled : Variant.Outlined)"
-                                 OnClick="@(() => TogglePocket(name))">
-                            @name
+                                 OnClick="@(() => TogglePocket(pocket))">
+                            @pocket.Name
                         </MudChip>
                     }
                 </div>
@@ -87,12 +108,20 @@
                 </div>
             </MudItem>
 
+            @* Separator — only relevant for TXT *@
             @if (_selectedFormat == "TXT")
             {
-                @* TODO: when .txt is selected, add separator option *@
-                <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["separator"]</MudText>
                 <MudItem xs="12">
-                    @L["define_separator"]
+                    <MudText Typo="Typo.h6" Style="text-transform: capitalize" Class="pa-2">@L["separator"]</MudText>
+                    <div class="pa-2">
+                        <MudTextField T="string"
+                                      @bind-Value="_separator"
+                                      Placeholder="|"
+                                      HelperText="@L["define_separator"]"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="3"
+                                      Style="max-width: 200px;" />
+                    </div>
                 </MudItem>
             }
         </MudGrid>
@@ -142,12 +171,17 @@
 
     private string? _selectedFormat;
 
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? _selectedAccount;
+
     private List<CategoryDTO> _categories = new();
-    private HashSet<string> _selectedCategoryIds = new();
+    // Selected categories kept as full DTOs; the dictionary is keyed by Id for O(1)
+    // toggle/contains without needing a custom IEqualityComparer.
+    private Dictionary<string, CategoryDTO> _selectedCategories = new();
     private bool _allCategories = true;
 
-    private List<string> _pocketNames = new();
-    private HashSet<string> _selectedPocketNames = new(StringComparer.OrdinalIgnoreCase);
+    private List<PocketDTO> _pockets = new();
+    private Dictionary<string, PocketDTO> _selectedPockets = new();
 
     private DateTime? _fromDate = DateTime.Today.AddDays(-30);
     private DateTime? _toDate = DateTime.Today;
@@ -177,20 +211,11 @@
         try
         {
             _categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories") ?? new();
+            _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            _selectedAccount = _accounts.FirstOrDefault();
 
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var accId in UserDto?.AccountIds ?? new List<string>())
-            {
-                var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accId}") ?? new();
-                foreach (var pocket in plans.SelectMany(p => p.Pockets))
-                {
-                    if (seen.Add(pocket.Name))
-                        _pocketNames.Add(pocket.Name);
-                }
-            }
-
-            // Pockets: pre-select all per spec.
-            _selectedPocketNames = new HashSet<string>(_pocketNames, StringComparer.OrdinalIgnoreCase);
+            if (_selectedAccount != null)
+                await LoadPocketsForAccount(_selectedAccount.Id);
         }
         catch
         {
@@ -198,30 +223,54 @@
         }
     }
 
+    private async Task LoadPocketsForAccount(string accountId)
+    {
+        _pockets = new();
+        try
+        {
+            var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}") ?? new();
+            foreach (var pocket in plans.SelectMany(p => p.Pockets))
+            {
+                if (_pockets.All(p => p.Id != pocket.Id))
+                    _pockets.Add(pocket);
+            }
+        }
+        catch
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+        
+        _selectedPockets = _pockets.ToDictionary(p => p.Id);
+    }
+
+    private async Task OnAccountChanged(AccountDTO account)
+    {
+        _selectedAccount = account;
+        await LoadPocketsForAccount(account.Id);
+    }
+
     private void OnFormatSelected(string title) => _selectedFormat = title;
 
     private void ToggleAllCategories()
     {
         _allCategories = true;
-        _selectedCategoryIds.Clear();
+        _selectedCategories.Clear();
     }
 
-    private void ToggleCategory(string id)
+    private void ToggleCategory(CategoryDTO category)
     {
-        // Selecting an individual category drops out of the "All" mode.
         _allCategories = false;
-        if (!_selectedCategoryIds.Add(id))
-            _selectedCategoryIds.Remove(id);
-
-        // If nothing remains selected, snap back to All so the export is never empty by accident.
-        if (_selectedCategoryIds.Count == 0)
+        if (!_selectedCategories.Remove(category.Id))
+            _selectedCategories[category.Id] = category;
+        
+        if (_selectedCategories.Count == 0)
             _allCategories = true;
     }
 
-    private void TogglePocket(string name)
+    private void TogglePocket(PocketDTO pocket)
     {
-        if (!_selectedPocketNames.Add(name))
-            _selectedPocketNames.Remove(name);
+        if (!_selectedPockets.Remove(pocket.Id))
+            _selectedPockets[pocket.Id] = pocket;
     }
 
     private void ApplyDatePreset(DatePreset preset)
@@ -244,28 +293,28 @@
                 break;
         }
     }
-
-    // Backend not implemented yet; this is the prepared call shape.
-    // Expected response: a file stream the browser can download.
+    
     private async Task ExportData()
     {
         if (_selectedFormat is null) return;
-        if (_selectedPocketNames.Count == 0)
+        if (_selectedPockets.Count == 0)
         {
             Snackbar.Add(L["select_at_least_one_pocket"], Severity.Warning);
             return;
         }
 
-    _exporting = true;
+        _exporting = true;
         try
         {
-            var payload = new ExportRequestDTO
+            var payload = new ExportParameterDTO
             {
-                Format = _selectedFormat,
-                CategoryIds = _allCategories ? null : _selectedCategoryIds.ToList(),
-                PocketNames = _selectedPocketNames.ToList(),
-                From = _fromDate,
-                To = _toDate
+                ExportingFormat = _selectedFormat,
+                Categories = _allCategories ? new List<CategoryDTO>() : _selectedCategories.Values.ToList(),
+                Pockets = _selectedPockets.Values.ToList(),
+                FromDate = _fromDate ?? DateTime.Today.AddYears(-1),
+                ToDate = _toDate ?? DateTime.Today,
+                Separator = _separator,
+                CurrencyName = _selectedAccount?.CurrencyCode ?? string.Empty
             };
 
             var res = await Http.PostAsJsonAsync("api/expenditures/export", payload);
@@ -275,8 +324,15 @@
                 return;
             }
 
-            // When the backend exists it will return a file. For now we just
-            // surface a success snackbar so the wiring is exercised end-to-end.
+            // Extract the filename
+            var fileName = res.Content.Headers.ContentDisposition?.FileNameStar
+                           ?? res.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                           ?? $"flowbudget-export.{_selectedFormat.ToLowerInvariant()}";
+            
+            await using var stream = await res.Content.ReadAsStreamAsync();
+            using var streamRef = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+
             Snackbar.Add(L["export_started"], Severity.Success);
         }
         catch
@@ -303,14 +359,5 @@
         new() { Title = "EXCEL", Icon = Icons.Material.Filled.TableChart },
     };
 
-    // Local DTO mirroring what the future backend endpoint will accept.
-    private class ExportRequestDTO
-    {
-        public string Format { get; set; } = string.Empty;
-        public List<string>? CategoryIds { get; set; }
-        public List<string> PocketNames { get; set; } = new();
-        public DateTime? From { get; set; }
-        public DateTime? To { get; set; }
-    }
 
 }

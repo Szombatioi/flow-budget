@@ -13,6 +13,7 @@ using MudBlazor.Services;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Text.Json;
+using FlowBudget.Services.ExportStrategies;
 using Hangfire;
 using Hangfire.Common;
 using Hangfire.States;
@@ -85,6 +86,10 @@ try
     builder.Services.AddTransient<SeederService>();
     builder.Services.AddTransient<LlmHandler>();
     builder.Services.AddTransient<EmailService>();
+    builder.Services.AddTransient<IExportStrategy, CsvExportStrategy>();
+    builder.Services.AddTransient<IExportStrategy, TxtExportStrategy>();
+    builder.Services.AddTransient<IExportStrategy, JsonExportStrategy>();
+    builder.Services.AddTransient<IExportStrategy, ExcelExportStrategy>();
 
     builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 

@@ -1,5 +1,7 @@
+using DTO;
 using FlowBudget.Client.Components.DTO;
 using FlowBudget.Services;
+using FlowBudget.Services.ExportStrategies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,12 +36,6 @@ namespace FlowBudget.Controllers
             return NoContent();
         }
         
-        // The [EnableQuery] attribute on a non-OData-routed MVC action just returns
-        // the array as JSON; the OData envelope ({@odata.count, value}) is never
-        // produced because there's no MapODataRoute. We instead inject
-        // ODataQueryOptions<T>, apply $filter/$orderby/$skip/$top ourselves, take a
-        // post-filter pre-pagination count, and return a deterministic
-        // { count, value } wrapper the client can rely on.
         [HttpGet]
         public async Task<ActionResult> Query(ODataQueryOptions<ExpenditureDTO> options)
         {
@@ -64,6 +60,21 @@ namespace FlowBudget.Controllers
 
             var items = await result.ToListAsync();
             return Ok(new { count, value = items });
+        }
+
+        [HttpPost("export")]
+        public async Task<IActionResult> Export(
+            [FromBody] ExportParameterDTO dto,
+            [FromServices] IEnumerable<IExportStrategy> strategies)
+        {
+            var strategy = strategies.FirstOrDefault(s =>
+                string.Equals(s.Format, dto.ExportingFormat, StringComparison.OrdinalIgnoreCase));
+            if (strategy == null)
+                return BadRequest($"Unsupported format: {dto.ExportingFormat}");
+
+            var stream = await strategy.ExportAsync(UserId, dto);
+            var filename = $"flowbudget-export-{DateTime.UtcNow:yyyy-MM-dd-HHmmss}.{strategy.FileExtension}";
+            return File(stream, strategy.ContentType, filename);
         }
 
         [HttpGet("stats")]
