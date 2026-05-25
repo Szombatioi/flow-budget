@@ -26,8 +26,7 @@ public class LlmHandler(HttpClient http)
     public async Task<T> UploadReceipt<T>(string resultLanguage, List<CategoryHeaderDTO> availableCategories, string apiKey, IFormFile file)
     {
         var base64Image = await ConvertFileToBase64(file);
-    
-        // 1. Add 'response_mime_type' to the payload to help Gemini return pure JSON
+        
         var payload = new 
         {
             contents = new[] {
@@ -43,27 +42,24 @@ public class LlmHandler(HttpClient http)
             }
         };
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key={apiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={apiKey}";
     
         var response = await http.PostAsJsonAsync(url, payload);
         response.EnsureSuccessStatusCode();
 
-        // 2. Deserialize into the Gemini Wrapper first
+        // Gemini Wrapper
         var fullResponse = await response.Content.ReadFromJsonAsync<LlmResponse>();
-    
-        // 3. Extract the text string
+        
         var jsonString = fullResponse?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text;
 
         if (string.IsNullOrEmpty(jsonString))
             throw new Exception("Gemini returned an empty response.");
-
-        // 4. Clean Markdown if Gemini ignored the 'application/json' config
+        
         if (jsonString.StartsWith("```json"))
         {
             jsonString = jsonString.Replace("```json", "").Replace("```", "").Trim();
         }
-
-        // 5. Finally, deserialize the actual list of items
+        
         return JsonSerializer.Deserialize<T>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
                ?? throw new Exception("Failed to parse receipt items.");
     }
