@@ -401,9 +401,6 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         if (user.Accounts.All(a => a.DivisionPlans.All(dp => dp.Pockets.All(p => p.Id != pocketId))))
             throw new UnauthorizedAccessException();
         
-        // Materialize first to avoid SQLite APPLY limitation:
-        // accessing the parent `de.Date` inside SelectMany's inner selector
-        // forces EF Core to generate a CROSS APPLY, which SQLite doesn't support.
         var dailyExpenses = await db.DailyExpenses
             .Where(de => de.PocketId == pocketId
                          && de.Date.Date >= from.Date
@@ -445,7 +442,12 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
                          && de.Date.Date >= from.Date
                          && de.Date.Date <= to.Date)
             .OrderBy(de => de.Date)
-            .Select(de => new DailyBudgetDTO { Date = de.Date, Amount = de.RelativeBudget })
+            .Select(de => new DailyBudgetDTO
+            {
+                Date = de.Date,
+                Amount = de.RelativeBudget,
+                StartAmount = de.StartAmount
+            })
             .ToListAsync();
     }
 
@@ -466,7 +468,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             throw new UnauthorizedAccessException("no_api_key");
         }
         
-        //Get preferred language for user from their settings
+        //TODO: Get preferred language for user from their settings
         var language = "English";
         
         //Get available categories

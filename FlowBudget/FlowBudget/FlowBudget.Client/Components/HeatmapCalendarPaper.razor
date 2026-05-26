@@ -1,0 +1,55 @@
+@using FlowBudget.Client.Components.Diagrams
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudPaper Elevation="4" Class="py-2 px-4 d-flex flex-column"
+          Style="height: 100%; max-height: 100%; width: 100%; border-radius: 16px; overflow: hidden;">
+    @if (!string.IsNullOrWhiteSpace(DiagramTitle))
+    {
+        <MudText Typo="Typo.h6" Align="Align.Center">@DiagramTitle</MudText>
+    }
+    <div class="flex-grow-1 d-flex justify-center align-center" style="min-height: 0;">
+        @if (_selectedPocket != null)
+        {
+            <HeatmapCalendar PocketId="@_selectedPocket.Id"
+                             Date="_date"
+                             OnDateSelected="OnDateSelected" />
+        }
+    </div>
+
+    <MudDivider Class="my-4" />
+
+    <MudStack Row="true" Spacing="4" Class="flex-grow-0 mt-auto" AlignItems="AlignItems.Center">
+        <MudSelect T="PocketDTO" Label="@L["pocket"]" @bind-Value="_selectedPocket"
+                   Variant="Variant.Outlined" Dense="true">
+            @foreach (var pocket in Pockets)
+            {
+                <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudDatePicker Label="@L["date"]" @bind-Date="_datePicker"
+                       Variant="Variant.Outlined" Editable="true" Dense="true" />
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter] public required List<PocketDTO> Pockets { get; set; }
+    [Parameter] public string? DiagramTitle { get; set; }
+    [Parameter] public EventCallback<DateTime> OnDateSelected { get; set; }
+
+    private PocketDTO? _selectedPocket;
+    private DateTime _date = DateTime.Today;
+
+    private DateTime? _datePicker
+    {
+        get => _date;
+        set { if (value.HasValue) _date = value.Value; }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_selectedPocket == null && Pockets.Count > 0)
+            _selectedPocket = Pockets[0];
+    }
+}

@@ -8,6 +8,7 @@
 @inject HttpClient Http
 @inject IStringLocalizer<SharedResources> L
 @inject ISnackbar Snackbar
+@inject NavigationManager Nav
 
 @if (!_loaded)
 {
@@ -50,6 +51,11 @@ else
             </MudItem>
             <MudItem xs="12" md="6">
                 <DiagramPaper DiagramTitle="@(L["diagram_title_burndown"])" DiagramType="typeof(BurndownChart)" Pockets="@ActivePlan.Pockets"/>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <HeatmapCalendarPaper DiagramTitle="@(L["diagram_title_heatmap"])"
+                                      Pockets="@ActivePlan.Pockets"
+                                      OnDateSelected=@((date) => Nav.NavigateTo($"/{date:yyyy-MM-dd}"))/>
             </MudItem>
         }
         else

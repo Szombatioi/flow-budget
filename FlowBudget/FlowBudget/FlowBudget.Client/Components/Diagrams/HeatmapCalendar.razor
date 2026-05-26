@@ -1,0 +1,118 @@
+@using global::DTO
+@inject HttpClient Http
+@inject IStringLocalizer<SharedResources> L
+
+<div style="width: 100%; padding: 16px;">
+    @if (_loading)
+    {
+        <div class="d-flex justify-center align-center pa-4">
+            <MudProgressCircular Indeterminate="true" />
+        </div>
+    }
+    else
+    {
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; max-width: 360px; margin: 0 auto;">
+            @foreach (var header in DayHeaders)
+            {
+                <div style="text-align: center; font-weight: 700; font-size: 11px; color: rgba(0,0,0,0.55); text-transform: uppercase; letter-spacing: 0.05em;">
+                    @header
+                </div>
+            }
+            @for (var i = 0; i < _leadingEmpty; i++)
+            {
+                <div></div>
+            }
+            @foreach (var day in _days)
+            {
+                <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;"
+                     @onclick="@(() => OnDayClick(day.Date))">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; transition: transform 100ms;@CircleStyle(day)">@day.Date.Day</div>
+                    @if (!day.HasData)
+                    {
+                        <div style="width: 4px; height: 4px; border-radius: 50%; background-color: rgba(0,0,0,0.45); margin-top: 3px;"></div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string PocketId { get; set; } = "";
+    [Parameter] public DateTime Date { get; set; } = DateTime.Today;
+    [Parameter] public EventCallback<DateTime> OnDateSelected { get; set; }
+
+    private bool _loading;
+    private List<DayInfo> _days = [];
+    private int _leadingEmpty;
+
+    private static readonly string[] DayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    private record DayInfo(DateTime Date, decimal Spent, decimal Budget, bool HasData);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrEmpty(PocketId)) return;
+
+        _loading = true;
+        try
+        {
+            var firstDay = new DateTime(Date.Year, Date.Month, 1);
+            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+
+            var expsTask = Http.GetFromJsonAsync<List<TimeSeriesItemDTO>>(
+                $"api/daily-expenses/{PocketId}/time-series?from={firstDay:yyyy-MM-dd}&to={lastDay:yyyy-MM-dd}");
+            var budgetsTask = Http.GetFromJsonAsync<List<DailyBudgetDTO>>(
+                $"api/daily-expenses/{PocketId}/budget-series?from={firstDay:yyyy-MM-dd}&to={lastDay:yyyy-MM-dd}");
+            await Task.WhenAll(expsTask, budgetsTask);
+
+            var spentByDay = (expsTask.Result ?? [])
+                .GroupBy(e => e.Date.Date)
+                .ToDictionary(g => g.Key, g => g.Sum(e => e.Price));
+            
+            var budgetByDay = (budgetsTask.Result ?? [])
+                .ToDictionary(b => b.Date.Date, b => b.StartAmount);
+
+            var totalDays = (lastDay - firstDay).Days + 1;
+            _days = Enumerable.Range(0, totalDays)
+                .Select(i => firstDay.AddDays(i))
+                .Select(d => new DayInfo(
+                    d,
+                    spentByDay.GetValueOrDefault(d, 0m),
+                    budgetByDay.GetValueOrDefault(d, 0m),
+                    spentByDay.ContainsKey(d)))
+                .ToList();
+
+
+            _leadingEmpty = ((int)firstDay.DayOfWeek + 6) % 7;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string CircleStyle(DayInfo d)
+    {
+
+        if (!d.HasData)
+        {
+            return "background-color: transparent; border: 1px solid rgba(0,0,0,0.2); color: rgba(0,0,0,0.55);";
+        }
+
+        var ratio = d.Budget > 0 ? (double)(d.Spent / d.Budget) : double.PositiveInfinity;
+        var color = ratio switch
+        {
+            < 0.5 => "#4caf50",
+            < 0.8 => "#ffc107",
+            _     => "#f44336"
+        };
+        return $"background-color: {color}; color: #fff;";
+    }
+
+    private async Task OnDayClick(DateTime day)
+    {
+        if (OnDateSelected.HasDelegate)
+            await OnDateSelected.InvokeAsync(day);
+    }
+}

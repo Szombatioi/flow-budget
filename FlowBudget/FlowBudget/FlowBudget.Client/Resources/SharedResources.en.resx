@@ -797,6 +797,12 @@
   <data name="diagram_title_burndown" xml:space="preserve">
     <value>Burndown chart: Desired vs. Actual spending</value>
   </data>
+  <data name="diagram_title_heatmap" xml:space="preserve">
+    <value>Spending heatmap</value>
+  </data>
+  <data name="heatmap_date_selected" xml:space="preserve">
+    <value>Selected day: {0}</value>
+  </data>
   <data name="nav_expenses" xml:space="preserve">
     <value>Expenses</value>
   </data>
