@@ -48,6 +48,7 @@
             lastDay = firstDay.AddDays(6);
             days = GetDaysInRange(firstDay, lastDay);
             _xAxisLabels = days.Select(d => d.DayOfWeek.ToString()).ToArray();
+            _chartOptions.XAxisLabelRotation = 0;
         }
         else
         {

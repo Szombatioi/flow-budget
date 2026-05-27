@@ -5,44 +5,62 @@
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<SharedResources> L
 
+<PageTitle>@L["nav_planning_and_setup"]</PageTitle>
+
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
     @if (_isLoading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
     }
-    else if (_selectedAccountId != null)
+    else if (_accounts.Count == 0)
     {
-        <MudStack Spacing="6">
-            @* Pass the ID to all children *@
-            <IncomePaper AccountId="@_selectedAccountId" />
-
-            <PocketsPaper AccountId="@_selectedAccountId" />
-
-            <FixedExpensesPaper AccountId="@_selectedAccountId" />
-
-            <CategoryPaper />
-        </MudStack>
+        <MudAlert Severity="Severity.Info">@L["no_accounts_found"]</MudAlert>
     }
     else
     {
-        <MudAlert Severity="Severity.Info">@L["no_accounts_found"]</MudAlert>
+        <MudSelect T="AccountDTO"
+                   Value="_selectedAccount"
+                   ValueChanged="OnAccountChanged"
+                   Label="@L["select_account"]"
+                   Variant="Variant.Outlined"
+                   ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                   AnchorOrigin="Origin.BottomCenter"
+                   Dense="true"
+                   Class="mb-4"
+                   Style="max-width: 240px;">
+            @foreach (var account in _accounts)
+            {
+                <MudSelectItem Value="@account">@account.Name (@account.CurrencyCode)</MudSelectItem>
+            }
+        </MudSelect>
+
+        @if (_selectedAccount != null)
+        {
+            <MudStack Spacing="6">
+                @* Pass the ID to all children *@
+                <IncomePaper AccountId="@_selectedAccount.Id" />
+
+                <FixedExpensesPaper AccountId="@_selectedAccount.Id" />
+
+                <PocketsPaper AccountId="@_selectedAccount.Id" />
+
+                <CategoryPaper />
+            </MudStack>
+        }
     }
 </MudContainer>
 
 @code {
     private bool _isLoading = true;
-    private string? _selectedAccountId;
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? _selectedAccount;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var accounts = await http.GetFromJsonAsync<List<AccountDTO>>("api/accounts");
-            if (accounts != null && accounts.Any())
-            {
-                // Default to the first account
-                _selectedAccountId = accounts[0].Id;
-            }
+            _accounts = await http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            _selectedAccount = _accounts.FirstOrDefault();
         }
         catch (Exception)
         {
@@ -52,5 +70,10 @@
         {
             _isLoading = false;
         }
+    }
+
+    private void OnAccountChanged(AccountDTO account)
+    {
+        _selectedAccount = account;
     }
 }

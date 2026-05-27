@@ -1,12 +1,16 @@
 @page "/wishlist"
 @using global::DTO
 @using FlowBudget.Client.Components
+@using FlowBudget.Client.Components.Dialogs
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject NavigationManager Nav
+@inject IDialogService DialogService
+
+<PageTitle>@L["wishlist_page_title"]</PageTitle>
 
 <div class="pa-4 d-flex justify-space-between align-center">
     <MudText Typo="Typo.h3">@L["wishlist_page_title"]</MudText>
@@ -61,9 +65,28 @@ else
         }
     }
 
-    private void OnDisplay(WishlistDTO wishlist)
+    private async Task OnDisplay(WishlistDTO wishlist)
     {
-        // Placeholder until the details/activate-deactivate dialog is built.
-        Snackbar.Add(string.Format(L["wishlist_display_placeholder"].ToString(), wishlist.Name), Severity.Info);
+        var parameters = new DialogParameters<WishlistDetailsDialog>
+        {
+            { x => x.WishlistId, wishlist.Id }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<WishlistDetailsDialog>(wishlist.Name, parameters, options);
+        // Status/delete changes can have happened inside the dialog — reload either way.
+        await dialog.Result;
+        await ReloadWishlists();
+    }
+
+    private async Task ReloadWishlists()
+    {
+        try
+        {
+            _wishlists = await Http.GetFromJsonAsync<List<WishlistDTO>>("api/wishlists") ?? new();
+        }
+        catch
+        {
+            _wishlists = new();
+        }
     }
 }

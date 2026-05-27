@@ -145,6 +145,8 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         var dailyExpense = await db.DailyExpenses
             .Include(de => de.Expenditures)
             .ThenInclude(e => e.Category)
+            .Include(de => de.Expenditures)
+            .ThenInclude(e => e.Wishlist)
             .Include(de => de.Pocket)
             .ThenInclude(p => p.DivisionPlan)
             .ThenInclude(p => p.Account)
@@ -407,6 +409,8 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
                          && de.Date.Date <= to.Date)
             .Include(de => de.Expenditures)
             .ThenInclude(e => e.Category)
+            .Include(de => de.Expenditures)
+            .ThenInclude(e => e.Wishlist)
             .ToListAsync();
 
         return dailyExpenses
@@ -419,6 +423,29 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             }))
             .OrderBy(x => x.Date)
             .ToList();
+    }
+
+    public async Task<List<WishlistAffectedExpenseDTO>> GetInRange(string userId, string pocketId, DateTime from, DateTime to)
+    {
+        var pocket = await db.Pockets
+            .Include(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
+            .SingleOrDefaultAsync(p => p.Id == pocketId)
+            ?? throw new NotFoundException();
+        if (pocket.DivisionPlan.Account.UserId != userId)
+            throw new UnauthorizedAccessException();
+
+        return await db.DailyExpenses
+            .Where(de => de.PocketId == pocketId
+                         && de.Date.Date >= from.Date
+                         && de.Date.Date <= to.Date)
+            .OrderBy(de => de.Date)
+            .Select(de => new WishlistAffectedExpenseDTO
+            {
+                Id = de.Id,
+                Date = de.Date,
+                PocketName = pocket.Name
+            })
+            .ToListAsync();
     }
 
     public async Task<List<DailyBudgetDTO>> GetBudgetSeries(string userId, string pocketId, DateTime from, DateTime to)

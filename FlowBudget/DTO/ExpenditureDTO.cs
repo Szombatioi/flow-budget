@@ -13,6 +13,8 @@ public class ExpenditureDTO
     public string Currency { get; set; }
     public CategoryDTO? Category { get; set; }
     public string PocketName { get; set; } = string.Empty;
+    public string? WishlistId { get; set; }
+    public string? WishlistName { get; set; }
 }
 
 public class ExpenditureStatsDTO

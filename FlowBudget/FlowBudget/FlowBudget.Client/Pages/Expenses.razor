@@ -10,6 +10,8 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Nav
 
+<PageTitle>@L["nav_expenses"]</PageTitle>
+
 <MudText Typo="Typo.h3">@L["expenses_page_title"]</MudText>
 
 <MudPaper Elevation="0" Class="pa-6 mb-6" Style=@($"background-color: {CustomColors.LightPaper}; border-radius: 16px;")>
@@ -85,18 +87,12 @@
     </MudGrid>
 </MudPaper>
 
-@* Here comes the table of expenses:
-HEADER: Date, Category, Description, Pocket, Amount
-TABLE: rows of the fetched expenses
-FOOTER:
-    left side: "Showing x - y of z expenses
-    right side: (pagination) < 1  2  3 ... >
-*@
 <MudPaper Elevation="2" Class="mb-6" Style="border-radius: 16px; overflow: hidden;">
     <MudTable T="ExpenditureDTO" Items="@_expenses" Loading="_loading" Hover="true" Dense="false">
         <HeaderContent>
             <MudTh>@L["date"]</MudTh>
             <MudTh>@L["category"]</MudTh>
+            <MudTh>@L["name"]</MudTh>
             <MudTh>@L["description"]</MudTh>
             <MudTh>@L["pocket"]</MudTh>
             <MudTh Style="text-align: right;">@L["amount"]</MudTh>
@@ -114,9 +110,15 @@ FOOTER:
             </MudTd>
             <MudTd>
                 <MudText Typo="Typo.body2" Style="font-weight: 700;">@context.Name</MudText>
+            </MudTd>
+            <MudTd>
                 @if (!string.IsNullOrWhiteSpace(context.Description))
                 {
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@context.Description</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Description</MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["no_description"]</MudText>
                 }
             </MudTd>
             <MudTd>
@@ -153,10 +155,6 @@ FOOTER:
     </div>
 </MudPaper>
 
-@* Here comes the bottom of the page:
-Monthly spend summary card (e.g. 123 412 HUF)
-Weekly spend summary card
-*@
 <MudGrid>
     <MudItem xs="12" md="3">
         <MudPaper Elevation="0" Class="pa-6"
@@ -205,8 +203,7 @@ Weekly spend summary card
     private int From => _total == 0 ? 0 : (_page - 1) * PageSize + 1;
     private int To => Math.Min(_page * PageSize, _total);
     private int PageCount => Math.Max(1, (int)Math.Ceiling(_total / (double)PageSize));
-
-    // Matches the { count, value } wrapper the controller returns.
+    
     private class PagedResult<T>
     {
         [JsonPropertyName("count")] public long Count { get; set; }
@@ -228,9 +225,7 @@ Weekly spend summary card
         try
         {
             _categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories") ?? new();
-
-            // Gather unique pocket names across all the user's accounts/plans so
-            // the toggle buttons reflect the user's own pocket naming.
+            
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var accId in UserDto?.AccountIds ?? new List<string>())
             {

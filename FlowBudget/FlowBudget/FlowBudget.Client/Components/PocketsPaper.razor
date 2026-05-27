@@ -7,7 +7,26 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject HttpClient http
-<MudContainer MaxWidth="MaxWidth.Medium">
+
+<style>
+    .pockets-paper-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    @@media (max-width: 599px) {
+        .pockets-paper-bottom {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+        .pockets-paper-bottom > div {
+            justify-content: center;
+        }
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
     <MudPaper Elevation="3" Class="pa-6">
 
         <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6">
@@ -34,23 +53,23 @@
                     {
                         <MudListItem>
                             <MudGrid Class="align-center">
-                                <MudItem xs="4">
+                                <MudItem xs="12" sm="4">
                                     <MudText Typo="Typo.body1">@pocket.Name</MudText>
                                 </MudItem>
 
-                                <MudItem xs="3">
+                                <MudItem xs="6" sm="3">
                                     <MudText Typo="Typo.body1">
-                                        @((((decimal)pocket.Ration / 100m) * _incomes.Sum(i => i.Amount)).ToString("N0")) @SelectedCurrency
+                                        @((((decimal)pocket.Ration / 100m) * DistributableMoney).ToString("N0")) @SelectedCurrency
                                     </MudText>
                                 </MudItem>
 
-                                <MudItem xs="2">
+                                <MudItem xs="6" sm="2">
                                     <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
                                         @pocket.Ration.ToString("N1") %
                                     </MudChip>
                                 </MudItem>
 
-                                <MudItem xs="3" Class="d-flex justify-end">
+                                <MudItem xs="12" sm="3" Class="d-flex justify-end">
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                    OnClick="@(() => EditPocket(pocket))"/>
                                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
@@ -83,72 +102,77 @@
             }
 
             // Bottom
-            <MudContainer Class="d-flex justify-space-between align-center mt-6 w-100" Style="border: 1px solid red;">
+            <MudContainer Class="pockets-paper-bottom mt-6 w-100">
 
                 @* --- Left Side --- *@
-                <MudButton Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           Variant="Variant.Text"
-                           Size="Size.Small"
-                           OnClick="AddPocket"
-                           Disabled="@(string.IsNullOrEmpty(_selectedPlanId))">
-                    @L["add_pocket"]
-                </MudButton>
-                
+                <div class="d-flex">
+                    <MudButton Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Variant="Variant.Text"
+                               Size="Size.Small"
+                               OnClick="AddPocket"
+                               Disabled="@(string.IsNullOrEmpty(_selectedPlanId))">
+                        @L["add_pocket"]
+                    </MudButton>
 
-                <MudContainer xs="6" Class="d-flex flex-column align-center justify-center">
-                    <MudText Typo="Typo.subtitle2">@L["total_ratio"]</MudText>
-                    @{
-                        var totalRatio = _pockets.Sum(x => x.Ration);
-                        var isRatioValid = Math.Abs(totalRatio - 100) < 0.01;
-                    }
-                    <MudChip T="string" Color="@(isRatioValid ? Color.Success : Color.Warning)"
-                             Variant="Variant.Filled">
-                        @totalRatio.ToString("N1") % / 100%
-                    </MudChip>
-                </MudContainer>
+
+                    <MudContainer xs="6" Class="d-flex flex-column align-center justify-center">
+                        <MudText Typo="Typo.subtitle2">@L["total_ratio"]</MudText>
+                        @{
+                            var totalRatio = _pockets.Sum(x => x.Ration);
+                            var isRatioValid = Math.Abs(totalRatio - 100) < 0.01;
+                        }
+                        <MudChip T="string" Color="@(isRatioValid ? Color.Success : Color.Warning)"
+                                 Variant="Variant.Filled">
+                            @totalRatio.ToString("N1") % / 100%
+                        </MudChip>
+                    </MudContainer>
+                </div>
 
                 @* --- Right Side --- *@
-                <MudSelect T="string"
-                           Label="@L["select_division_plan"]"
-                           Value="_selectedPlanId"
-                           ValueChanged="OnPlanChanged"
-                           Variant="Variant.Outlined"
-                           FullWidth="false"
-                           Dense="true"
-                           Margin="Margin.Dense"
-                           Style="width: 280px;">
-                    @if (!_plans.Any())
-                    {
-                        <MudSelectItem Value="@("CREATE_NEW")">
-                            <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
-                                         Color="Color.Primary"/>
-                                <MudText Color="Color.Primary"><b>@L["create_first_plan"]</b></MudText>
-                            </div>
-                        </MudSelectItem>
-                    }
-                    else
-                    {
-                        @foreach (var plan in _plans)
+                <div class="d-flex">
+                    <MudSelect T="string"
+                               Label="@L["select_division_plan"]"
+                               Value="_selectedPlanId"
+                               ValueChanged="OnPlanChanged"
+                               Variant="Variant.Outlined"
+                               FullWidth="false"
+                               Dense="true"
+                               Margin="Margin.Dense"
+                               Class="mx-2"
+                               Style="width: 280px;">
+                        @if (!_plans.Any())
                         {
-                            <MudSelectItem Value="@plan.Id">
-                                @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
+                            <MudSelectItem Value="@("CREATE_NEW")">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                             Color="Color.Primary"/>
+                                    <MudText Color="Color.Primary"><b>@L["create_first_plan"]</b></MudText>
+                                </div>
                             </MudSelectItem>
                         }
+                        else
+                        {
+                            @foreach (var plan in _plans)
+                            {
+                                <MudSelectItem Value="@plan.Id">
+                                    @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
+                                </MudSelectItem>
+                            }
 
-                        @* <MudDivider/> *@
-                        <MudSelectItem Value="@("CREATE_NEW")">
-                            <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
-                                         Color="Color.Primary"/>
-                                <MudText Color="Color.Primary"><b>@L["add_new_plan"]</b></MudText>
-                            </div>
-                        </MudSelectItem>
-                    }
-                </MudSelect>
-                
-                <MudButton OnClick="() => ActivatePlan()" Disabled="_selectedPlanId == _plans.SingleOrDefault(p => p.IsActive)?.Id">@L["activate"]</MudButton>
+                            @* <MudDivider/> *@
+                            <MudSelectItem Value="@("CREATE_NEW")">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                             Color="Color.Primary"/>
+                                    <MudText Color="Color.Primary"><b>@L["add_new_plan"]</b></MudText>
+                                </div>
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudButton OnClick="() => ActivatePlan()" Disabled="_selectedPlanId == _plans.SingleOrDefault(p => p.IsActive)?.Id">@L["activate"]</MudButton>
+                </div>
             </MudContainer>
         }
     </MudPaper>
@@ -160,6 +184,8 @@
     private List<PocketDTO> _pockets = new();
     private List<DivisionPlanDTO> _plans = new();
     private List<IncomeDTO> _incomes = new();
+    private List<FixedExpenseDTO> _fixedExpenses = new();
+    private decimal DistributableMoney => _incomes.Sum(i => i.Amount) - _fixedExpenses.Sum(e => e.Amount);
 
     private string? _selectedPlanId;
     private string SelectedCurrency = "HUF";
@@ -180,15 +206,15 @@
         _isLoading = true;
         try
         {
-            // Fetch Plans and Incomes simultaneously for better performance
+            // Fetch Plans, Incomes and Fixed expenses simultaneously.
             var plansTask = http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{AccountId}");
             var incomesTask = http.GetFromJsonAsync<List<IncomeDTO>>($"api/incomes/{AccountId}");
-            
-            await Task.WhenAll(plansTask, incomesTask);
-            Console.WriteLine(plansTask);
-            Console.WriteLine(incomesTask);
+            var fixedExpensesTask = http.GetFromJsonAsync<List<FixedExpenseDTO>>($"api/fixed-expenses/{AccountId}");
+
+            await Task.WhenAll(plansTask, incomesTask, fixedExpensesTask);
             _plans = await plansTask ?? new();
             _incomes = await incomesTask ?? new();
+            _fixedExpenses = await fixedExpensesTask ?? new();
 
             var activePlan = _plans.FirstOrDefault(x => x.IsActive) ?? _plans.FirstOrDefault();
             _selectedPlanId = activePlan?.Id;
@@ -265,7 +291,7 @@
             { x => x.Currency, SelectedCurrency },
             { x => x.Model, new PocketDTO() },
             { x => x.PresentPockets, _pockets },
-            { x => x.Incomes, _incomes.Sum(i => i.Amount) },
+            { x => x.Incomes, DistributableMoney },
         };
 
         var dialog = await DialogService.ShowAsync<AddPocketDialog>(L["add_pocket"], parameters, _standardOptions);
@@ -307,7 +333,7 @@
             { x => x.Currency, SelectedCurrency },
             { x => x.Model, modelCopy },
             { x => x.PresentPockets, _pockets },
-            { x => x.Incomes, _incomes.Sum(i => i.Amount) },
+            { x => x.Incomes, DistributableMoney },
         };
 
         var editDialog = await DialogService.ShowAsync<AddPocketDialog>(L["edit_pocket"], editParameters, _standardOptions);

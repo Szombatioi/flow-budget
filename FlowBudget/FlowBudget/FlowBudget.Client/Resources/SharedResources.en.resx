@@ -344,6 +344,57 @@
   <data name="wishlist_link_confirm_description" xml:space="preserve">
     <value>This day's remaining money will be moved to "{0}". Continue?</value>
   </data>
+  <data name="wishlist_link_none" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="wishlist_unlink_confirm_title" xml:space="preserve">
+    <value>Unlink from wishlist</value>
+  </data>
+  <data name="wishlist_unlink_confirm_description" xml:space="preserve">
+    <value>This day will no longer contribute its remaining money to the wishlist. Continue?</value>
+  </data>
+  <data name="wishlist_prefix" xml:space="preserve">
+    <value>Wishlist</value>
+  </data>
+  <data name="wishlist_approach" xml:space="preserve">
+    <value>Approach</value>
+  </data>
+  <data name="wishlist_progress" xml:space="preserve">
+    <value>Progress</value>
+  </data>
+  <data name="status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="wishlist_status_inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="wishlist_status_active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="wishlist_status_completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="wishlist_activate" xml:space="preserve">
+    <value>Activate</value>
+  </data>
+  <data name="wishlist_deactivate" xml:space="preserve">
+    <value>Deactivate</value>
+  </data>
+  <data name="wishlist_activate_confirm" xml:space="preserve">
+    <value>Activate this wishlist? Affected daily expenses will start contributing on the next day end.</value>
+  </data>
+  <data name="wishlist_deactivate_confirm" xml:space="preserve">
+    <value>Deactivate this wishlist? It will stop receiving new contributions until reactivated.</value>
+  </data>
+  <data name="wishlist_delete" xml:space="preserve">
+    <value>Delete wishlist</value>
+  </data>
+  <data name="wishlist_delete_confirm" xml:space="preserve">
+    <value>Delete this wishlist? Linked daily expenses and progress entries will be unlinked. This cannot be undone.</value>
+  </data>
+  <data name="delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
   <data name="create_account" xml:space="preserve">
     <value>Create account</value>
   </data>
@@ -580,6 +631,21 @@
   </data>
   <data name="register" xml:space="preserve">
     <value>Register</value>
+  </data>
+  <data name="page_title_wishlist_new" xml:space="preserve">
+    <value>Create wishlist</value>
+  </data>
+  <data name="registration_success" xml:space="preserve">
+    <value>Registration successful.</value>
+  </data>
+  <data name="registration_failed" xml:space="preserve">
+    <value>Registration failed</value>
+  </data>
+  <data name="error_connecting_to_server" xml:space="preserve">
+    <value>Could not connect to the server.</value>
+  </data>
+  <data name="user_already_exists" xml:space="preserve">
+    <value>A user with that username or email already exists.</value>
   </data>
   <data name="no_account_yet" xml:space="preserve">
     <value>No account yet?</value>
@@ -940,5 +1006,65 @@
   </data>
   <data name="wishlist_completed" xml:space="preserve">
     <value>Wishlist is already completed!</value>
+  </data>
+  <data name="wishlist_move_tab" xml:space="preserve">
+    <value>Wishlist</value>
+  </data>
+  <data name="wishlist" xml:space="preserve">
+    <value>Wishlist</value>
+  </data>
+  <data name="wishlist_fields_required" xml:space="preserve">
+    <value>Wishlist, Name, Amount and Date fields are required!</value>
+  </data>
+  <data name="publish_rss_update" xml:space="preserve">
+    <value>Publish RSS Update</value>
+  </data>
+  <data name="admin_version_id_label" xml:space="preserve">
+    <value>Version / ID</value>
+  </data>
+  <data name="admin_version_id_placeholder" xml:space="preserve">
+    <value>e.g. v1.2.0 or hotfix-2026-05-04</value>
+  </data>
+  <data name="admin_title_label" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="admin_title_placeholder" xml:space="preserve">
+    <value>e.g. [v1.2.0] Receipt scanning</value>
+  </data>
+  <data name="admin_description_placeholder" xml:space="preserve">
+    <value>What changed, what was fixed, or current status…</value>
+  </data>
+  <data name="admin_publish_button" xml:space="preserve">
+    <value>Publish</value>
+  </data>
+  <data name="admin_publishing" xml:space="preserve">
+    <value>Publishing…</value>
+  </data>
+  <data name="admin_preview_feed" xml:space="preserve">
+    <value>Preview feed</value>
+  </data>
+  <data name="admin_required_warning" xml:space="preserve">
+    <value>Title and Description are required.</value>
+  </data>
+  <data name="admin_publish_success" xml:space="preserve">
+    <value>RSS entry published successfully.</value>
+  </data>
+  <data name="admin_publish_failed" xml:space="preserve">
+    <value>Failed: {0}</value>
+  </data>
+  <data name="admin_category_release" xml:space="preserve">
+    <value>Release</value>
+  </data>
+  <data name="admin_category_hotfix" xml:space="preserve">
+    <value>Hotfix</value>
+  </data>
+  <data name="admin_category_status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="admin_category_maintenance" xml:space="preserve">
+    <value>Maintenance</value>
+  </data>
+  <data name="price_cannot_be_zero" xml:space="preserve">
+    <value>Price cannot be null</value>
   </data>
 </root>

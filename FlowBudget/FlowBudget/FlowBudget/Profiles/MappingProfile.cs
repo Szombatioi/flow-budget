@@ -21,7 +21,12 @@ public class MappingProfile : Profile
                 src.DailyExpense.Pocket.DivisionPlan.Account.CurrencyCode))
             .ForMember(dest => dest.PocketName, opt => opt.MapFrom(src =>
                 src.DailyExpense.Pocket.Name))
+            .ForMember(dest => dest.WishlistName, opt => opt.MapFrom(src =>
+                src.Wishlist != null ? src.Wishlist.Name : null))
             .ReverseMap();
+
+        CreateMap<DailyExpense, WishlistAffectedExpenseDTO>()
+            .ForMember(d => d.PocketName, opt => opt.MapFrom(s => s.Pocket.Name));
 
         CreateMap<Wishlist, WishlistDTO>()
             .ForMember(d => d.TargetAmount, opt => opt.MapFrom(s => s.Goal))

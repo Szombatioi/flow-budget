@@ -44,6 +44,7 @@
             lastDay = firstDay.AddDays(6);
             days = GetDaysInRange(firstDay, lastDay);
             _xAxisLabels = days.Select(d => d.DayOfWeek.ToString()).ToArray();
+            _chartOptions.XAxisLabelRotation = 0;
         }
         else
         {
@@ -51,6 +52,7 @@
             lastDay = firstDay.AddMonths(1).AddDays(-1);
             days = GetDaysInRange(firstDay, lastDay);
             _xAxisLabels = days.Select(d => d.ToString("MM.dd")).ToArray();
+            _chartOptions.XAxisLabelRotation = 60;
         }
 
         // Fetch expenditures and daily budgets in parallel

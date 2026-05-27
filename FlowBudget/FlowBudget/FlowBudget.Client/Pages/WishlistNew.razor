@@ -7,6 +7,8 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Nav
 
+<PageTitle>@L["page_title_wishlist_new"]</PageTitle>
+
 <div class="pa-4 d-flex justify-center">
     <MudPaper Class="pa-6 w-100 mb-2" Elevation="0" Style="max-width: 900px; border-radius: 16px;">
         <MudText Typo="Typo.h3" Align="Align.Center">@L["create_new_wishlist"]</MudText>
@@ -176,7 +178,7 @@
         }
         catch
         {
-            // Silent — page is still usable without accounts loaded.
+            Snackbar.Add(L["error_loading_accounts"], Severity.Error);
         }
     }
 
@@ -194,7 +196,7 @@
         }
         catch
         {
-            // Silent — leaves _pockets empty.
+            Snackbar.Add(L["error_loading_pockets"], Severity.Error);
         }
     }
 

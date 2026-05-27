@@ -10,7 +10,7 @@ namespace FlowBudget.Services;
 
 public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyExpenseService dailyExpenseService)
 {
-    public async Task AddExpenditure(string userId, string pocketId, CreateExpenditureDTO dto)
+    public async Task<Expenditure> AddExpenditure(string userId, string pocketId, CreateExpenditureDTO dto)
     {
         var user = await db.Users
             .Include(u => u.Accounts)
@@ -47,7 +47,7 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
         var newExpenditure = new Expenditure()
         {
             Date = dto.Date ?? DateTime.Now,
-            Price = -1 * dto.Price,
+            Price = dto.Price,
             Name  = dto.Name,
             Description  = dto.Description,
             CategoryId = dto.CategoryId,
@@ -63,6 +63,8 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
 
         await db.SaveChangesAsync();
         await dailyExpenseService.RecalculateStartedDaysFromDate(pocket.Id, newExpenditure.Date);
+
+        return newExpenditure;
     }
 
     public async Task UpdateExpenditure(string userId, string expenditureId, UpdateExpenditureDTO dto)

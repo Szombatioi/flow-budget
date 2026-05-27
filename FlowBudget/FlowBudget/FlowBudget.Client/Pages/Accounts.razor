@@ -9,6 +9,8 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
+<PageTitle>@L["nav_accounts"]</PageTitle>
+
 @if (isLoading)
 {
     <MudContainer Class="d-flex justify-center align-center">
@@ -17,7 +19,7 @@
 }
 else
 {
-    <MudContainer Class="w-50 mx-auto">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto">
         <MudPaper Elevation="3" Class="p-4 d-flex flex-column">
             <MudText Align="Align.Center" Typo="Typo.h4">@L["create_account"]</MudText>
             <MudTextField T="string"
@@ -45,7 +47,7 @@ else
         </MudPaper>
     </MudContainer>
 
-    <MudContainer Class="w-50 mx-auto">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto">
         <MudTable Elevation="3" Items="accounts" Hover="true" Striped="true" Class="mt-4 p-4">
             <HeaderContent>
                 <MudTh>@L["account_name"]</MudTh>

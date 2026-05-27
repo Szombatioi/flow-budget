@@ -46,6 +46,17 @@
                     @(string.IsNullOrWhiteSpace(Expenditure.Description) ? L["no_description"] : Expenditure.Description)
                 </MudText>
             </MudListItem>
+            @if (Expenditure.WishlistId != null)
+            {
+                <MudDivider />
+                <MudListItem T="string">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["wishlist_prefix"]</MudText>
+                    <MudText Typo="Typo.body1">
+                        <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Size="Size.Small" Class="mr-1 mb-n1" />
+                        @(Expenditure.WishlistName ?? string.Empty)
+                    </MudText>
+                </MudListItem>
+            }
         </MudList>
     </DialogContent>
     <DialogActions>

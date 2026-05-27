@@ -42,13 +42,35 @@ public class WishlistsController(WishlistService wishlistService) : ApiBaseContr
         await wishlistService.Delete(UserId, id);
         return NoContent();
     }
-
-    // Moves a daily expense to a different wishlist. The previous wishlist (if any)
-    // loses the affiliation automatically because the FK on DailyExpense is reassigned.
+    
     [HttpPost("{wishlistId}/align/{dailyExpenseId}")]
     public async Task<ActionResult> Align(string wishlistId, string dailyExpenseId)
     {
         await wishlistService.Align(UserId, dailyExpenseId, wishlistId);
         return NoContent();
+    }
+
+    [HttpDelete("align/{dailyExpenseId}")]
+    public async Task<ActionResult> Unalign(string dailyExpenseId)
+    {
+        await wishlistService.Unalign(UserId, dailyExpenseId);
+        return NoContent();
+    }
+
+    // The service throws InvalidOperationException with a translatable key
+    // (e.g. "wishlist_inactive"). Surface the key as a plain-text 400 body so the
+    // UI can look it up via the localizer.
+    [HttpPost("move/{wishlistId}/{pocketId}")]
+    public async Task<ActionResult> MoveMoneyToWishlist(string pocketId, string wishlistId, MoveMoneyDTO dto)
+    {
+        try
+        {
+            await wishlistService.MoveMoneyToWishlist(UserId, pocketId, wishlistId, dto);
+            return Created();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new ContentResult { Content = ex.Message, ContentType = "text/plain", StatusCode = 400 };
+        }
     }
 }

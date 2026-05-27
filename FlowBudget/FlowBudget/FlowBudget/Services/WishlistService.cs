@@ -1,5 +1,6 @@
 using AutoMapper;
 using DTO;
+using FlowBudget.Client.Components.DTO;
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
 using FlowBudget.Services.Exceptions;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlowBudget.Services;
 
-public class WishlistService(ApplicationDbContext db, IMapper mapper)
+public class WishlistService(ApplicationDbContext db, IMapper mapper, ExpenditureService expenditureService)
 {
     public async Task<WishlistDTO> Create(string userId, CreateWishlistDTO dto)
     {
@@ -68,18 +69,20 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
     public async Task<WishlistDTO> Get(string userId, string wishlistId)
     {
         var entity = await db.Wishlists
-            .Include(w => w.Account)
-            .Include(w => w.Progress)
-            .Include(w => w.AffectedDailyExpenses)
-            .SingleOrDefaultAsync(w => w.Id == wishlistId && w.Account.UserId == userId)
-            ?? throw new NotFoundException();
+                         .Include(w => w.Account)
+                         .Include(w => w.Progress)
+                         .Include(w => w.AffectedDailyExpenses)
+                         .ThenInclude(de => de.Pocket)
+                         .SingleOrDefaultAsync(w => w.Id == wishlistId && w.Account.UserId == userId)
+                     ?? throw new NotFoundException();
 
         var dto = mapper.Map<WishlistDTO>(entity);
         dto.Status = entity.Status;
         return dto;
     }
 
-    public async Task MoveMoneyToWishlist(string userId, string pocketId, string wishlistId, MoveMoneyDTO dto, bool saveImmediately = true)
+    public async Task MoveMoneyToWishlist(string userId, string pocketId, string wishlistId, MoveMoneyDTO dto,
+        bool saveImmediately = true)
     {
         var user = await db.Users
             .Include(u => u.Accounts)
@@ -90,7 +93,7 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
         {
             throw new NotFoundException();
         }
-        
+
         var pocket = await db.Pockets
             .Include(pocket => pocket.DivisionPlan)
             .SingleOrDefaultAsync(p => p.Id == pocketId);
@@ -98,12 +101,12 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
         {
             throw new NotFoundException();
         }
-        
+
         if (user.Accounts.All(a => a.DivisionPlans.All(dp => dp.Pockets.All(p => p.Id != pocketId))))
         {
             throw new UnauthorizedAccessException();
         }
-        
+
         //Find DailyExpense
         var dailyExpense = await db.DailyExpenses
             .Include(de => de.Expenditures)
@@ -112,7 +115,7 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
         {
             throw new NotFoundException();
         }
-        
+
         var wishlist = await db.Wishlists
             .Include(wishlist => wishlist.Account).Include(wishlist => wishlist.Progress)
             .Include(wishlist => wishlist.AffectedDailyExpenses)
@@ -122,51 +125,67 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
             throw new NotFoundException();
         }
 
-        if (wishlist.Account.UserId == userId)
+        if (wishlist.Account.UserId != userId)
         {
             throw new UnauthorizedAccessException();
         }
-        
-        
+
+
         //Check if DE is started
         if (!dailyExpense.IsStarted)
         {
             throw new InvalidOperationException("de_not_started");
         }
-        
+
         //Check if Wishlist is Inactive or Completed
         if (wishlist.Status == WishlistStatus.Inactive)
         {
             throw new InvalidOperationException("wishlist_inactive");
         }
+
         if (wishlist.Status == WishlistStatus.Completed)
         {
             throw new InvalidOperationException("wishlist_completed");
         }
-        
-        //Expenditure entity, with Wishlist!
-        var expense = new Expenditure()
+
+        // //Expenditure entity, with Wishlist!
+        // var expense = new Expenditure()
+        // {
+        //     Name = dto.Name,
+        //     Description = dto.Description,
+        //     Date = dto.Date,
+        //     Price = dto.Amount,
+        //     CategoryId = null,
+        //     Category = null,
+        //     DailyExpenseId =  dailyExpense.Id,
+        //     DailyExpense =  dailyExpense,
+        //     WishlistId = wishlist.Id,
+        //     Wishlist =  wishlist,
+        // };
+        //
+        // await db.Expenditures.AddAsync(expense); //wishlist.Progress SHOULD contain the expense now
+
+        //Instead, we call expenditureService, then update the Wishlist entity!
+        //Create a dto that matches
+
+        var newDto = new CreateExpenditureDTO()
         {
             Name = dto.Name,
-            Description = dto.Description,
-            Date = dto.Date,
             Price = dto.Amount,
-            CategoryId = null,
-            Category = null,
-            DailyExpenseId =  dailyExpense.Id,
-            DailyExpense =  dailyExpense,
-            WishlistId = wishlist.Id,
-            Wishlist =  wishlist,
+            Description = dto.Description,
+            PocketId = pocketId,
+            Date = dto.Date,
         };
-        
-        await db.Expenditures.AddAsync(expense); //wishlist.Progress SHOULD contain the expense now
-        
+        var expenditure = await expenditureService.AddExpenditure(userId, pocketId, newDto);
+
+        wishlist.Progress.Add(expenditure);
+
         //Check if wishlist is finished
         if (wishlist.Progress.Sum(p => p.Price) >= wishlist.Goal)
         {
             //1. set status to Completed
             wishlist.Status = WishlistStatus.Completed;
-            
+
             //2. remove future DEs from AffectedDEs (only for Automatic mode)
             if (wishlist.Mode == WishlistApproachType.Automatic)
             {
@@ -177,9 +196,50 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
                 }
             }
         }
-        
-        if(saveImmediately) await db.SaveChangesAsync();
-        
+
+        if (saveImmediately) await db.SaveChangesAsync();
+    }
+
+    public async Task MoveRemainingMoneyToWishlist()
+    {
+        var today = DateTime.Today;
+
+        var dailyExpenses = await db.DailyExpenses
+            .Include(de => de.Wishlist)
+            .ThenInclude(w => w!.Account)
+            .Where(de => de.Date.Date == today
+                         && de.EoDAmount > 0
+                         && de.WishlistId != null
+                         && de.Wishlist!.Status == WishlistStatus.Active)
+            .ToListAsync();
+
+        foreach (var de in dailyExpenses)
+        {
+            try
+            {
+                var dto = new MoveMoneyDTO
+                {
+                    Name = $"[Sweep] ({de.Date:yyyy-MM-dd})",
+                    Description = string.Empty,
+                    Amount = de.EoDAmount,
+                    Date = de.Date
+                };
+
+                await MoveMoneyToWishlist(
+                    de.Wishlist!.Account.UserId,
+                    de.PocketId,
+                    de.WishlistId!,
+                    dto,
+                    saveImmediately: false
+                );
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     public async Task Activate(string userId, string wishlistId)
@@ -208,9 +268,9 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
         var target = await GetWishlist(userId, toWishlistId);
 
         var de = await db.DailyExpenses
-            .Include(d => d.Pocket).ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
-            .SingleOrDefaultAsync(d => d.Id == dailyExpenseId)
-            ?? throw new NotFoundException();
+                     .Include(d => d.Pocket).ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
+                     .SingleOrDefaultAsync(d => d.Id == dailyExpenseId)
+                 ?? throw new NotFoundException();
         if (de.Pocket.DivisionPlan.Account.UserId != userId)
             throw new UnauthorizedAccessException();
 
@@ -219,12 +279,25 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper)
         await db.SaveChangesAsync();
     }
 
+    public async Task Unalign(string userId, string dailyExpenseId)
+    {
+        var de = await db.DailyExpenses
+                     .Include(d => d.Pocket).ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
+                     .SingleOrDefaultAsync(d => d.Id == dailyExpenseId)
+                 ?? throw new NotFoundException();
+        if (de.Pocket.DivisionPlan.Account.UserId != userId)
+            throw new UnauthorizedAccessException();
+
+        de.WishlistId = null;
+        await db.SaveChangesAsync();
+    }
+
     private async Task<Wishlist> GetWishlist(string userId, string wishlistId)
     {
         var w = await db.Wishlists
-            .Include(w => w.Account)
-            .SingleOrDefaultAsync(w => w.Id == wishlistId)
-            ?? throw new NotFoundException();
+                    .Include(w => w.Account)
+                    .SingleOrDefaultAsync(w => w.Id == wishlistId)
+                ?? throw new NotFoundException();
         if (w.Account.UserId != userId) throw new UnauthorizedAccessException();
         return w;
     }

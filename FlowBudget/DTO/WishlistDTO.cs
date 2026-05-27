@@ -20,6 +20,9 @@ public class WishlistDTO
     public string CurrencyCode { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public WishlistStatus Status { get; set; }
+
+    // Populated by Get (single wishlist); empty when returned from GetAll.
+    public List<WishlistAffectedExpenseDTO> AffectedDailyExpenses { get; set; } = new();
 }
 
 public enum WishlistStatus

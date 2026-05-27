@@ -65,7 +65,8 @@ namespace FlowBudget.Controllers
             if (result.Succeeded)
             {
                 // 3. Optional: Automatically sign them in after successful registration
-                await _signInManager.SignInAsync(user, isPersistent: false);
+                // RememberMe-equivalent: persistent cookie so the new user stays signed in across browser restarts.
+                await _signInManager.SignInAsync(user, isPersistent: true);
                 
                 return Ok(new { Message = "User registered and logged in." });
             }

@@ -1,11 +1,18 @@
 @using FlowBudget.Client.Components.DTO
+@inject IStringLocalizer<SharedResources> L
 
 <div class="py-2"
      style="@RowStyle"
      @onclick="@(() => OnClick.InvokeAsync(Expenditure))"
      @onmouseover="@(() => _hovered = true)"
      @onmouseout="@(() => _hovered = false)">
-    <MudText Typo="Typo.h6">@Expenditure.Name</MudText>
+    <MudText Typo="Typo.h6">
+        @if (Expenditure.WishlistId != null)
+        {
+            <span class="mud-text-secondary">[@L["wishlist_prefix"]] </span><text> </text>
+        }
+        @Expenditure.Name
+    </MudText>
     <div style="display: flex; align-items: center; gap: 4px;"
          @onclick:stopPropagation="true">
         <MudText Typo="Typo.h6">@Expenditure.Price @Expenditure.Currency</MudText>

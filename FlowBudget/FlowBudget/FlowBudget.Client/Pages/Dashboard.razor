@@ -6,12 +6,16 @@
 @using FlowBudget.Client.Components.Dialogs
 @using FlowBudget.Client.Components.Helpers
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @attribute [Authorize]
+
+<PageTitle>@L["nav_dashboard"]</PageTitle>
 
 @if (UserDto is null || IsLoading)
 {
@@ -53,13 +57,45 @@ else
         .no-hover-chart {
             pointer-events: none;
         }
+
+        .dashboard-toolbar {
+            display: flex;
+            align-items: center;
+        }
+        .dashboard-toolbar > .toolbar-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .dashboard-toolbar > .toolbar-center {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dashboard-toolbar > .toolbar-spacer {
+            flex: 1;
+        }
+        @@media (max-width: 599px) {
+            .dashboard-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .dashboard-toolbar > .toolbar-left {
+                align-items: stretch;
+            }
+            .dashboard-toolbar > .toolbar-spacer {
+                display: none;
+            }
+        }
     </style>
 
     <MudGrid Justify="Justify.Center" Spacing="0">
 
         @* Date navigation *@
-        <MudItem xs="12" Class="align-center mb-2" Style="display: flex;">
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+        <MudItem xs="12" Class="dashboard-toolbar mb-2">
+            <div class="toolbar-left">
                 <MudSelect T="AccountDTO"
                            Value="SelectedAccount"
                            ValueChanged="OnAccountChanged!"
@@ -89,7 +125,7 @@ else
                     }
                 </MudSelect>
             </div>
-            <div style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;">
+            <div class="toolbar-center">
                 <div style="display: flex; align-items: center;">
                     <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
                                    OnClick="@(() => NavigateToDay(SelectedDate.AddDays(-1)))"
@@ -105,7 +141,7 @@ else
                 </div>
                 <MudButton OnClick="@(() => NavigateToDay(DateTime.Today))">@(L["today"])</MudButton>
             </div>
-            <div style="flex: 1;"></div>
+            <div class="toolbar-spacer"></div>
         </MudItem>
 
         @* Account + Pocket selectors *@
@@ -191,8 +227,9 @@ else
                                        Dense="true"
                                        Clearable="false"
                                        Disabled="@(SelectedDate.Date < DateTime.Today || _wishlists.Count == 0)"
-                                       ToStringFunc="@(w => w?.Name ?? string.Empty)"
+                                       ToStringFunc="@(w => w?.Name ?? L["wishlist_link_none"].ToString())"
                                        Style="max-width: 240px;">
+                                <MudSelectItem T="WishlistDTO" Value="@(null)">@L["wishlist_link_none"]</MudSelectItem>
                                 @foreach (var w in _wishlists)
                                 {
                                     <MudSelectItem Value="@w">@w.Name</MudSelectItem>
@@ -234,6 +271,11 @@ else
     private List<WishlistDTO> _wishlists = new();
     private WishlistDTO? _linkedWishlist;
 
+    // Persist the user's last picked Account/Pocket across page loads.
+    private const string AccountStorageKey = "fb.dashboard.accountId";
+    private const string PocketStorageKey = "fb.dashboard.pocketId";
+    private bool _storageRead;
+
     private readonly DialogOptions _standardOptions = new()
     {
         CloseOnEscapeKey = true,
@@ -243,10 +285,78 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Don't gate on firstRender — UserDto can cascade in after the very first
+        // render, so _accounts may not be populated yet on that pass. Trigger on
+        // the first render where it actually is.
+        if (!_storageRead && _accounts.Count > 0)
+        {
+            _storageRead = true;
+            await RestoreSelectionFromLocalStorage();
+        }
+
         if (_isDataReady && !_hasAnimated)
         {
             _hasAnimated = true;
             await AnimateChart();
+        }
+    }
+
+    private async Task RestoreSelectionFromLocalStorage()
+    {
+        string? savedAccount = null;
+        string? savedPocket = null;
+        try
+        {
+            savedAccount = await JS.InvokeAsync<string?>("localStorage.getItem", AccountStorageKey);
+            savedPocket = await JS.InvokeAsync<string?>("localStorage.getItem", PocketStorageKey);
+        }
+        catch
+        {
+            return;
+        }
+
+        var changed = false;
+
+        var account = !string.IsNullOrEmpty(savedAccount)
+            ? _accounts.FirstOrDefault(a => a.Id == savedAccount)
+            : null;
+        if (account != null && account.Id != SelectedAccount?.Id)
+        {
+            SelectedAccount = account;
+            await LoadPlanForAccount(account.Id);
+            changed = true;
+        }
+
+        var pocket = !string.IsNullOrEmpty(savedPocket)
+            ? ActivePlan?.Pockets.FirstOrDefault(p => p.Id == savedPocket)
+            : null;
+        if (pocket != null && pocket.Id != SelectedPocket?.Id)
+        {
+            SelectedPocket = pocket;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            _hasAnimated = false;
+            _isDataReady = false;
+            if (SelectedPocket != null) await LoadDailyExpense();
+            StateHasChanged();
+        }
+    }
+
+    private async Task PersistSelection()
+    {
+        try
+        {
+            if (SelectedAccount != null)
+                await JS.InvokeVoidAsync("localStorage.setItem", AccountStorageKey, SelectedAccount.Id);
+            if (SelectedPocket != null)
+                await JS.InvokeVoidAsync("localStorage.setItem", PocketStorageKey, SelectedPocket.Id);
+        }
+        catch
+        {
+            // localStorage can be unavailable (private mode, quota) — non-critical.
         }
     }
 
@@ -309,7 +419,11 @@ else
         try
         {
             _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
-            SelectedAccount ??= _accounts.FirstOrDefault();
+            // Re-resolve against the freshly-fetched list so SelectedAccount references
+            // the current instance (MudSelect compares by reference for object types).
+            SelectedAccount = SelectedAccount is not null
+                ? _accounts.FirstOrDefault(a => a.Id == SelectedAccount.Id) ?? _accounts.FirstOrDefault()
+                : _accounts.FirstOrDefault();
         }
         catch (Exception)
         {
@@ -358,7 +472,11 @@ else
             var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}");
             var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
             ActivePlan = activePlan;
-            SelectedPocket = ActivePlan?.Pockets.FirstOrDefault();
+            // Preserve the previously-picked pocket across re-fetches if its Id still
+            // exists in the new plan; otherwise fall back to the first pocket.
+            SelectedPocket = SelectedPocket is not null
+                ? ActivePlan?.Pockets.FirstOrDefault(p => p.Id == SelectedPocket.Id) ?? ActivePlan?.Pockets.FirstOrDefault()
+                : ActivePlan?.Pockets.FirstOrDefault();
         }
         catch (Exception)
         {
@@ -381,6 +499,7 @@ else
         DailyExpense = null;
         await LoadPlanForAccount(newAccount.Id);
         if (SelectedPocket != null) await LoadDailyExpense();
+        await PersistSelection();
     }
 
     private async Task LoadDailyExpense()
@@ -427,6 +546,7 @@ else
         _hasAnimated = false;
         _isDataReady = false;
         await LoadDailyExpense();
+        await PersistSelection();
     }
 
     private async Task ShowExpenditureDetails(ExpenditureDTO expenditure)
@@ -495,8 +615,36 @@ else
 
     private async Task OnWishlistLinkChanged(WishlistDTO newWishlist)
     {
-        if (DailyExpense is null || newWishlist is null || newWishlist.Id == DailyExpense.WishlistId)
+        if (DailyExpense is null) return;
+
+        // Clearing the link (picked the "None" item).
+        if (newWishlist is null)
+        {
+            if (DailyExpense.WishlistId is null) return;
+
+            var clearParams = new DialogParameters<ConfirmDialog>
+            {
+                { x => x.Title, L["wishlist_unlink_confirm_title"].ToString() },
+                { x => x.ContentText, L["wishlist_unlink_confirm_description"].ToString() }
+            };
+            var clearDialog = await DialogService.ShowAsync<ConfirmDialog>(L["wishlist_unlink_confirm_title"], clearParams);
+            if ((await clearDialog.Result)!.Canceled) return;
+
+            var clearRes = await Http.DeleteAsync($"api/wishlists/align/{DailyExpense.Id}");
+            if (clearRes.IsSuccessStatusCode)
+            {
+                _linkedWishlist = null;
+                DailyExpense.WishlistId = null;
+                Snackbar.Add(L["save_success"], Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
             return;
+        }
+
+        if (newWishlist.Id == DailyExpense.WishlistId) return;
 
         var parameters = new DialogParameters<ConfirmDialog>
         {
@@ -527,6 +675,7 @@ else
         {
             { x => x.Categories, _categories },
             { x => x.Pockets, ActivePlan?.Pockets ?? new() },
+            { x => x.Wishlists, _wishlists ?? new() },
             { x => x.Currency, ActivePlan?.Account.CurrencyCode },
             { x => x.Date, SelectedDate },
             { x => x.DefaultPocketId, SelectedPocket.Id },
@@ -539,6 +688,11 @@ else
         if (!result!.Canceled)
         {
             var payloads = (List<CreateExpenditureDTO>)result.Data!;
+            if (payloads.Any(p => p.Price <= 0))
+            {
+                Snackbar.Add(L["price_cannot_be_zero"], Severity.Error);
+                return;
+            }
             var savedCount = 0;
             foreach (var payload in payloads)
             {

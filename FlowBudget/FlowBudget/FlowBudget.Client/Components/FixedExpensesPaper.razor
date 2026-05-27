@@ -24,21 +24,21 @@
                 {
                     <MudListItem>
                         <MudGrid Items="12" Class="align-center">
-                            <MudItem xs="4">
+                            <MudItem xs="12" sm="4">
                                 <MudText Typo="Typo.body1">@budget.Name</MudText>
                             </MudItem>
-                
-                            <MudItem xs="4">
+
+                            <MudItem xs="6" sm="4">
                                 <MudText Typo="Typo.body1">
                                     @budget.Amount.ToString("N0") @SelectedCurrency
                                 </MudText>
                             </MudItem>
 
-                            <MudItem xs="4" Class="d-flex justify-end">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                            <MudItem xs="6" sm="4" Class="d-flex justify-end">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                OnClick="@(() => EditFE(budget))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                               Color="Color.Error" 
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
                                                OnClick="@(() => DeleteFE(budget))" />
                             </MudItem>
                         </MudGrid>

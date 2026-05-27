@@ -2,12 +2,6 @@ using Hangfire;
 
 namespace FlowBudget.Services;
 
-/// <summary>
-/// Registers all Hangfire recurring jobs once at application startup.
-/// Using the generic AddOrUpdate&lt;TService&gt; overload so Hangfire resolves
-/// the service from the DI container at execution time — not at registration time —
-/// avoiding the disposed-scope problem of capturing a scoped instance here.
-/// </summary>
 public class HangfireJobRegistrationService(ILogger<HangfireJobRegistrationService> logger) : BackgroundService
 {
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,11 +19,16 @@ public class HangfireJobRegistrationService(ILogger<HangfireJobRegistrationServi
             }
         );
 
-        // RecurringJob.AddOrUpdate<WishlistService>(
-        //     "wishlist-transfer-job",
-        //     service => service.TransferWishlistItems(),
-        //     Cron.Daily(23, 59)
-        // );
+        logger.LogInformation("Registering Wishlist move job for Hangfire");
+        RecurringJob.AddOrUpdate<WishlistService>(
+            "wishlist-sweep-job",
+            service => service.MoveRemainingMoneyToWishlist(),
+            Cron.Daily(23, 59),
+            new RecurringJobOptions
+            {
+                TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time")
+            }
+        );
 
         return Task.CompletedTask;
     }

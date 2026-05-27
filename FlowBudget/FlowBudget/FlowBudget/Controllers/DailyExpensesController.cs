@@ -45,5 +45,11 @@ namespace FlowBudget.Controllers
         {
             return await dailyExpenseService.GetBudgetSeries(UserId, pid, from, to);
         }
+
+        [HttpGet("{pid}/in-range")]
+        public async Task<ActionResult<List<WishlistAffectedExpenseDTO>>> GetInRange(string pid, [FromQuery] DateTime from, [FromQuery] DateTime to)
+        {
+            return await dailyExpenseService.GetInRange(UserId, pid, from, to);
+        }
     }
 }

@@ -6,55 +6,52 @@
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject NavigationManager Nav
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>@L["nav_admin"]</PageTitle>
 
 <MudGrid Justify="Justify.Center">
     <MudItem xs="12" sm="10" md="7" lg="6">
 
-        <MudText Typo="Typo.h5" Class="mb-6" Style="font-weight:700;">Admin Panel</MudText>
-
-        @* ── RSS Entry Form ── *@
         <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
-            <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">Publish RSS Update</MudText>
-            <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
-                This will prepend a new entry to the RSS feed at <code>/rss</code>.
-            </MudText>
+            <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight:700;">@L["publish_rss_update"]</MudText>
 
             <MudTextField @bind-Value="_entry.Id"
-                          Label="Version / ID"
-                          Placeholder="e.g. v1.2.0 or hotfix-2026-05-04"
+                          Label="@L["admin_version_id_label"]"
+                          Placeholder="@L["admin_version_id_placeholder"]"
                           Variant="Variant.Filled"
                           Class="mb-3" />
 
             <MudTextField @bind-Value="_entry.Title"
-                          Label="Title *"
-                          Placeholder="e.g. [v1.2.0] Receipt scanning"
+                          Label="@(L["admin_title_label"] + " *")"
+                          Placeholder="@L["admin_title_placeholder"]"
                           Variant="Variant.Filled"
                           Required
                           Class="mb-3" />
 
             <MudTextField @bind-Value="_entry.Description"
-                          Label="Description *"
-                          Placeholder="What changed, what was fixed, or current status…"
+                          Label="@(L["description"] + " *")"
+                          Placeholder="@L["admin_description_placeholder"]"
                           Variant="Variant.Filled"
                           Lines="4"
                           Required
                           Class="mb-3" />
 
             <MudDatePicker @bind-Date="_pickedDate"
-                           Label="Date"
+                           Label="@L["date"]"
                            Variant="Variant.Filled"
                            Class="mb-3"
                            DateFormat="yyyy-MM-dd" />
 
             <MudSelect @bind-Value="_entry.Category"
-                       Label="Category"
+                       Label="@L["category"]"
                        Variant="Variant.Filled"
                        AnchorOrigin="Origin.BottomCenter"
                        Class="mb-5">
-                <MudSelectItem Value=@("release")>Release</MudSelectItem>
-                <MudSelectItem Value=@("hotfix")>Hotfix</MudSelectItem>
-                <MudSelectItem Value=@("status")>Status</MudSelectItem>
-                <MudSelectItem Value=@("maintenance")>Maintenance</MudSelectItem>
+                <MudSelectItem Value=@("release")>@L["admin_category_release"]</MudSelectItem>
+                <MudSelectItem Value=@("hotfix")>@L["admin_category_hotfix"]</MudSelectItem>
+                <MudSelectItem Value=@("status")>@L["admin_category_status"]</MudSelectItem>
+                <MudSelectItem Value=@("maintenance")>@L["admin_category_maintenance"]</MudSelectItem>
             </MudSelect>
 
             <div class="d-flex align-center gap-3">
@@ -64,14 +61,14 @@
                            OnClick="Submit"
                            Disabled="_submitting"
                            Style="text-transform:none; background-color:#0d1b3e; border-radius:20px; padding:8px 28px;">
-                    @(_submitting ? "Publishing…" : "Publish")
+                    @(_submitting ? L["admin_publishing"].ToString() : L["admin_publish_button"].ToString())
                 </MudButton>
                 <MudButton Variant="Variant.Text"
                            Href="/rss"
                            Target="_blank"
                            StartIcon="@Icons.Material.Filled.RssFeed"
                            Style="text-transform:none;">
-                    Preview feed
+                    @L["admin_preview_feed"]
                 </MudButton>
             </div>
         </MudPaper>
@@ -88,7 +85,7 @@
     {
         if (string.IsNullOrWhiteSpace(_entry.Title) || string.IsNullOrWhiteSpace(_entry.Description))
         {
-            Snackbar.Add("Title and Description are required.", Severity.Warning);
+            Snackbar.Add(L["admin_required_warning"], Severity.Warning);
             return;
         }
 
@@ -100,19 +97,19 @@
             var res = await Http.PostAsJsonAsync("api/admin/rss", _entry);
             if (res.IsSuccessStatusCode)
             {
-                Snackbar.Add("RSS entry published successfully.", Severity.Success);
+                Snackbar.Add(L["admin_publish_success"], Severity.Success);
                 _entry = new RssEntryDTO { Category = "release", Date = DateTime.UtcNow };
                 _pickedDate = DateTime.UtcNow;
             }
             else
             {
                 var error = await res.Content.ReadAsStringAsync();
-                Snackbar.Add($"Failed: {error}", Severity.Error);
+                Snackbar.Add(string.Format(L["admin_publish_failed"].ToString(), error), Severity.Error);
             }
         }
         catch
         {
-            Snackbar.Add("Something went wrong.", Severity.Error);
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
         }
         finally
         {

@@ -1,0 +1,199 @@
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5"><b>@(_wishlist?.Name ?? string.Empty)</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_loading)
+        {
+            <div class="d-flex justify-center align-center pa-4">
+                <MudProgressCircular Indeterminate="true" />
+            </div>
+        }
+        else if (_wishlist != null)
+        {
+            @if (!string.IsNullOrWhiteSpace(_wishlist.ImageUrl))
+            {
+                <MudImage Src="@_wishlist.ImageUrl" Height="160" ObjectFit="ObjectFit.Cover" Class="mb-3" />
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_wishlist.Description))
+            {
+                <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">@_wishlist.Description</MudText>
+            }
+
+            <MudList T="string" Dense="true">
+                <MudListItem T="string">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["wishlist_approach"]</MudText>
+                    <MudText Typo="Typo.body1">@ApproachLabel</MudText>
+                </MudListItem>
+                <MudDivider />
+                <MudListItem T="string">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["wishlist_progress"]</MudText>
+                    <MudText Typo="Typo.body1">
+                        @_wishlist.CurrentAmount.ToString("N0") @_wishlist.CurrencyCode
+                        /
+                        @_wishlist.TargetAmount.ToString("N0") @_wishlist.CurrencyCode
+                    </MudText>
+                </MudListItem>
+                <MudDivider />
+                <MudListItem T="string">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["wishlist_target_date"]</MudText>
+                    <MudText Typo="Typo.body1">@_wishlist.TargetDate.ToString("yyyy.MM.dd")</MudText>
+                </MudListItem>
+                <MudDivider />
+                <MudListItem T="string">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["status"]</MudText>
+                    <MudText Typo="Typo.body1">@StatusLabel</MudText>
+                </MudListItem>
+            </MudList>
+
+            @if (_wishlist.AffectedDailyExpenses.Count > 0)
+            {
+                <MudText Typo="Typo.h6" Class="mt-4 mb-2">@L["wishlist_affected_des"]</MudText>
+                <MudPaper Outlined="true" Class="pa-2" Style="max-height: 200px; overflow-y: auto;">
+                    @foreach (var de in _wishlist.AffectedDailyExpenses.OrderBy(d => d.Date))
+                    {
+                        <MudText Typo="Typo.body2" Class="py-1">
+                            @de.Date.ToString("yyyy.MM.dd") (@de.PocketName)
+                        </MudText>
+                    }
+                </MudPaper>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Error" Variant="Variant.Text"
+                   OnClick="ConfirmDelete" Disabled="@(_wishlist is null || _busy)">
+            @L["delete"]
+        </MudButton>
+        <MudSpacer />
+        <MudButton OnClick="Close">@L["close"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   OnClick="ConfirmToggle"
+                   Disabled="@(_wishlist is null || _busy || _wishlist?.Status == WishlistStatus.Completed)">
+            @ToggleLabel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string WishlistId { get; set; } = string.Empty;
+
+    private WishlistDTO? _wishlist;
+    private bool _loading;
+    private bool _busy;
+
+    private string ApproachLabel => _wishlist?.ApproachType switch
+    {
+        WishlistApproachType.Automatic => L["wishlist_approach_automatic"].ToString(),
+        _ => L["wishlist_approach_manual"].ToString()
+    };
+
+    private string StatusLabel => _wishlist?.Status switch
+    {
+        WishlistStatus.Active => L["wishlist_status_active"].ToString(),
+        WishlistStatus.Completed => L["wishlist_status_completed"].ToString(),
+        _ => L["wishlist_status_inactive"].ToString()
+    };
+
+    private string ToggleLabel => _wishlist?.Status == WishlistStatus.Active
+        ? L["wishlist_deactivate"].ToString()
+        : L["wishlist_activate"].ToString();
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _wishlist = await Http.GetFromJsonAsync<WishlistDTO>($"api/wishlists/{WishlistId}");
+        }
+        catch
+        {
+            Snackbar.Add(L["something_went_wrong"], Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ConfirmToggle()
+    {
+        if (_wishlist is null) return;
+
+        var activating = _wishlist.Status != WishlistStatus.Active;
+        var title = activating ? L["wishlist_activate"].ToString() : L["wishlist_deactivate"].ToString();
+        var description = activating ? L["wishlist_activate_confirm"].ToString() : L["wishlist_deactivate_confirm"].ToString();
+
+        if (!await Confirm(title, description)) return;
+
+        _busy = true;
+        try
+        {
+            var endpoint = activating ? "activate" : "deactivate";
+            var res = await Http.PostAsync($"api/wishlists/{_wishlist.Id}/{endpoint}", null);
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                await Load();
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_wishlist is null) return;
+        if (!await Confirm(L["wishlist_delete"].ToString(), L["wishlist_delete_confirm"].ToString())) return;
+
+        _busy = true;
+        try
+        {
+            var res = await Http.DeleteAsync($"api/wishlists/{_wishlist.Id}");
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task<bool> Confirm(string title, string description)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, title },
+            { x => x.ContentText, description }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(title, parameters);
+        var result = await dialog.Result;
+        return !result!.Canceled;
+    }
+
+    private void Close() => MudDialog.Close();
+}
