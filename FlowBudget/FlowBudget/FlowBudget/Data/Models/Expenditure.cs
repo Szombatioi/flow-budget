@@ -17,4 +17,8 @@ public class Expenditure
 
     public string DailyExpenseId { get; set; }
     public virtual DailyExpense DailyExpense { get; set; } = null!;
+
+    // Optional: this expenditure counts toward a wishlist's progress.
+    public string? WishlistId { get; set; }
+    public virtual Wishlist? Wishlist { get; set; }
 }

@@ -47,7 +47,7 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
         var newExpenditure = new Expenditure()
         {
             Date = dto.Date ?? DateTime.Now,
-            Price = dto.Price,
+            Price = -1 * dto.Price,
             Name  = dto.Name,
             Description  = dto.Description,
             CategoryId = dto.CategoryId,
@@ -62,10 +62,6 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
         dailyExpense.EoDAmount = dailyExpense.StartAmount - sumExpenses;
 
         await db.SaveChangesAsync();
-
-        // Cascade the EoD change forward through every started day that comes after this one.
-        // Required when the expenditure is added to a past day (e.g. today = Apr 5 but
-        // days up to Apr 20 are already started) — those later days carried over the old EoD.
         await dailyExpenseService.RecalculateStartedDaysFromDate(pocket.Id, newExpenditure.Date);
     }
 

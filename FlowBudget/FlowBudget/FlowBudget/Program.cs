@@ -82,6 +82,7 @@ try
     builder.Services.AddTransient<FixedExpenseService>();
     builder.Services.AddTransient<DailyExpenseService>();
     builder.Services.AddTransient<ExpenditureService>();
+    builder.Services.AddTransient<WishlistService>();
     builder.Services.AddTransient<CategoryService>();
     builder.Services.AddTransient<SeederService>();
     builder.Services.AddTransient<LlmHandler>();

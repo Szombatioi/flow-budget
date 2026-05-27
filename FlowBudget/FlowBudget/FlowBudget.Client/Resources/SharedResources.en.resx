@@ -293,6 +293,57 @@
   <data name="create" xml:space="preserve">
     <value>Create</value>
   </data>
+  <data name="select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="deselect" xml:space="preserve">
+    <value>Deselect</value>
+  </data>
+  <data name="wishlist_page_title" xml:space="preserve">
+    <value>Wishlist</value>
+  </data>
+  <data name="wishlist_empty" xml:space="preserve">
+    <value>You don't have any wishlists yet.</value>
+  </data>
+  <data name="wishlist_display" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="wishlist_display_placeholder" xml:space="preserve">
+    <value>Display details for {0}</value>
+  </data>
+  <data name="wishlist_estimated_finish" xml:space="preserve">
+    <value>Estimated finish</value>
+  </data>
+  <data name="wishlist_approach_manual" xml:space="preserve">
+    <value>Only manual</value>
+  </data>
+  <data name="wishlist_approach_automatic" xml:space="preserve">
+    <value>Move remaining money</value>
+  </data>
+  <data name="wishlist_target_goal" xml:space="preserve">
+    <value>Target goal</value>
+  </data>
+  <data name="wishlist_target_date" xml:space="preserve">
+    <value>Target date</value>
+  </data>
+  <data name="wishlist_select_mode" xml:space="preserve">
+    <value>Select mode</value>
+  </data>
+  <data name="wishlist_affected_des" xml:space="preserve">
+    <value>Affected Daily Expenses</value>
+  </data>
+  <data name="wishlist_affected_des_empty" xml:space="preserve">
+    <value>Pick From, To and a Pocket to see matching daily expenses.</value>
+  </data>
+  <data name="dashboard_link_to_wishlist" xml:space="preserve">
+    <value>Move remaining money to wishlist</value>
+  </data>
+  <data name="wishlist_link_confirm_title" xml:space="preserve">
+    <value>Link daily expense to wishlist</value>
+  </data>
+  <data name="wishlist_link_confirm_description" xml:space="preserve">
+    <value>This day's remaining money will be moved to "{0}". Continue?</value>
+  </data>
   <data name="create_account" xml:space="preserve">
     <value>Create account</value>
   </data>
@@ -868,5 +919,26 @@
   </data>
   <data name="select_at_least_one_pocket" xml:space="preserve">
     <value>Please select at least one pocket!</value>
+  </data>
+  <data name="nav_wishlist" xml:space="preserve">
+    <value>Wishlists</value>
+  </data>
+  <data name="wishlist_select_empty" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="create_new_wishlist" xml:space="preserve">
+    <value>Create a new wishlist</value>
+  </data>
+  <data name="mask_as_income" xml:space="preserve">
+    <value>Mask as income</value>
+  </data>
+  <data name="de_not_started" xml:space="preserve">
+    <value>DailyExpense is not started yet!</value>
+  </data>
+  <data name="wishlist_inactive" xml:space="preserve">
+    <value>Wishlist is inactive!</value>
+  </data>
+  <data name="wishlist_completed" xml:space="preserve">
+    <value>Wishlist is already completed!</value>
   </data>
 </root>

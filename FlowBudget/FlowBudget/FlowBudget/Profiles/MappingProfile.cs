@@ -22,5 +22,12 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PocketName, opt => opt.MapFrom(src =>
                 src.DailyExpense.Pocket.Name))
             .ReverseMap();
+
+        CreateMap<Wishlist, WishlistDTO>()
+            .ForMember(d => d.TargetAmount, opt => opt.MapFrom(s => s.Goal))
+            .ForMember(d => d.ApproachType, opt => opt.MapFrom(s => s.Mode))
+            .ForMember(d => d.CurrencyCode, opt => opt.MapFrom(s => s.Account.CurrencyCode))
+            .ForMember(d => d.CurrentAmount, opt => opt.MapFrom(s => s.Progress.Sum(p => p.Price)))
+            .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.Status == WishlistStatus.Active));
     }
 }

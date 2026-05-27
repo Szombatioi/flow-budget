@@ -11,4 +11,5 @@ public class DailyExpenseDTO
     public PocketDTO Pocket { get; set; }
     public bool IsStarted { get; set; }
     public List<ExpenditureDTO> Expenditures { get; set; }
+    public string? WishlistId { get; set; }
 }

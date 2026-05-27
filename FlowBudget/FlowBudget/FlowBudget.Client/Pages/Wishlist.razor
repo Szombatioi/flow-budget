@@ -1,0 +1,69 @@
+@page "/wishlist"
+@using global::DTO
+@using FlowBudget.Client.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<div class="pa-4 d-flex justify-space-between align-center">
+    <MudText Typo="Typo.h3">@L["wishlist_page_title"]</MudText>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex justify-center align-center pa-8">
+        <MudProgressCircular Indeterminate="true" />
+    </div>
+}
+else if (_wishlists.Count == 0)
+{
+    <MudAlert Severity="Severity.Info" Class="mx-4">@L["wishlist_empty"]</MudAlert>
+}
+else
+{
+    <MudGrid Class="pa-4">
+        @foreach (var wishlist in _wishlists)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <WishlistCard Wishlist="@wishlist" OnDisplay="OnDisplay" />
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<div class="d-flex justify-end pa-4">
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+               OnClick="@(() => Nav.NavigateTo("/wishlist/new"))">
+        @L["create"]
+    </MudButton>
+</div>
+
+@code {
+    private bool _loading = true;
+    private List<WishlistDTO> _wishlists = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _wishlists = await Http.GetFromJsonAsync<List<WishlistDTO>>("api/wishlists") ?? new();
+        }
+        catch
+        {
+            _wishlists = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnDisplay(WishlistDTO wishlist)
+    {
+        // Placeholder until the details/activate-deactivate dialog is built.
+        Snackbar.Add(string.Format(L["wishlist_display_placeholder"].ToString(), wishlist.Name), Severity.Info);
+    }
+}

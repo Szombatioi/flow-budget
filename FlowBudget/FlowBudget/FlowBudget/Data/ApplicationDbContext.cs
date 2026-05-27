@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<DailyExpense> DailyExpenses { get; set; }
     public DbSet<Expenditure> Expenditures { get; set; }
     public DbSet<FixedExpense> FixedExpenses { get; set; }
+    public DbSet<Wishlist> Wishlists { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,13 +85,31 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany(a => a.FixedExpenses)
             .HasForeignKey(fe => fe.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // --- DivisionPlan Configuration ---
+        
         modelBuilder.Entity<DivisionPlan>()
             .HasOne(dp => dp.Account)
             .WithMany(a => a.DivisionPlans)
             .HasForeignKey(dp => dp.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
         
+        modelBuilder.Entity<Wishlist>()
+            .HasOne(w => w.Account)
+            .WithMany()
+            .HasForeignKey(w => w.AccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<Expenditure>()
+            .HasOne(e => e.Wishlist)
+            .WithMany(w => w.Progress)
+            .HasForeignKey(e => e.WishlistId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+        
+        modelBuilder.Entity<DailyExpense>()
+            .HasOne(de => de.Wishlist)
+            .WithMany(w => w.AffectedDailyExpenses)
+            .HasForeignKey(de => de.WishlistId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

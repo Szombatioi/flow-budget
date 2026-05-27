@@ -119,7 +119,8 @@
             </MudTabPanel>
 
             @* ── Receipt Tab ── *@
-            <MudTabPanel Text=@(L["receipt_expense_tab"]) Disabled="@(!HasApiKey)" ToolTip="@(HasApiKey ? null : L["receipt_requires_api_key"].ToString())">
+            <MudTabPanel Text=@(L["receipt_expense_tab"]) Disabled="@(!HasApiKey)"
+                         ToolTip="@(HasApiKey ? null : L["receipt_requires_api_key"].ToString())">
                 <MudContainer Style="height: 500px; overflow-y: auto; padding: 16px 0 0 0;">
 
                     @* ── State: Drop zone (no file chosen yet) ── *@
@@ -131,27 +132,29 @@
                                        Style="display: block; width: 100%;">
                             <ActivatorContent>
                                 <div style="border: 2px dashed @(_isDragging ? "#6366f1" : "#cbd5e1");
-                                            border-radius: 14px;
-                                            background-color: @(_isDragging ? "#eef2ff" : "#f8fafc");
-                                            cursor: pointer;
-                                            min-height: 320px;
-                                            width: 100%;
-                                            display: flex;
-                                            flex-direction: column;
-                                            align-items: center;
-                                            justify-content: center;
-                                            padding: 40px 32px;
-                                            box-sizing: border-box;
-                                            transition: border-color .15s, background-color .15s;"
+                                border-radius: 14px;
+                                background-color: @(_isDragging ? "#eef2ff" : "#f8fafc");
+                                cursor: pointer;
+                                min-height: 320px;
+                                width: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 40px 32px;
+                                box-sizing: border-box;
+                                transition: border-color .15s, background-color .15s;"
                                      @ondragenter="@(() => _isDragging = true)"
                                      @ondragleave="@(() => _isDragging = false)"
                                      @ondragover:preventDefault="true"
                                      @ondrop="@(() => _isDragging = false)">
 
                                     <MudIcon Icon="@Icons.Material.Filled.CloudUpload"
-                                             Style="font-size: 56px; width: 56px; height: 56px; color: #a5b4fc; margin-bottom: 16px;" />
-                                    <MudText Typo="Typo.h6" Style="margin-bottom: 8px;"><b>@L["drop_zone_title"]</b></MudText>
-                                    <MudText Typo="Typo.body2" Align="Align.Center" Style="color: #64748b; margin-bottom: 24px;">
+                                             Style="font-size: 56px; width: 56px; height: 56px; color: #a5b4fc; margin-bottom: 16px;"/>
+                                    <MudText Typo="Typo.h6" Style="margin-bottom: 8px;"><b>@L["drop_zone_title"]</b>
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center"
+                                             Style="color: #64748b; margin-bottom: 24px;">
                                         @L["drop_zone_hint"]
                                     </MudText>
                                     <div style="background-color: #111827; color: #ffffff; font-weight: 700;
@@ -163,20 +166,22 @@
                             </ActivatorContent>
                         </MudFileUpload>
                     }
-
                     @* ── State: File chosen, not yet uploaded ── *@
                     else if (_receiptRows == null && !_isUploading)
                     {
                         <MudPaper Outlined="true"
                                   Style="border-radius: 10px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 16px;">
-                            <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Primary" Size="Size.Large" />
+                            <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Primary" Size="Size.Large"/>
                             <div style="flex: 1; overflow: hidden;">
-                                <MudText Typo="Typo.body1" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <MudText Typo="Typo.body1"
+                                         Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     <b>@_fileName</b>
                                 </MudText>
-                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@FormatFileSize(_fileBytes!.Length)</MudText>
+                                <MudText Typo="Typo.caption"
+                                         Class="mud-text-secondary">@FormatFileSize(_fileBytes!.Length)</MudText>
                             </div>
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Color="Color.Error" OnClick="ClearReceipt" />
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Color="Color.Error"
+                                           OnClick="ClearReceipt"/>
                         </MudPaper>
 
                         <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary"
@@ -185,20 +190,20 @@
                             @L["upload"]
                         </MudButton>
                     }
-
                     @* ── State: Uploading ── *@
                     else if (_isUploading)
                     {
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; gap:16px;">
-                            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                        <div
+                            style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; gap:16px;">
+                            <MudProgressCircular Indeterminate="true" Size="Size.Large"/>
                             <MudText Typo="Typo.body1" Class="mud-text-secondary">@L["receipt_scanning"]</MudText>
                         </div>
                     }
-
                     @* ── State: Results ready ── *@
                     else if (_receiptRows != null)
                     {
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <MudText Typo="Typo.subtitle1" Style="font-weight:600;">
                                 @L["receipt_items_found"]: @_receiptRows.Count
                             </MudText>
@@ -209,8 +214,10 @@
                         </div>
 
                         @* Pocket selector (applies to all receipt items) *@
-                        <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block">@L["pocket"].ToString().ToUpper()</MudText>
-                        <MudSelect @bind-Value="_pocketId" Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter" Class="rounded-lg mb-4">
+                        <MudText Typo="Typo.caption"
+                                 Class="fw-bold mb-1 d-block">@L["pocket"].ToString().ToUpper()</MudText>
+                        <MudSelect @bind-Value="_pocketId" Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter"
+                                   Class="rounded-lg mb-4">
                             @foreach (var pocket in Pockets)
                             {
                                 <MudSelectItem Value="@pocket.Id">@pocket.Name</MudSelectItem>
@@ -240,13 +247,13 @@
                                                      Value="@context.Include"
                                                      ValueChanged="@((bool v) => context.Include = v)"
                                                      Color="Color.Primary"
-                                                     Size="Size.Small" />
+                                                     Size="Size.Small"/>
                                     </MudTd>
                                     <MudTd>
                                         <MudTextField @bind-Value="context.Name"
                                                       Variant="Variant.Text"
                                                       Margin="Margin.Dense"
-                                                      DisableUnderLine="true" />
+                                                      DisableUnderLine="true"/>
                                     </MudTd>
                                     <MudTd>
                                         <MudNumericField @bind-Value="context.Price"
@@ -256,7 +263,7 @@
                                                          AdornmentText="@(Currency ?? "HUF")"
                                                          HideSpinButtons="true"
                                                          Format="0.##"
-                                                         DisableUnderLine="true" />
+                                                         DisableUnderLine="true"/>
                                     </MudTd>
                                     <MudTd>
                                         <MudSelect @bind-Value="context.CategoryId"
@@ -267,7 +274,8 @@
                                                    DisableUnderLine="true">
                                             @foreach (var cat in Categories)
                                             {
-                                                <MudSelectItem Value="@cat.Id">@(cat.IsSystem ? @L[cat.DisplayName] : cat.DisplayName)</MudSelectItem>
+                                                <MudSelectItem
+                                                    Value="@cat.Id">@(cat.IsSystem ? @L[cat.DisplayName] : cat.DisplayName)</MudSelectItem>
                                             }
                                         </MudSelect>
                                     </MudTd>
@@ -304,9 +312,11 @@
     .rounded-lg {
         margin-top: 0;
     }
+
     .fw-bold {
         font-weight: 700;
     }
+
     .full-width-tabbar .mud-tab {
         flex: 1 !important;
     }
@@ -324,6 +334,8 @@
 
     // For Single expense
     private decimal _price;
+
+    // private bool _maskAsIncome;
     private string? _categoryId;
     private string? _pocketId;
     private string? _name;
@@ -338,7 +350,7 @@
 
     private DateTime SplitMonthEnd =>
         SplitMonthStart.AddMonths(1).AddDays(-1);
-    
+
     private List<DateTime> SplitDays
     {
         get
@@ -350,7 +362,7 @@
             return days;
         }
     }
-    
+
     private record SplitItem(string Name, decimal Price, DateTime Date);
 
     private List<SplitItem> SplitPreview
@@ -366,9 +378,9 @@
                 .ToList();
         }
     }
-    
+
     private int _activeTab = 0;
-    
+
     // For receipts
     private byte[]? _fileBytes;
     private string? _fileName;
@@ -376,7 +388,7 @@
     private bool _isDragging;
     private bool _isUploading;
     private List<ReceiptRow>? _receiptRows;
-    
+
     private bool IsSubmitDisabled =>
         (_activeTab == 1 && (_receiptRows == null || !_receiptRows.Any(r => r.Include))) ||
         (_activeTab == 0 && _splitEnabled && SplitPreview.Count == 0);
@@ -390,11 +402,13 @@
                 var count = _receiptRows.Count(r => r.Include);
                 return count > 0 ? $"{L["add_transaction"]} ({count})" : L["add_transaction"];
             }
+
             if (_activeTab == 0 && _splitEnabled)
             {
                 var count = SplitPreview.Count;
                 return count > 0 ? $"{L["add_transaction"]} ({count})" : L["add_transaction"];
             }
+
             return L["add_transaction"];
         }
     }
@@ -404,7 +418,7 @@
         if (string.IsNullOrEmpty(_pocketId) && Pockets.Any())
             _pocketId = DefaultPocketId ?? Pockets[0].Id;
     }
-    
+
     private async Task OnReceiptFileChanged(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -440,10 +454,14 @@
         < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
         _ => $"{bytes / (1024.0 * 1024):0.#} MB"
     };
-    
+
     private async Task UploadReceipt()
     {
-        if (_fileBytes == null) { Snackbar.Add(L["file_missing"], Severity.Warning); return; }
+        if (_fileBytes == null)
+        {
+            Snackbar.Add(L["file_missing"], Severity.Warning);
+            return;
+        }
 
         _isUploading = true;
         StateHasChanged();
@@ -488,11 +506,12 @@
             StateHasChanged();
         }
     }
-    
+
     private void Submit()
     {
         List<CreateExpenditureDTO> payloads;
 
+        //Tab 1: Receipts
         if (_activeTab == 1 && _receiptRows != null)
         {
             // return all checked rows
@@ -508,7 +527,7 @@
                 })
                 .ToList();
         }
-        else if (_activeTab == 0 && _splitEnabled && SplitPreview.Count > 0)
+        else if (_activeTab == 0 && _splitEnabled && SplitPreview.Count > 0) //Tab 0: Regular with splits
         {
             // Split expense
             payloads = SplitPreview
@@ -533,6 +552,7 @@
                     Name = _name ?? string.Empty,
                     Description = _description,
                     Price = _price,
+                    // Income = _maskAsIncome,
                     CategoryId = _categoryId,
                     PocketId = _pocketId,
                     Date = Date,
@@ -544,4 +564,10 @@
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    // private string IncomeStyle()
+    // {
+    //     if (_maskAsIncome) return "color: #62c769";
+    //     return "";
+    // }
 }

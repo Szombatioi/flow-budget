@@ -138,7 +138,9 @@ else
 
             @* Remaining budget alert *@
             <MudAlert Severity="Severity.Info" Class="my-2">
-                <div>@(L["remaining_budget"]): <b>@(DailyExpense.EoDAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b></div>
+                <div>@(L["remaining_budget"]):
+                    <b>@(DailyExpense.EoDAmount.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</b>
+                </div>
                 <div>@(L["relative_daily_limit"]): @(DailyExpense.RelativeBudget.ToString("0.##")) @(L[$"currency_{ActivePlan.Account.CurrencyCode.ToLower()}_short"])</div>
             </MudAlert>
 
@@ -159,7 +161,7 @@ else
                         </MudIconButton>
                     </MudTooltip>
                 </div>
-                
+
                 @foreach (var e in DailyExpense.Expenditures)
                 {
                     <ExpenditureListItem Expenditure=e
@@ -171,6 +173,34 @@ else
                         <MudDivider/>
                     }
                 }
+
+                @* Wishlist *@
+                @if (_wishlists.Count != 0)
+                {
+                    <MudDivider Class="mt-4 mb-3"/>
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.h6">@L["dashboard_link_to_wishlist"]</MudText>
+                        </div>
+                        <div>
+
+                            <MudSelect T="WishlistDTO"
+                                       Value="@_linkedWishlist"
+                                       ValueChanged="OnWishlistLinkChanged"
+                                       Variant="Variant.Outlined"
+                                       Dense="true"
+                                       Clearable="false"
+                                       Disabled="@(SelectedDate.Date < DateTime.Today || _wishlists.Count == 0)"
+                                       ToStringFunc="@(w => w?.Name ?? string.Empty)"
+                                       Style="max-width: 240px;">
+                                @foreach (var w in _wishlists)
+                                {
+                                    <MudSelectItem Value="@w">@w.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </div>
+                    </div>
+                }
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -178,11 +208,10 @@ else
 
 
 @code {
-    [Parameter]
-    public DateTime? Date { get; set; }
+    [Parameter] public DateTime? Date { get; set; }
 
     private DateTime SelectedDate { get; set; } = DateTime.Today;
-    
+
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
     private double[] SeriesData = { 100, 0 };
     private double targetValue = 0;
@@ -202,6 +231,8 @@ else
     private ChartOptions Options = new ChartOptions();
 
     private List<CategoryDTO> _categories = new();
+    private List<WishlistDTO> _wishlists = new();
+    private WishlistDTO? _linkedWishlist;
 
     private readonly DialogOptions _standardOptions = new()
     {
@@ -251,21 +282,28 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        if (UserDto == null) { IsLoading = false; return; }
-        if (UserDto.AccountIds.Count == 0) { IsLoading = false; return; }
+        if (UserDto == null)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        if (UserDto.AccountIds.Count == 0)
+        {
+            IsLoading = false;
+            return;
+        }
+
         IsLoading = true;
         IsError = false;
 
-        // Reset chart animation state so a new date re-runs the donut animation
-        // instead of keeping the previously rendered value.
+        // Reset chart animation state
         _hasAnimated = false;
         _isDataReady = false;
         currentDisplayValue = 0;
         targetValue = 0;
         SeriesData = new double[] { 100, 0 };
-        
-        // URL route enforces the :datetime constraint, so non-date segments fall
-        // through to the Router's NotFoundPage and never reach here.
+
         SelectedDate = Date ?? DateTime.Today;
 
         try
@@ -297,6 +335,15 @@ else
         catch (Exception)
         {
             // Non-critical: dialog will just show empty category list
+        }
+
+        try
+        {
+            _wishlists = await Http.GetFromJsonAsync<List<WishlistDTO>>("api/wishlists") ?? new();
+        }
+        catch
+        {
+            _wishlists = new();
         }
 
         if (SelectedPocket != null) await LoadDailyExpense();
@@ -344,6 +391,9 @@ else
             if (SelectedPocket == null) throw new Exception(); //Catch below
             var res = await Http.GetFromJsonAsync<DailyExpenseDTO>($"api/daily-expenses/{SelectedPocket.Id}?date={SelectedDate.FormatDate()}");
             DailyExpense = res;
+            _linkedWishlist = DailyExpense?.WishlistId is { } id
+                ? _wishlists.FirstOrDefault(w => w.Id == id)
+                : null;
 
             var spent = DailyExpense.Expenditures.Sum(ex => ex.Price);
             var start = DailyExpense.StartAmount;
@@ -361,6 +411,7 @@ else
                 // Can exceed 100 if the user overspent (e.g. 150% = spent 1.5× the budget).
                 targetValue = (double)(spent / start * 100);
             }
+
             _isDataReady = true;
             StateHasChanged();
         }
@@ -439,6 +490,33 @@ else
             {
                 Snackbar.Add(L["delete_error"], Severity.Error);
             }
+        }
+    }
+
+    private async Task OnWishlistLinkChanged(WishlistDTO newWishlist)
+    {
+        if (DailyExpense is null || newWishlist is null || newWishlist.Id == DailyExpense.WishlistId)
+            return;
+
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["wishlist_link_confirm_title"].ToString() },
+            { x => x.ContentText, string.Format(L["wishlist_link_confirm_description"].ToString(), newWishlist.Name) }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["wishlist_link_confirm_title"], parameters);
+        var result = await dialog.Result;
+        if (result!.Canceled) return;
+
+        var res = await Http.PostAsync($"api/wishlists/{newWishlist.Id}/align/{DailyExpense.Id}", null);
+        if (res.IsSuccessStatusCode)
+        {
+            _linkedWishlist = newWishlist;
+            DailyExpense.WishlistId = newWishlist.Id;
+            Snackbar.Add(L["save_success"], Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(L["save_error"], Severity.Error);
         }
     }
 

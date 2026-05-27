@@ -1,0 +1,79 @@
+@using global::DTO
+@inject IStringLocalizer<SharedResources> L
+
+<MudPaper Elevation="2" Class="d-flex flex-column h-100" Style="border-radius: 16px; overflow: hidden;">
+    <MudImage Src="@ImageUrl" Height="180" ObjectFit="ObjectFit.Cover" Alt="@Wishlist.Name"/>
+
+    <div class="pa-4 d-flex flex-column flex-grow-1" style="gap: 12px; min-width: 0;">
+        <div>
+            <MudText Typo="Typo.h6"
+                     Style="font-weight: 700; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;">
+                @Wishlist.Name
+            </MudText>
+
+            @if (!string.IsNullOrWhiteSpace(Wishlist.Description))
+            {
+                <MudTooltip Text="@Wishlist.Description" Placement="Placement.Top">
+                    <MudText Typo="Typo.body2"
+                             Class="mud-text-secondary"
+                             Style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; word-break: break-word;">
+                        @Wishlist.Description
+                    </MudText>
+                </MudTooltip>
+            }
+        </div>
+
+        <div class="d-flex align-center" style="gap: 12px;">
+            <MudAvatar Color="Color.Dark" Size="Size.Medium">
+                <MudIcon Icon="@ApproachIcon" Style="color: #fff;"/>
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.body2" Style="font-weight: 600;">@ApproachLabel</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                    @L["wishlist_estimated_finish"]: @(Wishlist.EstimatedFinishDate?.ToString("yyyy.MM.dd") ?? "—")
+                </MudText>
+            </div>
+        </div>
+
+        <div class="mt-auto">
+            <MudText Typo="Typo.body2" Class="mb-1">
+                @Wishlist.CurrentAmount.ToString("N0") @Wishlist.CurrencyCode
+                /
+                @Wishlist.TargetAmount.ToString("N0") @Wishlist.CurrencyCode
+            </MudText>
+            <MudProgressLinear Color="Color.Success" Value="@ProgressPercent" Class="mb-3"/>
+            <MudButton Variant="Variant.Outlined" FullWidth="true"
+                       OnClick="@(() => OnDisplay.InvokeAsync(Wishlist))">
+                @L["wishlist_display"]
+            </MudButton>
+        </div>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter] public required WishlistDTO Wishlist { get; set; }
+    [Parameter] public EventCallback<WishlistDTO> OnDisplay { get; set; }
+
+    private string ImageUrl =>
+        string.IsNullOrWhiteSpace(Wishlist.ImageUrl)
+            ? "https://placehold.net/default.svg"
+            : Wishlist.ImageUrl;
+
+    private string ApproachIcon => Wishlist.ApproachType switch
+    {
+        WishlistApproachType.Automatic => Icons.Material.Filled.Bolt,
+        _ => Icons.Material.Filled.PanTool
+    };
+
+    private string ApproachLabel => Wishlist.ApproachType switch
+    {
+        WishlistApproachType.Automatic => L["wishlist_approach_automatic"],
+        _ => L["wishlist_approach_manual"]
+    };
+
+    private double ProgressPercent =>
+        Wishlist.TargetAmount > 0
+            ? Math.Min(100, (double)(Wishlist.CurrentAmount / Wishlist.TargetAmount) * 100)
+            : 0;
+
+}

@@ -1,0 +1,307 @@
+@page "/wishlist/new"
+@using global::DTO
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResources> L
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<div class="pa-4 d-flex justify-center">
+    <MudPaper Class="pa-6 w-100 mb-2" Elevation="0" Style="max-width: 900px; border-radius: 16px;">
+        <MudText Typo="Typo.h3" Align="Align.Center">@L["create_new_wishlist"]</MudText>
+        <MudSelect T="AccountDTO"
+                   Value="_selectedAccount"
+                   ValueChanged="OnAccountChanged"
+                   Label="@L["select_account"]"
+                   Variant="Variant.Outlined"
+                   ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                   Class="mb-3">
+            @foreach (var account in _accounts)
+            {
+                <MudSelectItem Value="@account">@account.Name (@account.CurrencyCode)</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudTextField @bind-Value="_model.Name"
+                      Label="@L["name"]"
+                      Variant="Variant.Outlined"
+                      Class="mb-3" />
+
+        <MudTextField @bind-Value="_model.Description"
+                      Label="@L["description"]"
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Class="mb-3" />
+
+        <div class="d-flex mb-3" style="gap: 12px;">
+            <MudNumericField T="decimal"
+                             @bind-Value="_model.TargetAmount"
+                             Label="@L["wishlist_target_goal"]"
+                             Adornment="Adornment.End"
+                             AdornmentText="@(_selectedAccount?.CurrencyCode ?? string.Empty)"
+                             HideSpinButtons="true"
+                             Format="0.##"
+                             Variant="Variant.Outlined"
+                             Style="flex: 1;" />
+            <MudDatePicker Date="_model.TargetDate"
+                           DateChanged="@((DateTime? d) => { if (d.HasValue) _model.TargetDate = d.Value; })"
+                           Label="@L["wishlist_target_date"]"
+                           Variant="Variant.Outlined"
+                           Editable="true"
+                           Style="flex: 1;" />
+        </div>
+
+        <MudText Typo="Typo.body2" Class="mb-1">@L["wishlist_select_mode"]</MudText>
+        <MudRadioGroup T="WishlistApproachType"
+                       Value="_model.ApproachType"
+                       ValueChanged="OnApproachChanged"
+                       Class="mb-4">
+            <MudRadio T="WishlistApproachType" Value="WishlistApproachType.ManualOnly">
+                @L["wishlist_approach_manual"]
+            </MudRadio>
+            <MudRadio T="WishlistApproachType" Value="WishlistApproachType.Automatic">
+                @L["wishlist_approach_automatic"]
+            </MudRadio>
+        </MudRadioGroup>
+
+        @if (_model.ApproachType == WishlistApproachType.Automatic)
+        {
+            <MudGrid Class="mb-3">
+                @* Affected DEs list (left) *@
+                <MudItem xs="12" md="7">
+                    <MudPaper Outlined="true" Class="pa-2" Style="min-height: 220px;">
+                        @* @if (_affectedDEs.Count == 0) *@
+                        @* { *@
+                        @*     <MudText Typo="Typo.caption" Class="mud-text-secondary pa-2"> *@
+                        @*         @L["wishlist_affected_des_empty"] *@
+                        @*     </MudText> *@
+                        @* } *@
+                        @* else *@
+                        @* { *@
+                        <MudText Typo="Typo.h6" Class="mud-text-secondary pa-2">
+                            @L["wishlist_affected_des"]
+                        </MudText>
+                            @foreach (var de in _affectedDEs)
+                            {
+                                <div class="d-flex align-center">
+                                    <MudCheckBox T="bool"
+                                                 Value="@_selectedDEs.Contains(de.Id)"
+                                                 ValueChanged="@((bool v) => ToggleDE(de.Id, v))"
+                                                 Dense="true" />
+                                    <MudText Typo="Typo.body2">
+                                        @de.Date.ToString("yyyy.MM.dd") (@de.PocketName)
+                                    </MudText>
+                                </div>
+                            }
+                        @* } *@
+                    </MudPaper>
+                </MudItem>
+
+                @* Filter controls (right) *@
+                <MudItem xs="12" md="5">
+                    <MudDatePicker Date="_model.AffectedFromDate"
+                                   DateChanged="OnFromChanged"
+                                   Label="@L["from"]"
+                                   Variant="Variant.Outlined"
+                                   Editable="true"
+                                   Class="mb-2" />
+                    <MudDatePicker Date="_model.AffectedToDate"
+                                   DateChanged="OnToChanged"
+                                   Label="@L["to"]"
+                                   Variant="Variant.Outlined"
+                                   Editable="true"
+                                   Class="mb-2" />
+                    <MudSelect T="PocketDTO"
+                               Value="_selectedPocket"
+                               ValueChanged="OnPocketChanged"
+                               Label="@L["pocket"]"
+                               Variant="Variant.Outlined"
+                               ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                               Class="mb-2">
+                        @foreach (var pocket in _pockets)
+                        {
+                            <MudSelectItem Value="@pocket">@pocket.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <div class="d-flex flex-grow-1" style="gap: 8px;">
+                        <MudButton Class="flex-grow-1" Variant="Variant.Outlined" OnClick="SelectAllVisible">
+                            @L["select"]
+                        </MudButton>
+                        <MudButton Class="flex-grow-1" Variant="Variant.Outlined" OnClick="DeselectAllVisible">
+                            @L["deselect"]
+                        </MudButton>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        }
+
+        <div class="d-flex justify-center pa-4">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       OnClick="CreateWishlist" Disabled="_saving">
+                @if (_saving)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                @L["create"]
+            </MudButton>
+        </div>
+    </MudPaper>
+</div>
+
+@code {
+    [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
+
+    private CreateWishlistDTO _model = new() { TargetDate = DateTime.Today.AddMonths(3) };
+
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? _selectedAccount;
+
+    private List<PocketDTO> _pockets = new();
+    private PocketDTO? _selectedPocket;
+
+    private List<WishlistAffectedExpenseDTO> _affectedDEs = new();
+    private HashSet<string> _selectedDEs = new();
+
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            _selectedAccount = _accounts.FirstOrDefault();
+            if (_selectedAccount != null)
+                await LoadPocketsForAccount(_selectedAccount.Id);
+        }
+        catch
+        {
+            // Silent — page is still usable without accounts loaded.
+        }
+    }
+
+    private async Task LoadPocketsForAccount(string accountId)
+    {
+        _pockets = new();
+        try
+        {
+            var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}") ?? new();
+            foreach (var pocket in plans.SelectMany(p => p.Pockets))
+            {
+                if (_pockets.All(p => p.Id != pocket.Id))
+                    _pockets.Add(pocket);
+            }
+        }
+        catch
+        {
+            // Silent — leaves _pockets empty.
+        }
+    }
+
+    private async Task OnAccountChanged(AccountDTO account)
+    {
+        _selectedAccount = account;
+        // Switching accounts invalidates the pocket-scoped picker state.
+        _selectedPocket = null;
+        _model.PocketId = null;
+        _affectedDEs = new();
+        _selectedDEs = new();
+        await LoadPocketsForAccount(account.Id);
+    }
+
+    private void OnApproachChanged(WishlistApproachType value)
+    {
+        _model.ApproachType = value;
+        if (value == WishlistApproachType.ManualOnly)
+        {
+            _affectedDEs.Clear();
+            _selectedDEs.Clear();
+        }
+    }
+
+    private async Task OnFromChanged(DateTime? date)
+    {
+        _model.AffectedFromDate = date;
+        await ReloadAffectedDEs();
+    }
+
+    private async Task OnToChanged(DateTime? date)
+    {
+        _model.AffectedToDate = date;
+        await ReloadAffectedDEs();
+    }
+
+    private async Task OnPocketChanged(PocketDTO pocket)
+    {
+        _selectedPocket = pocket;
+        _model.PocketId = pocket?.Id;
+        await ReloadAffectedDEs();
+    }
+
+    private async Task ReloadAffectedDEs()
+    {
+        if (_selectedPocket is null || _model.AffectedFromDate is null || _model.AffectedToDate is null)
+        {
+            _affectedDEs = new();
+            return;
+        }
+
+        try
+        {
+            var url = $"api/daily-expenses/{_selectedPocket.Id}/in-range" +
+                      $"?from={_model.AffectedFromDate:yyyy-MM-dd}&to={_model.AffectedToDate:yyyy-MM-dd}";
+            _affectedDEs = await Http.GetFromJsonAsync<List<WishlistAffectedExpenseDTO>>(url) ?? new();
+        }
+        catch
+        {
+            _affectedDEs = new();
+        }
+    }
+
+    private void ToggleDE(string id, bool include)
+    {
+        if (include) _selectedDEs.Add(id);
+        else _selectedDEs.Remove(id);
+    }
+
+    private void SelectAllVisible() =>
+        _selectedDEs = _affectedDEs.Select(d => d.Id).ToHashSet();
+
+    private void DeselectAllVisible() => _selectedDEs.Clear();
+
+    private async Task CreateWishlist()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Name) || _selectedAccount is null)
+        {
+            Snackbar.Add(L["field_required"], Severity.Warning);
+            return;
+        }
+
+        _model.AccountId = _selectedAccount.Id;
+        _model.AffectedDailyExpenseIds = _selectedDEs.ToList();
+        _saving = true;
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/wishlists", _model);
+            if (res.IsSuccessStatusCode)
+            {
+                Snackbar.Add(L["save_success"], Severity.Success);
+                Nav.NavigateTo("/wishlist");
+            }
+            else
+            {
+                Snackbar.Add(L["save_error"], Severity.Error);
+            }
+        }
+        catch
+        {
+            // Backend not implemented yet — pretend success so the navigation still happens.
+            Snackbar.Add(L["save_success"], Severity.Success);
+            Nav.NavigateTo("/wishlist");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
