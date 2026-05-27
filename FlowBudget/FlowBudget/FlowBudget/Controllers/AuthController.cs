@@ -19,9 +19,7 @@ namespace FlowBudget.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDTO model)
         {
-            // Resolve the user: first by username, falling back to email so the user
-            // can sign in with either identifier. PasswordSignInAsync itself only
-            // looks up by UserName, so we resolve the right UserName up front.
+            //Login via username, fallback for email
             var user = await _userManager.FindByNameAsync(model.UsernameOrEmail)
                        ?? await _userManager.FindByEmailAsync(model.UsernameOrEmail);
 
@@ -64,8 +62,7 @@ namespace FlowBudget.Controllers
         
             if (result.Succeeded)
             {
-                // 3. Optional: Automatically sign them in after successful registration
-                // RememberMe-equivalent: persistent cookie so the new user stays signed in across browser restarts.
+                //Log in with Remember me = true
                 await _signInManager.SignInAsync(user, isPersistent: true);
                 
                 return Ok(new { Message = "User registered and logged in." });

@@ -37,12 +37,12 @@
         @if (_selectedAccount != null)
         {
             <MudStack Spacing="6">
-                @* Pass the ID to all children *@
-                <IncomePaper AccountId="@_selectedAccount.Id" />
+                @* Pass the ID and currency to all children *@
+                <IncomePaper AccountId="@_selectedAccount.Id" SelectedCurrency="@_selectedAccount.CurrencyCode" />
 
-                <FixedExpensesPaper AccountId="@_selectedAccount.Id" />
+                <FixedExpensesPaper AccountId="@_selectedAccount.Id" SelectedCurrency="@_selectedAccount.CurrencyCode" />
 
-                <PocketsPaper AccountId="@_selectedAccount.Id" />
+                <PocketsPaper AccountId="@_selectedAccount.Id" SelectedCurrency="@_selectedAccount.CurrencyCode" />
 
                 <CategoryPaper />
             </MudStack>

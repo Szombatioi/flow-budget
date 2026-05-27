@@ -153,7 +153,7 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
             .Where(e => e.DailyExpense.Pocket.DivisionPlan.Account.UserId == userId)
             .ProjectTo<ExpenditureDTO>(mapper.ConfigurationProvider);
 
-    public async Task<ExpenditureStatsDTO> GetStats(string userId)
+    public async Task<ExpenditureStatsDTO> GetStats(string userId, string? accountId = null)
     {
         var today = DateTime.Today;
         var monthStart = new DateTime(today.Year, today.Month, 1);
@@ -164,6 +164,9 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
 
         var query = db.Expenditures
             .Where(e => e.DailyExpense.Pocket.DivisionPlan.Account.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(accountId))
+            query = query.Where(e => e.DailyExpense.Pocket.DivisionPlan.AccountId == accountId);
 
         var monthly = await query
             .Where(e => e.Date >= monthStart)

@@ -188,7 +188,7 @@
     private decimal DistributableMoney => _incomes.Sum(i => i.Amount) - _fixedExpenses.Sum(e => e.Amount);
 
     private string? _selectedPlanId;
-    private string SelectedCurrency = "HUF";
+    [Parameter] public string SelectedCurrency { get; set; } = string.Empty;
     private bool _isLoading = true;
 
     private readonly DialogOptions _standardOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };

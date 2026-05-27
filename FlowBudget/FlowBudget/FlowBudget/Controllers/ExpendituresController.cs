@@ -78,9 +78,9 @@ namespace FlowBudget.Controllers
         }
 
         [HttpGet("stats")]
-        public async Task<ActionResult<ExpenditureStatsDTO>> GetStats()
+        public async Task<ActionResult<ExpenditureStatsDTO>> GetStats([FromQuery] string? accountId = null)
         {
-            return await expenditureService.GetStats(UserId);
+            return await expenditureService.GetStats(UserId, accountId);
         }
     }
 }

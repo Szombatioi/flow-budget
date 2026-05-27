@@ -504,6 +504,7 @@ else
 
     private async Task LoadDailyExpense()
     {
+        IsLoading = true;
         Console.WriteLine("Load daily expense");
         try
         {
@@ -537,6 +538,10 @@ else
         catch (Exception)
         {
             Snackbar.Add(L["error_load_daily_expense"], Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

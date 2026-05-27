@@ -70,9 +70,9 @@
 
 @code {
     [Parameter] public string? AccountId { get; set; }
-    
+    [Parameter] public string SelectedCurrency { get; set; } = string.Empty;
+
     private List<IncomeDTO> _budgets = new();
-    private string SelectedCurrency = "HUF";
     private string? SelectedAccount { get; set; }
     private bool _isLoading = true;
 

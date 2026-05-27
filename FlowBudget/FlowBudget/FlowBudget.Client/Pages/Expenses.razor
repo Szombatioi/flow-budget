@@ -16,6 +16,24 @@
 
 <MudPaper Elevation="0" Class="pa-6 mb-6" Style=@($"background-color: {CustomColors.LightPaper}; border-radius: 16px;")>
     <MudGrid AlignItems="Center.Center">
+        @* Account *@
+        <MudItem xs="12">
+            <MudSelect T="AccountDTO"
+                       Value="_selectedAccount"
+                       ValueChanged="OnAccountChanged"
+                       Label="@L["select_account"]"
+                       Variant="Variant.Filled"
+                       ToStringFunc="@(a => a?.Name ?? string.Empty)"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Dense="true"
+                       Style="max-width: 280px;">
+                @foreach (var account in _accounts)
+                {
+                    <MudSelectItem Value="@account">@account.Name (@account.CurrencyCode)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
         @* Search bar + Search by select field (e.g. search by category, description, pocket etc.) *@
         <MudItem xs="12" md="6">
             <MudTextField T="string"
@@ -185,6 +203,9 @@
 
     [CascadingParameter] public UserBaseDTO? UserDto { get; set; }
 
+    private List<AccountDTO> _accounts = new();
+    private AccountDTO? _selectedAccount;
+
     private List<ExpenditureDTO> _expenses = new();
     private List<CategoryDTO> _categories = new();
     private List<string> _pocketNames = new();
@@ -215,32 +236,44 @@
         if (_initialized || UserDto is null) return;
         _initialized = true;
 
-        await LoadCategoriesAndPockets();
+        await LoadAccountsAndCategories();
+        if (_selectedAccount != null)
+            await LoadPocketsForAccount(_selectedAccount.Id);
         await LoadExpensesAsync();
         await LoadStatsAsync();
     }
 
-    private async Task LoadCategoriesAndPockets()
+    private async Task LoadAccountsAndCategories()
     {
         try
         {
             _categories = await Http.GetFromJsonAsync<List<CategoryDTO>>("api/categories") ?? new();
-            
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var accId in UserDto?.AccountIds ?? new List<string>())
-            {
-                var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accId}") ?? new();
-                foreach (var pocket in plans.SelectMany(p => p.Pockets))
-                {
-                    if (seen.Add(pocket.Name))
-                        _pocketNames.Add(pocket.Name);
-                }
-            }
+            _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
+            _selectedAccount = _accounts.FirstOrDefault();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Snackbar.Add(L["something_went_wrong"], Severity.Error);
             Console.WriteLine(ex);
+        }
+    }
+
+    private async Task LoadPocketsForAccount(string accountId)
+    {
+        _pocketNames = new();
+        try
+        {
+            var plans = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}") ?? new();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pocket in plans.SelectMany(p => p.Pockets))
+            {
+                if (seen.Add(pocket.Name))
+                    _pocketNames.Add(pocket.Name);
+            }
+        }
+        catch
+        {
+            // Silent — leaves _pocketNames empty.
         }
     }
 
@@ -271,7 +304,10 @@
     {
         try
         {
-            _stats = await Http.GetFromJsonAsync<ExpenditureStatsDTO>("api/expenditures/stats");
+            var url = _selectedAccount is null
+                ? "api/expenditures/stats"
+                : $"api/expenditures/stats?accountId={_selectedAccount.Id}";
+            _stats = await Http.GetFromJsonAsync<ExpenditureStatsDTO>(url);
         }
         catch
         {
@@ -283,6 +319,10 @@
     {
         var filters = new List<string>();
 
+        if (_selectedAccount is not null)
+        {
+            filters.Add($"AccountId eq '{_selectedAccount.Id}'");
+        }
         if (!string.IsNullOrWhiteSpace(_search))
         {
             var q = _search.Replace("'", "''");
@@ -331,8 +371,19 @@
     private string FormatAmount(decimal? amount)
     {
         if (amount is null) return "—";
-        var currency = _expenses.FirstOrDefault()?.Currency ?? string.Empty;
+        var currency = _selectedAccount?.CurrencyCode ?? string.Empty;
         return $"{amount.Value:N2} {currency}".TrimEnd();
+    }
+
+    private async Task OnAccountChanged(AccountDTO account)
+    {
+        _selectedAccount = account;
+        // Pocket scope, search results and stats are all account-bound — reset and reload.
+        _pocketFilter = null;
+        _page = 1;
+        await LoadPocketsForAccount(account.Id);
+        await LoadExpensesAsync();
+        await LoadStatsAsync();
     }
 
     private async Task OnFilterChanged()

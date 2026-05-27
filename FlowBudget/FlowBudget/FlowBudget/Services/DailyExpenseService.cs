@@ -56,7 +56,9 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
         int daysInMonth = GetDaysInMonth(date);
         var existingDailyExpenses = await db.DailyExpenses
-            .Where(e => e.Date.Month == date.Month && e.Date.Year == date.Year)
+            .Include(de => de.Pocket)
+            .ThenInclude(p => p.DivisionPlan)
+            .Where(e => e.Pocket.DivisionPlan.AccountId == accountId && e.Date.Month == date.Month && e.Date.Year == date.Year)
             .ToListAsync();
 
         //Skip if they are already generated

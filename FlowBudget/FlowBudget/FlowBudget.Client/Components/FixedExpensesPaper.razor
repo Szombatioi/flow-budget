@@ -70,9 +70,9 @@
 
 @code {
     [Parameter] public string? AccountId { get; set; }
-    
+    [Parameter] public string SelectedCurrency { get; set; } = string.Empty;
+
     private List<FixedExpenseDTO> _fixedExpenses = new();
-    private string SelectedCurrency = "HUF";
     private bool _isLoading = true;
 
     private readonly DialogOptions _standardOptions = new() 
