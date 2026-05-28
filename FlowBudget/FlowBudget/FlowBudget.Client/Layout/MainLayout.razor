@@ -1,9 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
+@using System.Globalization
 @using System.Security.Claims
 @using DTO
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
 @inject AuthenticationStateProvider AuthProvider
 @attribute [Authorize]
 @inject HttpClient http
@@ -11,8 +13,8 @@
 @inject NavigationManager nav
 @inject ISnackbar Snackbar
 @inject ThemeService ThemeService
+@inject IJSRuntime JS
 
-@* Optional: @inject UserManager<ApplicationUser> UserManager *@
 
 <MudThemeProvider Theme="theme" IsDarkMode="@ThemeService.IsDarkMode"/>
 <MudPopoverProvider/>
@@ -20,18 +22,15 @@
 <MudSnackbarProvider/>
 
 <style>
-    /* Remove the default shadow from the AppBar to let it blend */
     .mud-appbar {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Subtle separator instead of shadow */
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05); 
     }
-
-    /* Fix the Drawer shadow to only cast to the right */
+    
     .mud-drawer-fixed {
         box-shadow: 4px 0 8px -3px rgba(0, 0, 0, 0.1);
         border-right: 1px solid rgba(0, 0, 0, 0.05);
     }
-
-    /* Ensure the mini-drawer icons are centered when collapsed */
+    
     .mud-drawer-mini .mud-nav-link {
         justify-content: center;
         padding-left: 0;
@@ -39,7 +38,6 @@
 </style>
 
 <MudLayout>
-    @* Elevation 0 removes the bottom shadow that separates it from the drawer *@
     <MudAppBar Elevation="0" Class="border-b">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit"
                        Edge="Edge.Start" OnClick="ToggleDrawer"
@@ -47,7 +45,6 @@
         <MudText Typo="Typo.h4" Class="ml-3">@appBarTitle</MudText>
     </MudAppBar>
 
-    @* ClipMode.Always ensures the AppBar stays 'above' the Drawer visually *@
     <MudDrawer @bind-Open="@_open"
                Variant="@DrawerVariant.Temporary"
                ClipMode="DrawerClipMode.Never"
@@ -139,7 +136,7 @@
     private ClaimsPrincipal? _currentUser;
     [CascadingParameter] private ClaimsPrincipal? User { get; set; }
     private UserBaseDTO? UserDto { get; set; }
-    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; } // Use the Task version for better reliability
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
 
     private string appBarTitle = ""; //TODO: make a dictionary with URL-title pairs and use them here (OnInitializedAsync method)
     private bool _open;
@@ -156,7 +153,7 @@
         PaletteLight = new PaletteLight()
         {
             Background = LightPaletteGrey,
-            Surface = "#ffffff",       // MudPaper background — slightly darker than the page
+            Surface = "#ffffff",
             DrawerBackground = "#FFFFFF",
             AppbarBackground = "#FFFFFF",
             TextPrimary = "#454748",
@@ -200,6 +197,7 @@
             UserDto = await http.GetFromJsonAsync<UserBaseDTO>("api/user");
             Console.WriteLine($"User loaded: {UserDto?.Id}");
             ThemeService.SetDarkMode(UserDto?.Theme == "dark");
+            await SyncLanguageWithServer();
         }
         catch (HttpRequestException ex)
         {
@@ -210,6 +208,33 @@
         catch (Exception ex)
         {
             Console.WriteLine($"API Error: {ex.Message}");
+        }
+    }
+
+    private async Task SyncLanguageWithServer()
+    {
+        var serverLang = UserDto?.Language;
+        if (string.IsNullOrWhiteSpace(serverLang)) return;
+
+        //Check if the language culture is already OK
+        var current = CultureInfo.CurrentUICulture.Name;
+        if (string.Equals(current, serverLang, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, serverLang, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "fb.language");
+            if (string.Equals(stored, serverLang, StringComparison.OrdinalIgnoreCase)) return;
+
+            await JS.InvokeVoidAsync("localStorage.setItem", "fb.language", serverLang);
+            nav.NavigateTo(nav.Uri, forceLoad: true);
+        }
+        catch
+        {
+            //ignored
         }
     }
 

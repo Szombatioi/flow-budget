@@ -1,11 +1,13 @@
 @page "/settings"
 @using DTO
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject ThemeService ThemeService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @attribute [Authorize]
 
 <PageTitle>@L["nav_settings"]</PageTitle>
@@ -21,7 +23,7 @@ else
     <MudGrid Justify="Justify.Center">
         <MudItem xs="12" sm="10" md="7" lg="6">
 
-            @* ── Profile ── *@
+            @* Profile *@
             <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
                 <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_profile_section"]</MudText>
                 <MudTextField @bind-Value="_userName"
@@ -43,7 +45,7 @@ else
                 </MudButton>
             </MudPaper>
 
-            @* ── Security ── *@
+            @* Security *@
             <MudPaper Elevation="2" Class="pa-6 mb-4" Style="border-radius: 12px;">
                 <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight:700;">@L["settings_security_section"]</MudText>
                 <MudTextField @bind-Value="_currentPassword"
@@ -284,11 +286,12 @@ else
                     _settings.Theme = SelectedTheme;
                     _settings.Language = _selectedLanguage;
                 }
-
-                // Theme is already live via ThemeService.
-                // Language requires a full reload so the new resource strings take effect.
+                
+                // Language requires a full reload
                 if (_selectedLanguage != previousLanguage)
                 {
+                    try { await JS.InvokeVoidAsync("localStorage.setItem", "fb.language", _selectedLanguage); }
+                    catch { /* non-critical */ }
                     Nav.NavigateTo(Nav.Uri, forceLoad: true);
                 }
             }
@@ -309,7 +312,6 @@ else
             if (res.IsSuccessStatusCode)
             {
                 _apiKeyValue = await res.Content.ReadAsStringAsync();
-                // The JSON response is a quoted string; deserialize it properly
                 if (_apiKeyValue?.StartsWith("\"") == true)
                     _apiKeyValue = System.Text.Json.JsonSerializer.Deserialize<string>(_apiKeyValue);
                 _apiKeyRevealed = true;

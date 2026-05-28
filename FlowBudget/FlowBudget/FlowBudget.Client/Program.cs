@@ -1,6 +1,8 @@
+using System.Globalization;
 using FlowBudget.Client.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
 
@@ -28,4 +30,23 @@ builder.Services.AddScoped(sp =>
     var navManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
     return new HttpClient { BaseAddress = new Uri(navManager.BaseUri) };
 });
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+//Language
+try
+{
+    var js = host.Services.GetRequiredService<IJSRuntime>();
+    var stored = await js.InvokeAsync<string?>("localStorage.getItem", "fb.language");
+    if (!string.IsNullOrWhiteSpace(stored))
+    {
+        var ci = new CultureInfo(stored);
+        CultureInfo.DefaultThreadCurrentCulture = ci;
+        CultureInfo.DefaultThreadCurrentUICulture = ci;
+    }
+}
+catch
+{
+    //fall back to defaults.
+}
+
+await host.RunAsync();
