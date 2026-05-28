@@ -12,8 +12,7 @@ namespace FlowBudget.Controllers
     {
         protected string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
                                    ?? throw new InvalidOperationException("User ID not found in claims.");
-
-        // Helper if you need the ID as a Guid
+        
         protected Guid UserGuid => Guid.Parse(UserId);
     }
 }

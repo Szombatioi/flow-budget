@@ -10,47 +10,40 @@ namespace FlowBudget.Services;
 //One user can have multiple financial accounts for their user account
 //e.g. Account 1 - General
 //     Account 2 - Shared home budgets
-public class AccountService
+public class AccountService(ApplicationDbContext db)
 {
-    private readonly ApplicationDbContext _db;
-
-    public AccountService(ApplicationDbContext db)
-    {
-        _db = db;
-    }
-    
-    public async Task CreateAccount(string UserId, CreateAccountDTO dto)
+    public async Task CreateAccount(string userId, CreateAccountDTO dto)
     {
         //Find user
-        var user =  await _db.Users.SingleOrDefaultAsync(u => u.Id == UserId);
+        var user =  await db.Users.SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             throw new NotFoundException(); //TODO: handle exception via Middleware
         }
 
-        var currency = await _db.Currencies.SingleOrDefaultAsync(c => c.Code == dto.CurrencyCode);
+        var currency = await db.Currencies.SingleOrDefaultAsync(c => c.Code == dto.CurrencyCode);
         if (currency == null)
         {
             throw new NotFoundException();
         }
 
-        var Account = new Account()
+        var account = new Account()
         {
             Name =  dto.Name,
-            UserId = UserId,
+            UserId = userId,
             User = user,
             CurrencyCode = dto.CurrencyCode,
             Currency = currency,
         };
-        await _db.Accounts.AddAsync(Account);
-        await _db.SaveChangesAsync();
+        await db.Accounts.AddAsync(account);
+        await db.SaveChangesAsync();
     }
 
-    public async Task<List<AccountDTO>> GetAccounts(string UserId)
+    public async Task<List<AccountDTO>> GetAccounts(string userId)
     {
-        var user  = await _db.Users
+        var user  = await db.Users
             .Include(u => u.Accounts)
-            .SingleOrDefaultAsync(u => u.Id == UserId);
+            .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             throw new NotFoundException();
@@ -65,40 +58,40 @@ public class AccountService
             }).ToList();
     }
 
-    public async Task UpdateAccount(string UserId, string AccountId, UpdateAccountDTO dto)
+    public async Task UpdateAccount(string userId, string accountId, UpdateAccountDTO dto)
     {
-        var user = await _db.Users
+        var user = await db.Users
             .Include(u => u.Accounts)
-            .SingleOrDefaultAsync(u => u.Id == UserId);
+            .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null) throw new NotFoundException();
 
-        var account = user.Accounts.SingleOrDefault(a => a.Id == AccountId);
+        var account = user.Accounts.SingleOrDefault(a => a.Id == accountId);
         if (account == null) throw new NotFoundException();
 
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new InvalidOperationException("name_required");
 
         account.Name = dto.Name.Trim();
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
-    public async Task DeleteAccount(string UserId, string AccountId)
+    public async Task DeleteAccount(string userId, string accountId)
     {
-        var  user = await _db.Users
+        var  user = await db.Users
             .Include(u => u.Accounts)
-            .SingleOrDefaultAsync(u => u.Id == UserId);
+            .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             throw new NotFoundException();
         }
         
-        var account = user.Accounts.SingleOrDefault(a => a.Id == AccountId);
+        var account = user.Accounts.SingleOrDefault(a => a.Id == accountId);
         if (account == null)
         {
             throw new NotFoundException();
         }
         
         user.Accounts.Remove(account);
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 }

@@ -32,9 +32,7 @@ public class SeederService(ApplicationDbContext db, UserManager<ApplicationUser>
                 throw new InvalidOperationException($"Failed to seed admin user: {errors}");
             }
         }
-
-        // Always ensure the claim is present — handles existing users created before
-        // this claim was introduced (e.g. from a previous container run).
+        
         var existingClaims = await userManager.GetClaimsAsync(admin);
         if (!existingClaims.Any(c => c.Type == "admin" && c.Value == "true"))
         {

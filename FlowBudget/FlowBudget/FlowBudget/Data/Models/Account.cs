@@ -11,7 +11,6 @@ public class Account
     [Required, MaxLength(50)]
     public string Name { get; set; }
     
-    // Identity User Integration
     public string UserId { get; set; } = string.Empty;
     public virtual ApplicationUser User { get; set; }
 

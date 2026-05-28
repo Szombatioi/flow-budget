@@ -4,7 +4,6 @@ using System.Text.Json;
 
 namespace FlowBudget.Middleware;
 
-// Catching unhandled exceptions, logs them, then returns a HTTP response
 public class ExceptionLoggingMiddleware(RequestDelegate next, ILogger<ExceptionLoggingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)

@@ -73,7 +73,6 @@ else
         };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<WishlistDetailsDialog>(wishlist.Name, parameters, options);
-        // Status/delete changes can have happened inside the dialog — reload either way.
         await dialog.Result;
         await ReloadWishlists();
     }

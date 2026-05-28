@@ -245,61 +245,62 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper, Expenditur
 
     public async Task Activate(string userId, string wishlistId)
     {
-        var w = await GetWishlist(userId, wishlistId);
-        w.Status = WishlistStatus.Active;
+        var wishlist = await GetWishlist(userId, wishlistId);
+        wishlist.Status = WishlistStatus.Active;
         await db.SaveChangesAsync();
     }
 
     public async Task Deactivate(string userId, string wishlistId)
     {
-        var w = await GetWishlist(userId, wishlistId);
-        w.Status = WishlistStatus.Inactive;
+        var wishlist = await GetWishlist(userId, wishlistId);
+        wishlist.Status = WishlistStatus.Inactive;
         await db.SaveChangesAsync();
     }
 
     public async Task Delete(string userId, string wishlistId)
     {
-        var w = await GetWishlist(userId, wishlistId);
-        db.Wishlists.Remove(w);
+        var wishlist = await GetWishlist(userId, wishlistId);
+        db.Wishlists.Remove(wishlist);
         await db.SaveChangesAsync();
     }
 
+    //This is for the Dashboard: if the user has a Wishlist set for today, but wants to change
     public async Task Align(string userId, string dailyExpenseId, string toWishlistId)
     {
         var target = await GetWishlist(userId, toWishlistId);
 
-        var de = await db.DailyExpenses
+        var dailyExpense = await db.DailyExpenses
                      .Include(d => d.Pocket).ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
                      .SingleOrDefaultAsync(d => d.Id == dailyExpenseId)
                  ?? throw new NotFoundException();
-        if (de.Pocket.DivisionPlan.Account.UserId != userId)
+        if (dailyExpense.Pocket.DivisionPlan.Account.UserId != userId)
             throw new UnauthorizedAccessException();
 
         //Detaching wishlist from source, attaching to target
-        de.WishlistId = target.Id;
+        dailyExpense.WishlistId = target.Id;
         await db.SaveChangesAsync();
     }
 
     public async Task Unalign(string userId, string dailyExpenseId)
     {
-        var de = await db.DailyExpenses
+        var dailyExpense = await db.DailyExpenses
                      .Include(d => d.Pocket).ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
                      .SingleOrDefaultAsync(d => d.Id == dailyExpenseId)
                  ?? throw new NotFoundException();
-        if (de.Pocket.DivisionPlan.Account.UserId != userId)
+        if (dailyExpense.Pocket.DivisionPlan.Account.UserId != userId)
             throw new UnauthorizedAccessException();
 
-        de.WishlistId = null;
+        dailyExpense.WishlistId = null;
         await db.SaveChangesAsync();
     }
 
     private async Task<Wishlist> GetWishlist(string userId, string wishlistId)
     {
-        var w = await db.Wishlists
+        var wishlist = await db.Wishlists
                     .Include(w => w.Account)
-                    .SingleOrDefaultAsync(w => w.Id == wishlistId)
-                ?? throw new NotFoundException();
-        if (w.Account.UserId != userId) throw new UnauthorizedAccessException();
-        return w;
+                    .SingleOrDefaultAsync(w => w.Id == wishlistId); 
+        if(wishlist == null) throw new NotFoundException();
+        if (wishlist.Account.UserId != userId) throw new UnauthorizedAccessException();
+        return wishlist;
     }
 }

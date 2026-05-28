@@ -56,14 +56,10 @@ try
             outputTemplate:
             "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
         .ReadFrom.Configuration(ctx.Configuration));
-
-    // ── Services ──────────────────────────────────────────────────────────────
+    
 
     builder.Services.AddRazorComponents()
         .AddInteractiveWebAssemblyComponents()
-        // SerializeAllClaims: include custom claims (e.g. "admin") in the state
-        // that is passed from the server to the Blazor WASM client.
-        // Without this, only standard name/role claims are forwarded.
         .AddAuthenticationStateSerialization(o => o.SerializeAllClaims = true);
 
     builder.Services.AddCascadingAuthenticationState();
@@ -71,8 +67,7 @@ try
 
     var baseUrl = builder.Configuration["ApiSettings:BaseUrl"];
     builder.Services.AddHttpClient("APIClient", client => { client.BaseAddress = new Uri(baseUrl); });
-
-    // List of injectable services
+    
     builder.Services.AddTransient<UserService>();
     builder.Services.AddTransient<CurrencyService>();
     builder.Services.AddTransient<AccountService>();
@@ -175,10 +170,10 @@ try
     
     var app = builder.Build();
 
-    // Global exception logger — must be first so it wraps the entire pipeline
+    // Global exception logger
     app.UseMiddleware<ExceptionLoggingMiddleware>();
 
-    // Serilog request logging (logs HTTP method, path, status, elapsed)
+    // Serilog request logging
     app.UseSerilogRequestLogging(opts =>
     {
         opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0}ms";
@@ -225,13 +220,7 @@ try
     app.MapAdditionalIdentityEndpoints();
     app.MapControllers().DisableAntiforgery();
 
-    // ── DB migrations ─────────────────────────────────────────────────────────
-    // Apply EF Core migrations at startup so containers always run with the latest schema.
-    //
-    // Edge-case handled: if the DB was previously created with EnsureCreated() it has no
-    // __EFMigrationsHistory table, which would cause MigrateAsync() to fail trying to
-    // re-create tables that already exist.  In that case we delete and recreate the DB
-    // from scratch using migrations (acceptable for a dev/container environment).
+    // DB migrations for docker environment
     // using (var scope = app.Services.CreateScope())
     // {
     //     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

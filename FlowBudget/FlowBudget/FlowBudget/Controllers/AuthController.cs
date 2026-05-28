@@ -56,8 +56,7 @@ namespace FlowBudget.Controllers
                 UserName = model.Username,
                 Email = model.Email,
             };
-        
-            // 2. Create the user (this hashes the password automatically)
+            
             var result = await _userManager.CreateAsync(user, model.Password);
         
             if (result.Succeeded)
@@ -67,8 +66,7 @@ namespace FlowBudget.Controllers
                 
                 return Ok(new { Message = "User registered and logged in." });
             }
-        
-            // 4. If failed, return the specific Identity errors (e.g., Password too weak, Email taken)
+            
             var errors = result.Errors.Select(e => e.Description);
             return BadRequest(new { Errors = errors });
         }

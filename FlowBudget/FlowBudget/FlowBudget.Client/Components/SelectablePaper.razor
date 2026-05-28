@@ -12,7 +12,7 @@
     </div>
     
     <div class="d-flex justify-center mb-3">
-        <div style="background-color: var(@("--mud-palette-primary"));@IconDiscStyle" >
+        <div style="background-color: var(@("--mud-palette-primary")); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" >
             <MudIcon Icon="@Icon" Size="Size.Medium" Style="color: white;" />
         </div>
     </div>
@@ -41,11 +41,6 @@
     [Parameter] public string? Description { get; set; }
 
     [Parameter] public EventCallback<string> OnSelected { get; set; }
-    
-
-    private string IconDiscStyle =>
-        $"width: 56px; height: 56px; border-radius: 50%;" +
-        "display: flex; align-items: center; justify-content: center;";
 
     private async Task HandleClick()
     {

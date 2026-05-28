@@ -10,8 +10,6 @@ namespace FlowBudget.Controllers
     [ApiController]
     public class PocketsController(PocketService pocketService) : ApiBaseController
     {
-        private readonly PocketService _pocketService = pocketService;
-
         [HttpGet("{did}")]
         public async Task<ActionResult<List<PocketDTO>>> GetPockets(string did)
         {
@@ -19,27 +17,27 @@ namespace FlowBudget.Controllers
             // Console.WriteLine("xxxxxxxxxxxx");
             // Console.WriteLine(did);
             // Console.ResetColor();
-            return await _pocketService.GetAllPockets(UserId, did);
+            return await pocketService.GetAllPockets(UserId, did);
         }
 
         [HttpPost("{did}")]
         public async Task<ActionResult> AddPocket(string did, [FromBody] CreatePocketDTO dto, [FromQuery] DateTime? allowFrom = null)
         {
-            await _pocketService.AddPocket(UserId, did, dto, allowFrom);
+            await pocketService.AddPocket(UserId, did, dto, allowFrom);
             return Created();
         }
 
         [HttpPut]
         public async Task<ActionResult> UpdatePocket([FromBody] EditPocketDTO dto, [FromQuery] DateTime allowFrom)
         {
-            await _pocketService.UpdatePocket(UserId, dto, allowFrom);
+            await pocketService.UpdatePocket(UserId, dto, allowFrom);
             return Ok();
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeletePocket(string id)
         {
-            await _pocketService.DeletePocket(UserId, id);
+            await pocketService.DeletePocket(UserId, id);
             return NoContent();
         }
     }

@@ -308,9 +308,6 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Don't gate on firstRender — UserDto can cascade in after the very first
-        // render, so _accounts may not be populated yet on that pass. Trigger on
-        // the first render where it actually is.
         if (!_storageRead && _accounts.Count > 0)
         {
             _storageRead = true;
@@ -379,7 +376,7 @@ else
         }
         catch
         {
-            // localStorage can be unavailable (private mode, quota) — non-critical.
+            //non-critical
         }
     }
 
@@ -442,8 +439,6 @@ else
         try
         {
             _accounts = await Http.GetFromJsonAsync<List<AccountDTO>>("api/accounts") ?? new();
-            // Re-resolve against the freshly-fetched list so SelectedAccount references
-            // the current instance (MudSelect compares by reference for object types).
             SelectedAccount = SelectedAccount is not null
                 ? _accounts.FirstOrDefault(a => a.Id == SelectedAccount.Id) ?? _accounts.FirstOrDefault()
                 : _accounts.FirstOrDefault();
@@ -471,7 +466,7 @@ else
         }
         catch (Exception)
         {
-            // Non-critical: dialog will just show empty category list
+            // Non-critical
         }
 
         try
@@ -495,8 +490,6 @@ else
             var res = await Http.GetFromJsonAsync<List<DivisionPlanDTO>>($"api/plans/{accountId}");
             var activePlan = (res ?? throw new InvalidOperationException()).SingleOrDefault(p => p.IsActive);
             ActivePlan = activePlan;
-            // Preserve the previously-picked pocket across re-fetches if its Id still
-            // exists in the new plan; otherwise fall back to the first pocket.
             SelectedPocket = SelectedPocket is not null
                 ? ActivePlan?.Pockets.FirstOrDefault(p => p.Id == SelectedPocket.Id) ?? ActivePlan?.Pockets.FirstOrDefault()
                 : ActivePlan?.Pockets.FirstOrDefault();
@@ -543,15 +536,11 @@ else
 
             if (start <= 0)
             {
-                // StartAmount is zero or negative — already in debt before spending anything.
-                // A ratio is meaningless here (there is no positive budget to divide against),
-                // so always show 100% (fully red). The exact figures are visible as text.
                 targetValue = 100.0;
             }
             else
             {
-                // Normal case: what fraction of today's allowed budget has been spent.
-                // Can exceed 100 if the user overspent (e.g. 150% = spent 1.5× the budget).
+                // Normal case: what fraction of today's allowed budget has been spent
                 targetValue = (double)(spent / start * 100);
             }
 

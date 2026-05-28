@@ -9,7 +9,6 @@ namespace FlowBudget.Services;
 
 public class EmailService(ApplicationDbContext db, IConfiguration configuration, ILogger<EmailService> logger)
 {
-    //Notifies users who enabled email notifications to record their spending for the day
     public async Task NotifyUsers()
     {
         logger.LogInformation("Notifying users who have no records for today set");
@@ -53,8 +52,7 @@ public class EmailService(ApplicationDbContext db, IConfiguration configuration,
                              de.Pocket.DivisionPlan.Account.UserId == user.Id)
                 .ToListAsync();
             if (dailyExpensesWithNoExpense.Count == 0) continue;
-
-            //We should write one email, stating all DEs that have no records for today
+            
             var email = new MailMessage()
             {
                 From = new MailAddress(senderEmail),
@@ -77,8 +75,7 @@ public class EmailService(ApplicationDbContext db, IConfiguration configuration,
     private async Task<string> BuildBody(string userName, string date, List<DailyExpense> dailyExpenses)
     {
         var template = await File.ReadAllTextAsync("Data/EmailNotificationTemplate.html");
-
-        //Add as many grids as needed
+        
         var gridText = "";
         foreach (var expense in dailyExpenses)
         {

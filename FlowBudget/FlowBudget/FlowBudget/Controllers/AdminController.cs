@@ -11,7 +11,6 @@ namespace FlowBudget.Controllers;
 [ApiController]
 public class AdminController(ILogger<AdminController> logger) : ApiBaseController
 {
-    // Semaphore prevents concurrent writes corrupting the JSON file
     private static readonly SemaphoreSlim FileLock = new(1, 1);
 
     private static readonly JsonSerializerOptions ReadOptions =

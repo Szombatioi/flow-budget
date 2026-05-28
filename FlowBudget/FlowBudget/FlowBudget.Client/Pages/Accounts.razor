@@ -172,13 +172,11 @@ else
         var res = await http.PostAsJsonAsync<CreateAccountDTO>("api/accounts", payload);
         if (!res.IsSuccessStatusCode)
         {
-            //TODO: snackbar
-            Console.WriteLine("Error when saving account");
+            Snackbar.Add(L["error_save_account"], Severity.Error);
         }
         else
         {
-            //TODO: snackbar
-            Console.WriteLine("Account saved");
+            Snackbar.Add(L["account_save_success"], Severity.Error);
             await GetAccounts();
             accountName = string.Empty;
             selectedCurrency = null;

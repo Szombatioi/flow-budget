@@ -20,8 +20,7 @@ public class WishlistDTO
     public string CurrencyCode { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public WishlistStatus Status { get; set; }
-
-    // Populated by Get (single wishlist); empty when returned from GetAll.
+    
     public List<WishlistAffectedExpenseDTO> AffectedDailyExpenses { get; set; } = new();
 }
 
@@ -41,15 +40,13 @@ public class CreateWishlistDTO
     public decimal TargetAmount { get; set; }
     public DateTime TargetDate { get; set; }
     public WishlistApproachType ApproachType { get; set; }
-
-    // Only relevant when ApproachType == Automatic.
+    
     public DateTime? AffectedFromDate { get; set; }
     public DateTime? AffectedToDate { get; set; }
     public string? PocketId { get; set; }
     public List<string> AffectedDailyExpenseIds { get; set; } = new();
 }
 
-// Used by the "Affected DEs" picker on /wishlist/new.
 public class WishlistAffectedExpenseDTO
 {
     public string Id { get; set; } = string.Empty;

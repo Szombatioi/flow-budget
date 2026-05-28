@@ -56,10 +56,7 @@ public class WishlistsController(WishlistService wishlistService) : ApiBaseContr
         await wishlistService.Unalign(UserId, dailyExpenseId);
         return NoContent();
     }
-
-    // The service throws InvalidOperationException with a translatable key
-    // (e.g. "wishlist_inactive"). Surface the key as a plain-text 400 body so the
-    // UI can look it up via the localizer.
+    
     [HttpPost("move/{wishlistId}/{pocketId}")]
     public async Task<ActionResult> MoveMoneyToWishlist(string pocketId, string wishlistId, MoveMoneyDTO dto)
     {

@@ -24,13 +24,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // --- Account Configuration ---
+        
         modelBuilder.Entity<Account>()
             .HasOne(a => a.Currency)
             .WithMany()
             .HasForeignKey(a => a.CurrencyCode)
-            .OnDelete(DeleteBehavior.Restrict); // Don't delete Currency if an Account uses it
+            .OnDelete(DeleteBehavior.Restrict); // Don't delete Currency if an Account is being deleted :D
         
         modelBuilder.Entity<Category>()
             .HasOne(c => c.User)
@@ -38,28 +37,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasForeignKey(c => c.UserId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // --- Pocket Configuration ---
-        // modelBuilder.Entity<Pocket>()
-        //     .HasOne(p => p.Account)
-        //     .WithMany(a => a.Pockets)
-        //     .HasForeignKey(p => p.AccountId)
-        //     .OnDelete(DeleteBehavior.Cascade); // Delete Account -> Delete Pockets
+        
 
         modelBuilder.Entity<Pocket>()
             .HasOne(p => p.DivisionPlan)
             .WithMany(dp => dp.Pockets)
             .HasForeignKey(p => p.DivisionPlanId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // --- DailyExpense Configuration ---
+        
         modelBuilder.Entity<DailyExpense>()
             .HasOne(de => de.Pocket)
             .WithMany(p => p.DailyExpenses)
             .HasForeignKey(de => de.PocketId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // --- Expenditure Configuration ---
+        
         modelBuilder.Entity<Expenditure>()
             .HasOne(e => e.DailyExpense)
             .WithMany(de => de.Expenditures)
@@ -72,8 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasForeignKey(e => e.CategoryId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
-
-        // --- CostBudget Configuration ---
+        
         modelBuilder.Entity<Income>()
             .HasOne(cb => cb.Account)
             .WithMany(a => a.Incomes)

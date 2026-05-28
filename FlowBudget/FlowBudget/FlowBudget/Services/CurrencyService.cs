@@ -8,7 +8,6 @@ namespace FlowBudget.Services;
 public class CurrencyService(ApplicationDbContext db)
 {
     // private readonly ILogger<CurrencyService> _logger;
-    private readonly ApplicationDbContext _db = db;
 
     public async Task<List<CurrencyDTO>> GetAllCurrencies()
     {

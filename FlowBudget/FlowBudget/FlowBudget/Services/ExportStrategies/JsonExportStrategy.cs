@@ -20,8 +20,6 @@ public class JsonExportStrategy(ApplicationDbContext db) : ExportStrategyBase(db
     {
         var expenses = await GetExpenditures(userId, dto);
         
-        //Flattening the navigations. Price and Currency are kept as separate
-        //fields so consumers can treat Price as a number.
         var projected = expenses.Select(e => new
         {
             Date = e.Date.ToString("yyyy-MM-dd"),

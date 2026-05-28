@@ -17,7 +17,7 @@ public class DailyExpense
     public bool IsStarted { get; set; } = false;
     public virtual ICollection<Expenditure> Expenditures { get; set; } = new List<Expenditure>();
 
-    // Optional link to an automatic-mode wishlist; the EoD of this day flows there.
+
     public string? WishlistId { get; set; }
     public virtual Wishlist? Wishlist { get; set; }
 }

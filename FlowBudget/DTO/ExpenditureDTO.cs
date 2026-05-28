@@ -9,7 +9,6 @@ public class ExpenditureDTO
     public decimal Price { get; set; }
     public DateTime Date { get; set; }
     public string? Description { get; set; }
-    // public string
     public string Currency { get; set; }
     public CategoryDTO? Category { get; set; }
     public string PocketName { get; set; } = string.Empty;
@@ -30,11 +29,8 @@ public class CreateExpenditureDTO
     public decimal Price { get; set; }
     public string? Description { get; set; }
     public string? CategoryId { get; set; }
-    // This is used on Client-side only — used to route the POST to the correct pocket endpoint
     public string? PocketId { get; set; }
-
-    // You can optionally pass a Date
-    // (if you upload the data for a previous date, not for today)
+    
     public DateTime? Date { get; set; }
 }
 
@@ -49,7 +45,7 @@ public class ExpenditureReceiptItemDTO
 {
     public string Name { get; set; }
     public decimal Price { get; set; }
-    // The AI returns the field as "category" containing a category ID
+    // The AI returns the field as category
     [System.Text.Json.Serialization.JsonPropertyName("category")]
     public string? CategoryId { get; set; }
 }

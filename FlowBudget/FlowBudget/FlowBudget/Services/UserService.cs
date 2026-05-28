@@ -90,8 +90,7 @@ public class UserService(ApplicationDbContext db, UserManager<ApplicationUser> u
         user.Language = dto.Language;
         await db.SaveChangesAsync();
     }
-
-    /// <summary>Verifies the user's password and returns their API key.</summary>
+    
     public async Task<string?> RevealApiKey(string userId, RevealApiKeyDTO dto)
     {
         var user = await userManager.FindByIdAsync(userId);
@@ -102,8 +101,7 @@ public class UserService(ApplicationDbContext db, UserManager<ApplicationUser> u
 
         return user.ApiKey;
     }
-
-    /// <summary>Verifies the user's password, then saves the new API key.</summary>
+    
     public async Task UpdateApiKey(string userId, UpdateApiKeyDTO dto)
     {
         var user = await userManager.FindByIdAsync(userId);

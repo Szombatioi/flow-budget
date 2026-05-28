@@ -44,9 +44,7 @@ public class ExcelExportStrategy(ApplicationDbContext db) : ExportStrategyBase(d
         }
 
         sheet.Columns().AdjustToContents();
-
-        // ClosedXML writes synchronously; saving to a MemoryStream is in-process so
-        // there's no IO worth awaiting. Return the stream positioned at the start.
+        
         var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
         memoryStream.Position = 0;

@@ -78,8 +78,7 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyE
 
         var activateFromMonth = new DateTime(activateFrom.Year, activateFrom.Month, 1);
         var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-
-        // Is there already any active plan for this account
+        
         var hasActivePlan = account.DivisionPlans.Any(dp => dp.IsActive && dp.Id != planId);
 
         // Cannot activate for the current month when another plan is already active

@@ -690,8 +690,7 @@
         }
         else
         {
-            // Service emits a translatable resource key as the response body for
-            // known validation cases (de_not_started / wishlist_inactive / wishlist_completed).
+            // Translatable error messages, if possible
             var body = (await res.Content.ReadAsStringAsync()).Trim().Trim('"');
             var localized = string.IsNullOrWhiteSpace(body)
                 ? L["save_error"]

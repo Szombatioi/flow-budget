@@ -273,7 +273,7 @@
         }
         catch
         {
-            // Silent — leaves _pocketNames empty.
+            // ignored
         }
     }
 
@@ -378,7 +378,6 @@
     private async Task OnAccountChanged(AccountDTO account)
     {
         _selectedAccount = account;
-        // Pocket scope, search results and stats are all account-bound — reset and reload.
         _pocketFilter = null;
         _page = 1;
         await LoadPocketsForAccount(account.Id);

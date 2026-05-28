@@ -80,9 +80,7 @@ public class FixedExpenseService(ApplicationDbContext db, DailyExpenseService da
             await db.SaveChangesAsync();
             return;
         }
-
-        //Create new version — store the exact datetime so two edits in the same month
-        //get distinct ActiveFrom values and the latest one wins deterministically.
+        
         var originalId = fixedExpense.OriginalFixedExpenseId ?? fixedExpense.Id;
 
         var newFixedExpense = new FixedExpense

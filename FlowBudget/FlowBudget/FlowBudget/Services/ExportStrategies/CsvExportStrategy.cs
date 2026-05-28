@@ -16,7 +16,8 @@ public class CsvExportStrategy(ApplicationDbContext db) : ExportStrategyBase(db)
         var expenses = await GetExpenditures(userId, dto);
 
         var memoryStream = new MemoryStream();
-        await using (var writer = new StreamWriter(memoryStream, new UTF8Encoding(true), bufferSize: 1024, leaveOpen: true))
+        await using (var writer =
+                     new StreamWriter(memoryStream, new UTF8Encoding(true), bufferSize: 1024, leaveOpen: true))
         {
             await writer.WriteLineAsync("Date,Name,Price,Currency,Category,Description");
             foreach (var e in expenses)
@@ -29,15 +30,18 @@ public class CsvExportStrategy(ApplicationDbContext db) : ExportStrategyBase(db)
                     Escape(e.Category?.Name ?? "-"),
                     Escape(e.Description)));
             }
+
             await writer.FlushAsync();
         }
+
         memoryStream.Position = 0;
         return memoryStream;
     }
 
     private static string Escape(string? s) =>
-        s is null ? "" :
-        s.Contains(',') || s.Contains('"') || s.Contains('\n')
-            ? "\"" + s.Replace("\"", "\"\"") + "\""
-            : s;
+        s is null
+            ? ""
+            : s.Contains(',') || s.Contains('"') || s.Contains('\n')
+                ? "\"" + s.Replace("\"", "\"\"") + "\""
+                : s;
 }

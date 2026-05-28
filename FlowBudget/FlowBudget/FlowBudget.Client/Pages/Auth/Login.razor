@@ -48,7 +48,6 @@
         if (response.IsSuccessStatusCode)
         {
             // After successful login, redirect to home. 
-            // The auth cookie is set by the server automatically.
             Nav.NavigateTo("/", forceLoad: true); 
         }
         else

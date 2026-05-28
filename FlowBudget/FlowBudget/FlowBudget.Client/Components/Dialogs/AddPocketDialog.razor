@@ -35,7 +35,7 @@
                              HideSpinButtons="true"
             />
 
-            @* Visual feedback for remaining ratio *@
+            @* Remaining ratio *@
             <MudAlert Severity="@(RemainingRatio < 0 ? Severity.Error : Severity.Info)"
                       Dense="true"
                       Class="mt-4"
@@ -78,12 +78,8 @@
             .Sum(p => p.Ration);
 
         RemainingRatio = (decimal)(100.0 - usedByOthers - Model.Ration);
-
-        // Sync the Money field in the DTO
-        // Model.Money = Incomes * (decimal)Model.Ration / 100;
     }
-
-    // This function is called by MudForm to validate the specific field
+    
     private string? ValidateRatio(double value)
     {
         double usedByOthers = PresentPockets

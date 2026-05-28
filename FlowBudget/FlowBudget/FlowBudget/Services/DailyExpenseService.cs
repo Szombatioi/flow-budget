@@ -190,12 +190,6 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
     }
 
     // Recalculates StartAmount and EoDAmount for DailyExpenses in the given month, up to date.Date.
-    // - activate: also marks each processed day as IsStarted.
-    // - recalculateFromStart: begin from day 1 instead of the first un-started day.
-    //
-    // Carryover rule: only propagate EoD from a day that is already IsStarted.
-    // This prevents compounding on un-started future-month days (where every day
-    // would incorrectly accumulate the previous day's EoDAmount as extra budget).
     public async Task RecalculateDailyExpenses(string pocketId, DateTime date, bool activate = false, bool recalculateFromStart = false)
     {
         var dailyExpenses = await db.DailyExpenses
@@ -217,9 +211,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
         var lastStartedIndex = dailyExpenses.FindLastIndex(de => de.IsStarted);
         var requestedDayIndex = dailyExpenses.FindIndex(de => de.Date.Date == date.Date);
-
-        // When recalculateFromStart is true (ration/income/fixed-expense changed), restart from day 1
-        // so the new amounts are reflected in every already-started day.
+        
         var startIndex = recalculateFromStart ? 0 : lastStartedIndex + 1;
 
         var dailyExpenseAmount = await CalculateDailyExpenseAmount(
@@ -231,10 +223,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
             dailyExpenses[i].StartAmount = dailyExpenseAmount;
             dailyExpenses[i].RelativeBudget = dailyExpenseAmount;
-
-            // Only carry EoD from the immediately preceding day if that day has been started
-            // (i.e., it is a settled day). Un-started future days don't carry over, preventing
-            // the StartAmount from compounding across days that haven't happened yet.
+            
             decimal eod = (i > 0 && dailyExpenses[i - 1].IsStarted)
                 ? dailyExpenses[i - 1].EoDAmount
                 : 0m;
@@ -245,11 +234,8 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         await db.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Recalculates all currently-active pockets for an account for the given month.
-    /// Triggers recalculation even for months where no days are started yet (pre-generated future months).
-    /// Called after income, fixed-expense, or pocket ration changes.
-    /// </summary>
+
+    // Called after income, fixed-expense, or pocket ration changes.
     public async Task RecalculateAllPocketsForAccount(string accountId, DateTime date)
     {
         var firstDayOfMonth = new DateTime(date.Year, date.Month, 1);
@@ -257,7 +243,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         // Always recalculate up to the last day so all days in the month are covered
         var lastDayOfMonth = firstDayOfNextMonth.AddDays(-1);
 
-        // Find the active division plan for this month (latest ActiveFrom <= first of month)
+        // Find the active division plan for this month
         var divisionPlan = await db.DivisionPlans
             .Where(dp => dp.AccountId == accountId && dp.IsActive && dp.ActiveFrom <= firstDayOfMonth)
             .OrderByDescending(dp => dp.ActiveFrom)
@@ -265,8 +251,6 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
         if (divisionPlan == null) return; // No active plan, nothing to recalculate
         
-        // Get the pocket version active in the target month: any version created
-        // before the start of the following month counts, so mid-month edits are included.
         var allPockets = await db.Pockets
             .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom < firstDayOfNextMonth)
             .ToListAsync();
@@ -278,8 +262,6 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
 
         foreach (var pocket in currentPockets)
         {
-            // Recalculate whenever DEs exist for this month — started or not.
-            // This handles both live months (some days started) and pre-generated future months.
             var hasAnyDEs = await db.DailyExpenses.AnyAsync(de =>
                 de.PocketId == pocket.Id
                 && de.Date.Year == date.Year
@@ -291,31 +273,20 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             }
         }
     }
-
-    /// <summary>
-    /// Convenience wrapper: recalculates all DEs for a single pocket for an entire month
-    /// (from day 1 through the last day), without activating any days.
-    /// </summary>
+    
+    //recalculates all DEs for a single pocket
     public async Task RecalculateFullMonth(string pocketId, int year, int month)
     {
         var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month));
         await RecalculateDailyExpenses(pocketId, lastDay, activate: false, recalculateFromStart: true);
     }
-
-    /// <summary>
-    /// Calculates the daily budget for a pocket in a specific month.
-    /// Uses the income and fixed-expense versions that were active at the start of <paramref name="forMonth"/>,
-    /// so future-month pre-generation uses the correct scheduled amounts.
-    /// </summary>
+    
     public async Task<decimal> CalculateDailyExpenseAmount(string accountId, double ration, int daysInMonth, DateTime forMonth)
     {
         var firstDayOfTargetMonth = new DateTime(forMonth.Year, forMonth.Month, 1);
-        // Use < firstDayOfNextTargetMonth so that mid-month edits (ActiveFrom = e.g. May 15)
-        // are included when calculating for that same month.  This replaces the old
-        // <= firstDayOfTargetMonth which missed any version created after the 1st.
         var firstDayOfNextTargetMonth = firstDayOfTargetMonth.AddMonths(1);
 
-        // Resolve the income version active at the start of the target month
+        // Most active incomes
         var allIncomes = await db.Incomes
             .Where(i => i.AccountId == accountId && i.ActiveFrom < firstDayOfNextTargetMonth)
             .ToListAsync();
@@ -325,7 +296,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             .Select(g => g.OrderByDescending(i => i.ActiveFrom).First())
             .Sum(i => i.Amount);
 
-        // Resolve the fixed-expense version active at the start of the target month
+        // Most active fixed-expenses
         var allFixedExpenses = await db.FixedExpenses
             .Where(fe => fe.AccountId == accountId && fe.ActiveFrom < firstDayOfNextTargetMonth)
             .ToListAsync();
@@ -337,15 +308,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         var remainingMoney = sumOfIncomes - sumOfFixedExpenses;
         return (remainingMoney * (decimal)ration / 100) / daysInMonth;
     }
-
-    /// <summary>
-    /// Cascades a change in one day's EoD forward through all subsequent started days in the month.
-    /// Call this after adding or removing an expenditure on <paramref name="fromDate"/> once the
-    /// EoDAmount of that day has already been persisted — this method only touches the days AFTER it.
-    ///
-    /// Stops at the last started day: un-started days are intentionally skipped and will be
-    /// corrected naturally when the user opens them (RecalculateDailyExpenses with activate:true).
-    /// </summary>
+    
     public async Task RecalculateStartedDaysFromDate(string pocketId, DateTime fromDate)
     {
         var dailyExpenses = await db.DailyExpenses
@@ -359,7 +322,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
         var fromIndex = dailyExpenses.FindIndex(de => de.Date.Date == fromDate.Date);
         var lastStartedIndex = dailyExpenses.FindLastIndex(de => de.IsStarted);
 
-        // Nothing to cascade if the affected day is the last started day (or not found)
+        // Nothing to cascade if the affected day is the last started day
         if (fromIndex < 0 || fromIndex >= lastStartedIndex)
             return;
 
@@ -427,6 +390,7 @@ public class DailyExpenseService(ApplicationDbContext db, IMapper mapper, LlmHan
             .ToList();
     }
 
+    //Get DEs which are selected when creating a wishlist
     public async Task<List<WishlistAffectedExpenseDTO>> GetInRange(string userId, string pocketId, DateTime from, DateTime to)
     {
         var pocket = await db.Pockets

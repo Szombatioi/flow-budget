@@ -27,11 +27,8 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
             throw new NotFoundException();
         }
         
-        // For each pocket lineage (group by OriginalPocketId), pick the version with the
-        // highest ActiveFrom that is still within the current-or-past month.
-        // Legacy rows where OriginalPocketId IS NULL are treated as their own lineage (self-reference).
+        //Find most active pockets
         var firstDayOfNextMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1);
-
         var allCandidates = await db.Pockets
             .Where(p => p.DivisionPlanId == divisionPlan.Id && p.ActiveFrom < firstDayOfNextMonth)
             .ToListAsync();
@@ -63,9 +60,7 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
         if (user.Accounts.All(a => divisionPlan.AccountId != a.Id))
             throw new UnauthorizedAccessException();
-
-        // Use the exact allowFrom datetime so two edits in the same month get distinct ActiveFrom
-        // values and the latest one wins deterministically when versions are compared.
+        
         var effectiveFrom = allowFrom ?? DateTime.Now;
 
         var pocket = new Pocket
@@ -79,18 +74,11 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
         await db.Pockets.AddAsync(pocket);
         await db.SaveChangesAsync();
-
-        // OriginalPocketId is set after save so we can use pocket.Id as the self-reference
-        // when this is a brand-new pocket (no prior version exists).
+        
         pocket.OriginalPocketId = originalPocketId ?? pocket.Id;
         await db.SaveChangesAsync();
 
-        // For genuinely new pockets (not version-updates triggered by UpdatePocket):
-        // if DEs already exist for the target month (the month was already initiated by
-        // other pockets), create DEs for this new pocket immediately so it participates
-        // in the current accounting period right away.
-        // Version-updates are identified by originalPocketId being provided; UpdatePocket
-        // handles DE migration itself in that case.
+       //new pocket -> generate DEs
         if (originalPocketId == null)
         {
             var siblingPocketIds = await db.Pockets
@@ -128,10 +116,7 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
         return pocket;
     }
-
-    // Creates a new version of the pocket (preserving its lineage via OriginalPocketId).
-    // If allowFrom is in a future month no recalculation is done yet.
-    // If allowFrom is in the current month, existing daily expenses are re-assigned and recalculated.
+    
     public async Task UpdatePocket(string userId, EditPocketDTO dto, DateTime allowFrom)
     {
         var user = await db.Users
@@ -162,8 +147,7 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
             await db.SaveChangesAsync();
             return;
         }
-
-        // Carry the lineage forward: new version shares the same OriginalPocketId.
+        
         var originalId = pocket.OriginalPocketId ?? pocket.Id;
 
         var newPocketDto = new CreatePocketDTO()
@@ -173,14 +157,12 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
         };
 
         var firstDayOfNextMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1);
-
-        // Future month — create the new version and migrate any pre-generated DEs for that month.
+        
         if (allowFrom >= firstDayOfNextMonth)
         {
             var newDbPocketFuture = await AddPocket(userId, pocket.DivisionPlanId, newPocketDto, allowFrom, originalPocketId: originalId);
 
-            // If the user pre-generated DEs for the future month, migrate them to the new version
-            // and recalculate so the updated ration is reflected immediately.
+            //If there are generated DEs in the future -> Update their pocket
             var futureDEs = await db.DailyExpenses
                 .Where(de => de.PocketId == pocket.Id
                              && de.Date.Year == allowFrom.Year
@@ -239,8 +221,8 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
         if (user.Accounts.All(a => a.Id != pocket.DivisionPlan.AccountId))
             throw new UnauthorizedAccessException();
-
-        // Collect every version of this pocket's lineage
+        
+        //Collect every version
         var lineageId = pocket.OriginalPocketId ?? pocket.Id;
         var allLineageVersions = await db.Pockets
             .Where(p => (p.OriginalPocketId == lineageId || p.Id == lineageId)
@@ -250,8 +232,7 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
         var now = DateTime.Now;
         var firstDayOfNextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
-
-        // Get current-version sibling pockets (not from the deleted lineage)
+        
         var siblingCandidates = await db.Pockets
             .Where(p => p.DivisionPlanId == pocket.DivisionPlanId
                         && p.ActiveFrom < firstDayOfNextMonth
@@ -264,9 +245,9 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
             .ToList();
 
         if (!remainingCurrentPockets.Any())
-            throw new InconsistencyException(); // Cannot delete the only pocket in a plan
+            throw new InconsistencyException();
 
-        // Find the most active remaining pocket (most started DailyExpenses this month)
+        // Find the most active remaining pocket
         var remainingIds = remainingCurrentPockets.Select(p => p.Id).ToList();
         var startedCounts = await db.DailyExpenses
             .Where(de => remainingIds.Contains(de.PocketId)
@@ -284,14 +265,12 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
         // Add the deleted pocket's (current version) ration to the target
         targetPocket.Ration += pocket.Ration;
 
-        // Migrate all DailyExpenses from every lineage version into the target pocket.
-        // We use ExecuteUpdateAsync to move Expenditure FKs so that EF's cascade tracking
-        // never sees them as children of the DailyExpenses we are about to delete.
+        //Move all DEs from the deleted pocket to the remaining
         foreach (var version in allLineageVersions)
         {
             var sourceDEs = await db.DailyExpenses
                 .Where(de => de.PocketId == version.Id)
-                .ToListAsync(); // loaded WITHOUT Expenditures — intentional
+                .ToListAsync();
 
             foreach (var sourceDE in sourceDEs)
             {
@@ -301,19 +280,17 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
 
                 if (targetDE != null)
                 {
-                    // Target already has a DailyExpense for this date.
-                    // Move all expenditure references to targetDE at DB level.
+                    
                     await db.Expenditures
                         .Where(e => e.DailyExpenseId == sourceDE.Id)
                         .ExecuteUpdateAsync(e => e.SetProperty(x => x.DailyExpenseId, targetDE.Id));
-
-                    // Re-read the sum from DB to include the just-moved expenditures
-                    var totalExp = await db.Expenditures
+                    
+                    var totalExpenses = await db.Expenditures
                         .Where(e => e.DailyExpenseId == targetDE.Id)
                         .SumAsync(e => (decimal?)e.Price) ?? 0m;
-                    targetDE.EoDAmount = targetDE.StartAmount - totalExp;
+                    targetDE.EoDAmount = targetDE.StartAmount - totalExpenses;
 
-                    // sourceDE is now childless in DB — safe to mark for deletion
+                    //Now the DE has no expenses left, delete
                     db.DailyExpenses.Remove(sourceDE);
                 }
                 else
@@ -324,8 +301,7 @@ public class PocketService(ApplicationDbContext db, DailyExpenseService dailyExp
                 }
             }
         }
-
-        // Commit: ration update, EoD updates, sourceDE deletions, re-pointed DEs
+        
         await db.SaveChangesAsync();
 
         // Remove all lineage pocket versions (no DailyExpenses reference them anymore)

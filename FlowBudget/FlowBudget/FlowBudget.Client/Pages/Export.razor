@@ -177,8 +177,6 @@
     private AccountDTO? _selectedAccount;
 
     private List<CategoryDTO> _categories = new();
-    // Selected categories kept as full DTOs; the dictionary is keyed by Id for O(1)
-    // toggle/contains without needing a custom IEqualityComparer.
     private Dictionary<string, CategoryDTO> _selectedCategories = new();
     private bool _allCategories = true;
 

@@ -2,7 +2,7 @@
 @inject IStringLocalizer<SharedResources> L
 
 <div class="py-2"
-     style="@RowStyle"
+     style=@($"display: flex; flex-direction: row; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 6px; padding: 4px 8px; background-color: {(_hovered ? "rgba(0,0,0,0.04)" : "transparent")};")
      @onclick="@(() => OnClick.InvokeAsync(Expenditure))"
      @onmouseover="@(() => _hovered = true)"
      @onmouseout="@(() => _hovered = false)">
@@ -33,7 +33,4 @@
     [Parameter] public EventCallback<ExpenditureDTO> OnClick { get; set; }
 
     private bool _hovered;
-
-    private string RowStyle =>
-        $"display: flex; flex-direction: row; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 6px; padding: 4px 8px; background-color: {(_hovered ? "rgba(0,0,0,0.04)" : "transparent")};";
 }

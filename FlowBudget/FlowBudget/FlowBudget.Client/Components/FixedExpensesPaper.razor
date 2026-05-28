@@ -157,8 +157,7 @@
 
         if (result.Canceled || result.Data is not FixedExpenseDTO updated) return;
 
-        // Ask when the change should take effect.  The exact date+time is stored so that
-        // two edits in the same month get distinct ActiveFrom values and the latest wins.
+        // Ask when the change should take effect
         var dateParameters = new DialogParameters<SelectDateTimeDialog>
         {
             { x => x.Title, L["select_allow_from_title"].ToString() },
@@ -177,8 +176,6 @@
         if (response.IsSuccessStatusCode)
         {
             Snackbar.Add(L["save_success"], Severity.Success);
-            // Reload so the list reflects the new version ID — without this the local
-            // entry still holds the old ID and subsequent edit/delete targets the wrong row.
             await LoadFixedExpenses();
         }
         else

@@ -128,7 +128,6 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
             throw new UnauthorizedAccessException();
         }
         
-        // Capture before removal so we can cascade afterwards
         var affectedPocketId = expenditure.DailyExpense.PocketId;
         var affectedDate = expenditure.DailyExpense.Date;
 
@@ -139,12 +138,12 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
         dailyExpense.Expenditures.Remove(expenditure);
         db.Expenditures.Remove(expenditure);
 
-        //Recalculate EoD - reason of recalculating from 0 is to avoid glitches
+        //Recalculate EoD
         dailyExpense.EoDAmount = dailyExpense.StartAmount - dailyExpense.Expenditures.Sum(e => e.Price);
 
         await db.SaveChangesAsync();
 
-        // Cascade the freed-up budget forward through every started day after this one.
+        // Cascade the freed-up budget forward
         await dailyExpenseService.RecalculateStartedDaysFromDate(affectedPocketId, affectedDate);
     }
     
