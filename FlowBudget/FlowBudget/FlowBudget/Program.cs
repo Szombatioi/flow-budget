@@ -135,7 +135,7 @@ try
         new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!) });
 
     builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-    var supportedCultures = new[] { "en-US" };
+    var supportedCultures = new[] { "en-US", "hu" };
     var localizationOptions = new RequestLocalizationOptions()
         .SetDefaultCulture(supportedCultures[0])
         .AddSupportedCultures(supportedCultures)

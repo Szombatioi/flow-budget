@@ -47,7 +47,7 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyE
         if (account == null) throw new UnauthorizedAccessException();
 
         var plan = account.DivisionPlans.Single(dp => dp.Id == planId);
-        
+
         var activateFromMonth = new DateTime(activateFrom.Year, activateFrom.Month, 1);
         var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
@@ -57,22 +57,34 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyE
         // Cannot activate for the current month when another plan is already active
         if (hasActivePlan && activateFromMonth <= thisMonth)
         {
-            throw new InvalidOperationException( //TODO translatable message
+            throw new InvalidOperationException(
                 "Another division plan is already active for this account. " +
                 "The new plan can only be activated starting from next month.");
+        }
+        
+        //If the user starts to activate a DP in the future
+        //but there are active DEs generated, it cannot be done
+        var staleDailyExpenses = await db.DailyExpenses
+            .Include(de => de.Pocket).ThenInclude(p => p.DivisionPlan)
+            .Include(de => de.Expenditures)
+            .Where(de => de.Pocket.DivisionPlan.AccountId == account.Id
+                         && de.Pocket.DivisionPlan.Id != planId
+                         && de.Date >= activateFromMonth)
+            .ToListAsync();
+        
+        if (staleDailyExpenses.Any(de => de.Expenditures.Any()))
+        {
+            throw new InvalidOperationException("cannot_activate_with_existing_expenditures");
+        }
+        if (staleDailyExpenses.Count > 0)
+        {
+            db.DailyExpenses.RemoveRange(staleDailyExpenses);
         }
 
         plan.IsActive = true;
         plan.ActiveFrom = activateFromMonth;
 
         await db.SaveChangesAsync();
-
-        // After activation, recalculate DEs for the activation month in case:
-        // - The plan is activated for the current month (no prior active plan existed)
-        //   and DEs were already generated (e.g. user viewed the tracker today).
-        // - The plan is activated for a future month and DEs were pre-generated for
-        //   its pockets beforehand.
-        // RecalculateAllPocketsForAccount is a no-op when no DEs exist, so this is safe.
         await dailyExpenseService.RecalculateAllPocketsForAccount(account.Id, activateFromMonth);
     }
 

@@ -1067,4 +1067,7 @@
   <data name="price_cannot_be_zero" xml:space="preserve">
     <value>Price cannot be null</value>
   </data>
+  <data name="cannot_activate_with_existing_expenditures" xml:space="preserve">
+    <value>Cannot activate this plan because expenditures already exist for the selected month or later. Remove them first and try again.</value>
+  </data>
 </root>

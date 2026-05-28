@@ -14,12 +14,14 @@
         justify-content: space-between;
         align-items: center;
     }
+
     @@media (max-width: 599px) {
         .pockets-paper-bottom {
             flex-direction: column;
             align-items: stretch;
             gap: 12px;
         }
+
         .pockets-paper-bottom > div {
             justify-content: center;
         }
@@ -57,13 +59,13 @@
                                     <MudText Typo="Typo.body1">@pocket.Name</MudText>
                                 </MudItem>
 
-                                <MudItem xs="6" sm="3">
+                                <MudItem xs="12" sm="3">
                                     <MudText Typo="Typo.body1">
                                         @((((decimal)pocket.Ration / 100m) * DistributableMoney).ToString("N0")) @SelectedCurrency
                                     </MudText>
                                 </MudItem>
 
-                                <MudItem xs="6" sm="2">
+                                <MudItem xs="12" sm="2">
                                     <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
                                         @pocket.Ration.ToString("N1") %
                                     </MudChip>
@@ -82,15 +84,15 @@
                 </MudList>
 
                 @* <MudGrid Class="mt-4 align-center"> *@
-                    @* <MudItem xs="6"> *@
-                    @*     <MudText Typo="Typo.subtitle1"><b>@L["total_allocated"]</b></MudText> *@
-                    @*     <MudPaper Elevation="0" Class="pa-2 mt-1" *@
-                    @*               Style="background-color: #2c3034; color: white; width: fit-content;"> *@
-                    @*         <MudText Typo="Typo.h6"><b>@_pockets.Sum(x => x.Money).ToString("N0") @SelectedCurrency</b> *@
-                    @*         </MudText> *@
-                    @*     </MudPaper> *@
-                    @* </MudItem> *@
-                    
+                @* <MudItem xs="6"> *@
+                @*     <MudText Typo="Typo.subtitle1"><b>@L["total_allocated"]</b></MudText> *@
+                @*     <MudPaper Elevation="0" Class="pa-2 mt-1" *@
+                @*               Style="background-color: #2c3034; color: white; width: fit-content;"> *@
+                @*         <MudText Typo="Typo.h6"><b>@_pockets.Sum(x => x.Money).ToString("N0") @SelectedCurrency</b> *@
+                @*         </MudText> *@
+                @*     </MudPaper> *@
+                @* </MudItem> *@
+
                 // </MudGrid>
 
                 @if (Math.Abs(_pockets.Sum(x => x.Ration) - 100) > 0.01)
@@ -106,72 +108,84 @@
 
                 @* --- Left Side --- *@
                 <div class="d-flex">
-                    <MudButton Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Add"
-                               Variant="Variant.Text"
-                               Size="Size.Small"
-                               OnClick="AddPocket"
-                               Disabled="@(string.IsNullOrEmpty(_selectedPlanId))">
-                        @L["add_pocket"]
-                    </MudButton>
-
-
-                    <MudContainer xs="6" Class="d-flex flex-column align-center justify-center">
-                        <MudText Typo="Typo.subtitle2">@L["total_ratio"]</MudText>
-                        @{
-                            var totalRatio = _pockets.Sum(x => x.Ration);
-                            var isRatioValid = Math.Abs(totalRatio - 100) < 0.01;
-                        }
-                        <MudChip T="string" Color="@(isRatioValid ? Color.Success : Color.Warning)"
-                                 Variant="Variant.Filled">
-                            @totalRatio.ToString("N1") % / 100%
-                        </MudChip>
-                    </MudContainer>
+                    <MudGrid Justify="Justify.Center" Spacing="2">
+                        <MudItem xs="12" sm="6" Class="d-flex justify-center">
+                            <MudButton Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Variant="Variant.Text"
+                                       Size="Size.Small"
+                                       OnClick="AddPocket"
+                                       Disabled="@(string.IsNullOrEmpty(_selectedPlanId))">
+                                @L["add_pocket"]
+                            </MudButton>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" Class="d-flex flex-grow-1">
+                            <MudContainer xs="6" Class="d-flex flex-column align-center justify-center flex-grow-1">
+                                <MudText Typo="Typo.subtitle2">@L["total_ratio"]</MudText>
+                                @{
+                                    var totalRatio = _pockets.Sum(x => x.Ration);
+                                    var isRatioValid = Math.Abs(totalRatio - 100) < 0.01;
+                                }
+                                <MudChip T="string"
+                                         Color="@(isRatioValid ? Color.Success : Color.Warning)"
+                                         Variant="Variant.Filled"
+                                         Style="min-width: max-content;">
+                                    @totalRatio.ToString("N1") % / 100%
+                                </MudChip>
+                            </MudContainer>
+                        </MudItem>
+                    </MudGrid>
                 </div>
 
                 @* --- Right Side --- *@
                 <div class="d-flex">
-                    <MudSelect T="string"
-                               Label="@L["select_division_plan"]"
-                               Value="_selectedPlanId"
-                               ValueChanged="OnPlanChanged"
-                               Variant="Variant.Outlined"
-                               FullWidth="false"
-                               Dense="true"
-                               Margin="Margin.Dense"
-                               Class="mx-2"
-                               Style="width: 280px;">
-                        @if (!_plans.Any())
-                        {
-                            <MudSelectItem Value="@("CREATE_NEW")">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
-                                             Color="Color.Primary"/>
-                                    <MudText Color="Color.Primary"><b>@L["create_first_plan"]</b></MudText>
-                                </div>
-                            </MudSelectItem>
-                        }
-                        else
-                        {
-                            @foreach (var plan in _plans)
-                            {
-                                <MudSelectItem Value="@plan.Id">
-                                    @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
-                                </MudSelectItem>
-                            }
+                    <MudGrid Justify="Justify.Center" Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudSelect T="string"
+                                       Label="@L["select_division_plan"]"
+                                       Value="_selectedPlanId"
+                                       ValueChanged="OnPlanChanged"
+                                       Variant="Variant.Outlined"
+                                       FullWidth="false"
+                                       Dense="true"
+                                       Margin="Margin.Dense"
+                                       Class="mx-2"
+                                       Style="width: 280px;">
+                                @if (!_plans.Any())
+                                {
+                                    <MudSelectItem Value="@("CREATE_NEW")">
+                                        <div class="d-flex align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                                     Color="Color.Primary"/>
+                                            <MudText Color="Color.Primary"><b>@L["create_first_plan"]</b></MudText>
+                                        </div>
+                                    </MudSelectItem>
+                                }
+                                else
+                                {
+                                    @foreach (var plan in _plans)
+                                    {
+                                        <MudSelectItem Value="@plan.Id">
+                                            @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
+                                        </MudSelectItem>
+                                    }
 
-                            @* <MudDivider/> *@
-                            <MudSelectItem Value="@("CREATE_NEW")">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
-                                             Color="Color.Primary"/>
-                                    <MudText Color="Color.Primary"><b>@L["add_new_plan"]</b></MudText>
-                                </div>
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-
-                    <MudButton OnClick="() => ActivatePlan()" Disabled="_selectedPlanId == _plans.SingleOrDefault(p => p.IsActive)?.Id">@L["activate"]</MudButton>
+                                    @* <MudDivider/> *@
+                                    <MudSelectItem Value="@("CREATE_NEW")">
+                                        <div class="d-flex align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2"
+                                                     Color="Color.Primary"/>
+                                            <MudText Color="Color.Primary"><b>@L["add_new_plan"]</b></MudText>
+                                        </div>
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" Class="d-flex justify-center">
+                            <MudButton OnClick="() => ActivatePlan()"
+                                       Disabled="_selectedPlanId == _plans.SingleOrDefault(p => p.IsActive)?.Id">@L["activate"]</MudButton>
+                        </MudItem>
+                    </MudGrid>
                 </div>
             </MudContainer>
         }
@@ -226,6 +240,7 @@
                 {
                     Console.WriteLine(pocket.Name);
                 }
+
                 _pockets = activePlan?.Pockets ?? new();
             }
         }

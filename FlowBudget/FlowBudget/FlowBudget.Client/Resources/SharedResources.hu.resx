@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string"/>
+              <xsd:attribute name="type" type="xsd:string"/>
+              <xsd:attribute name="mimetype" type="xsd:string"/>
+              <xsd:attribute ref="xml:space"/>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string"/>
+              <xsd:attribute name="name" type="xsd:string"/>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+              <xsd:attribute ref="xml:space"/>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="todays_budget" xml:space="preserve"><value>Mai keret</value></data>
+  <data name="expenditures" xml:space="preserve"><value>Költések</value></data>
+  <data name="delete_expenditure_title" xml:space="preserve"><value>Költés törlése</value></data>
+  <data name="edit_expenditure" xml:space="preserve"><value>Költés szerkesztése</value></data>
+  <data name="expenditure_details" xml:space="preserve"><value>Költés részletei</value></data>
+  <data name="all" xml:space="preserve"><value>Összes</value></data>
+  <data name="loading" xml:space="preserve"><value>Betöltés…</value></data>
+  <data name="all_categories" xml:space="preserve"><value>Összes kategória</value></data>
+  <data name="no_expenditures_found" xml:space="preserve"><value>Nincs költés</value></data>
+  <data name="expenses_search_placeholder" xml:space="preserve"><value>Keresés leírás vagy név alapján…</value></data>
+  <data name="expenses_last_30_days" xml:space="preserve"><value>Elmúlt 30 nap</value></data>
+  <data name="expenses_last_quarter" xml:space="preserve"><value>Elmúlt negyedév</value></data>
+  <data name="expenses_year_to_date" xml:space="preserve"><value>Idei év</value></data>
+  <data name="expenses_all_time" xml:space="preserve"><value>Bármikor</value></data>
+  <data name="expenses_pagination_summary" xml:space="preserve"><value>{0} – {1} megjelenítve, összesen {2} költés</value></data>
+  <data name="expenses_monthly_spend" xml:space="preserve"><value>Havi költés</value></data>
+  <data name="expenses_weekly_spend" xml:space="preserve"><value>Heti költés</value></data>
+  <data name="no_description" xml:space="preserve"><value>(nincs leírás)</value></data>
+  <data name="close" xml:space="preserve"><value>Bezárás</value></data>
+  <data name="delete_expenditure_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a költést? A művelet nem visszavonható.</value></data>
+  <data name="add" xml:space="preserve"><value>Hozzáadás</value></data>
+  <data name="incomes_title" xml:space="preserve"><value>Bevételek</value></data>
+  <data name="save" xml:space="preserve"><value>Mentés</value></data>
+  <data name="add_income" xml:space="preserve"><value>Bevétel hozzáadása</value></data>
+  <data name="amount" xml:space="preserve"><value>Összeg</value></data>
+  <data name="cancel" xml:space="preserve"><value>Mégse</value></data>
+  <data name="confirm" xml:space="preserve"><value>Megerősítés</value></data>
+  <data name="month" xml:space="preserve"><value>Hónap</value></data>
+  <data name="time" xml:space="preserve"><value>Idő</value></data>
+  <data name="select_allow_from_title" xml:space="preserve"><value>Hatály kezdete</value></data>
+  <data name="select_allow_from_description" xml:space="preserve"><value>Válaszd ki, melyik hónaptól lépjen életbe a változás. Az aktuális hónap választása esetén a napi keretek azonnal újraszámolódnak.</value></data>
+  <data name="field_required" xml:space="preserve"><value>Ez a mező kötelező</value></data>
+  <data name="income_name_label" xml:space="preserve"><value>Bevétel neve</value></data>
+  <data name="income_amount_label" xml:space="preserve"><value>Összeg</value></data>
+  <data name="delete_income_title" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a bevételi forrást?</value></data>
+  <data name="delete_income_confirm_description" xml:space="preserve"><value>Az egyenleged módosul, és a napi költési limitek csökkenhetnek.</value></data>
+  <data name="item_deleted" xml:space="preserve"><value>Elem törölve</value></data>
+  <data name="save_success" xml:space="preserve"><value>Sikeresen mentve</value></data>
+  <data name="pocket_name_label" xml:space="preserve"><value>Zseb neve</value></data>
+  <data name="add_pocket" xml:space="preserve"><value>Zseb hozzáadása</value></data>
+  <data name="pocket_ratio_label" xml:space="preserve"><value>Arány (%)</value></data>
+  <data name="remaining_ratio" xml:space="preserve"><value>Fennmaradó arány</value></data>
+  <data name="ratio_exceed_limit" xml:space="preserve"><value>Az arány meghaladja a felső határt!</value></data>
+  <data name="money_amount" xml:space="preserve"><value>Pénzösszeg</value></data>
+  <data name="pockets_title" xml:space="preserve"><value>Költségvetési zsebek</value></data>
+  <data name="pocket" xml:space="preserve"><value>Zseb</value></data>
+  <data name="select_pocket" xml:space="preserve"><value>Zseb választása</value></data>
+  <data name="select_account" xml:space="preserve"><value>Számla választása</value></data>
+  <data name="no_accounts_yet" xml:space="preserve"><value>Még nincs pénzügyi számlád regisztrálva.</value></data>
+  <data name="create_one_here" xml:space="preserve"><value>Hozz létre egyet itt</value></data>
+  <data name="financial_accounts" xml:space="preserve"><value>Pénzügyi számlák</value></data>
+  <data name="currency" xml:space="preserve"><value>Pénznem</value></data>
+  <data name="account_name" xml:space="preserve"><value>Számla neve</value></data>
+  <data name="edit_account" xml:space="preserve"><value>Számla szerkesztése</value></data>
+  <data name="no_accounts" xml:space="preserve"><value>Még nincs számla.</value></data>
+  <data name="actions" xml:space="preserve"><value>Műveletek</value></data>
+  <data name="create" xml:space="preserve"><value>Létrehozás</value></data>
+  <data name="select" xml:space="preserve"><value>Kijelölés</value></data>
+  <data name="deselect" xml:space="preserve"><value>Kijelölés feloldása</value></data>
+  <data name="wishlist_page_title" xml:space="preserve"><value>Kívánságlista</value></data>
+  <data name="wishlist_empty" xml:space="preserve"><value>Még nincs kívánságlistád.</value></data>
+  <data name="wishlist_display" xml:space="preserve"><value>Megjelenítés</value></data>
+  <data name="wishlist_display_placeholder" xml:space="preserve"><value>Részletek megjelenítése: {0}</value></data>
+  <data name="wishlist_estimated_finish" xml:space="preserve"><value>Becsült befejezés</value></data>
+  <data name="wishlist_approach_manual" xml:space="preserve"><value>Csak kézi</value></data>
+  <data name="wishlist_approach_automatic" xml:space="preserve"><value>Maradék pénz áthelyezése</value></data>
+  <data name="wishlist_target_goal" xml:space="preserve"><value>Célösszeg</value></data>
+  <data name="wishlist_target_date" xml:space="preserve"><value>Céldátum</value></data>
+  <data name="wishlist_select_mode" xml:space="preserve"><value>Mód kiválasztása</value></data>
+  <data name="wishlist_affected_des" xml:space="preserve"><value>Érintett napi költések</value></data>
+  <data name="wishlist_affected_des_empty" xml:space="preserve"><value>Válaszd ki a Mettől, Meddig és a Zseb mezőket az érintett napi költések megtekintéséhez.</value></data>
+  <data name="dashboard_link_to_wishlist" xml:space="preserve"><value>Maradék pénz áthelyezése kívánságlistába</value></data>
+  <data name="wishlist_link_confirm_title" xml:space="preserve"><value>Napi költés kívánságlistához kötése</value></data>
+  <data name="wishlist_link_confirm_description" xml:space="preserve"><value>A nap maradék pénze a(z) „{0}” kívánságlistába kerül. Folytatod?</value></data>
+  <data name="wishlist_link_none" xml:space="preserve"><value>(nincs)</value></data>
+  <data name="wishlist_unlink_confirm_title" xml:space="preserve"><value>Leválasztás a kívánságlistáról</value></data>
+  <data name="wishlist_unlink_confirm_description" xml:space="preserve"><value>Ez a nap többé nem járul hozzá a kívánságlistához a maradék pénzével. Folytatod?</value></data>
+  <data name="wishlist_prefix" xml:space="preserve"><value>Kívánság</value></data>
+  <data name="wishlist_approach" xml:space="preserve"><value>Mód</value></data>
+  <data name="wishlist_progress" xml:space="preserve"><value>Haladás</value></data>
+  <data name="status" xml:space="preserve"><value>Állapot</value></data>
+  <data name="wishlist_status_inactive" xml:space="preserve"><value>Inaktív</value></data>
+  <data name="wishlist_status_active" xml:space="preserve"><value>Aktív</value></data>
+  <data name="wishlist_status_completed" xml:space="preserve"><value>Teljesítve</value></data>
+  <data name="wishlist_activate" xml:space="preserve"><value>Aktiválás</value></data>
+  <data name="wishlist_deactivate" xml:space="preserve"><value>Deaktiválás</value></data>
+  <data name="wishlist_activate_confirm" xml:space="preserve"><value>Aktiválod ezt a kívánságlistát? Az érintett napi költések a következő naptól kezdenek hozzájárulni.</value></data>
+  <data name="wishlist_deactivate_confirm" xml:space="preserve"><value>Deaktiválod ezt a kívánságlistát? Újraaktiválásig nem fogad új hozzájárulásokat.</value></data>
+  <data name="wishlist_delete" xml:space="preserve"><value>Kívánságlista törlése</value></data>
+  <data name="wishlist_delete_confirm" xml:space="preserve"><value>Törlöd ezt a kívánságlistát? A kapcsolódó napi költések és haladási bejegyzések leválasztódnak. A művelet nem visszavonható.</value></data>
+  <data name="delete" xml:space="preserve"><value>Törlés</value></data>
+  <data name="create_account" xml:space="preserve"><value>Számla létrehozása</value></data>
+  <data name="account_name_required" xml:space="preserve"><value>Add meg a számla nevét.</value></data>
+  <data name="currency_required" xml:space="preserve"><value>Válassz pénznemet.</value></data>
+  <data name="currency_huf" xml:space="preserve"><value>Forint</value></data>
+  <data name="currency_eur" xml:space="preserve"><value>Euró</value></data>
+  <data name="currency_country_huf" xml:space="preserve"><value>Magyarország</value></data>
+  <data name="currency_country_eur" xml:space="preserve"><value>Eurózóna</value></data>
+  <data name="delete_account_title" xml:space="preserve"><value>Törlöd a pénzügyi számlát?</value></data>
+  <data name="delete_account_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a pénzügyi számlát? A művelet nem visszavonható.</value></data>
+  <data name="fixed_expenses_title" xml:space="preserve"><value>Fix költségek</value></data>
+  <data name="save_error_for" xml:space="preserve"><value>Mentés sikertelen az alábbinál:</value></data>
+  <data name="delete_error" xml:space="preserve"><value>Hiba történt a törlés során</value></data>
+  <data name="total" xml:space="preserve"><value>Összesen</value></data>
+  <data name="total_income" xml:space="preserve"><value>Összes bevétel</value></data>
+  <data name="error_loading_pockets" xml:space="preserve"><value>Nem sikerült betölteni a zsebeket</value></data>
+  <data name="total_allocated" xml:space="preserve"><value>Összesen kiosztva</value></data>
+  <data name="ratio_warning_not_100" xml:space="preserve"><value>Figyelem: az arány még nem 100%</value></data>
+  <data name="total_ratio" xml:space="preserve"><value>Összes arány</value></data>
+  <data name="select_division_plan" xml:space="preserve"><value>Felosztási terv választása</value></data>
+  <data name="error_loading_accounts" xml:space="preserve"><value>Nem sikerült betölteni a számlákat</value></data>
+  <data name="no_pockets_for_plan" xml:space="preserve"><value>Még nincs zseb ehhez a tervhez</value></data>
+  <data name="create_first_plan" xml:space="preserve"><value>Hozd létre az első felosztási tervet</value></data>
+  <data name="plan_created" xml:space="preserve"><value>Felosztási terv létrehozva</value></data>
+  <data name="add_new_plan" xml:space="preserve"><value>Új felosztási terv hozzáadása</value></data>
+  <data name="delete_pocket_title" xml:space="preserve"><value>Zseb törlése?</value></data>
+  <data name="delete_pocket_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a zsebet? A művelet nem visszavonható.</value></data>
+  <data name="error_loading_fixed_expenses" xml:space="preserve"><value>Nem sikerült betölteni a fix költségeket</value></data>
+  <data name="total_fixed_expenses" xml:space="preserve"><value>Összes fix költség</value></data>
+  <data name="add_fixed_expense" xml:space="preserve"><value>Fix költség hozzáadása</value></data>
+  <data name="fixed_expense_amount_label" xml:space="preserve"><value>Összeg</value></data>
+  <data name="fixed_expense_name_label" xml:space="preserve"><value>Fix költség neve</value></data>
+  <data name="delete_fixed_expense_title" xml:space="preserve"><value>Fix költség törlése?</value></data>
+  <data name="delete_fixed_expense_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a fix költséget? A művelet nem visszavonható.</value></data>
+  <data name="nav_dashboard" xml:space="preserve"><value>Áttekintés</value></data>
+  <data name="toggle_navigation" xml:space="preserve"><value>Navigáció be/ki</value></data>
+  <data name="nav_planning_and_setup" xml:space="preserve"><value>Tervezés és beállítások</value></data>
+  <data name="nav_statistics" xml:space="preserve"><value>Statisztikák</value></data>
+  <data name="error_load_daily_expense" xml:space="preserve"><value>Nem sikerült betölteni a napi költést</value></data>
+  <data name="error_load_active_division_plan" xml:space="preserve"><value>Nem sikerült betölteni az aktív felosztási tervet</value></data>
+  <data name="categories_title" xml:space="preserve"><value>Kategóriák</value></data>
+  <data name="add_category" xml:space="preserve"><value>Kategória hozzáadása</value></data>
+  <data name="edit_category" xml:space="preserve"><value>Kategória szerkesztése</value></data>
+  <data name="category_name_label" xml:space="preserve"><value>Kategória neve</value></data>
+  <data name="delete_category_title" xml:space="preserve"><value>Kategória törlése?</value></data>
+  <data name="delete_category_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a kategóriát? Törléskor a hozzá tartozó költésekből eltávolítódik a kategória!</value></data>
+  <data name="system_category" xml:space="preserve"><value>Alapértelmezett</value></data>
+  <data name="error_loading_categories" xml:space="preserve"><value>Nem sikerült betölteni a kategóriákat</value></data>
+  <data name="name" xml:space="preserve"><value>Név</value></data>
+  <data name="name_placeholder" xml:space="preserve"><value>Pl. Kávé, Élelmiszer…</value></data>
+  <data name="record_new_transaction" xml:space="preserve"><value>Új tranzakció rögzítése</value></data>
+  <data name="transaction_subtitle" xml:space="preserve"><value>Kövesd nyomon a költéseidet</value></data>
+  <data name="add_transaction" xml:space="preserve"><value>Tranzakció hozzáadása</value></data>
+  <data name="description" xml:space="preserve"><value>Leírás</value></data>
+  <data name="description_placeholder" xml:space="preserve"><value>Opcionális megjegyzés…</value></data>
+  <data name="receipt" xml:space="preserve"><value>Blokk</value></data>
+  <data name="upload_or_scan_receipt" xml:space="preserve"><value>Blokk feltöltése vagy beolvasása</value></data>
+  <data name="upload_constraints_hint" xml:space="preserve"><value>PNG, JPG vagy PDF, max. 5MB</value></data>
+  <data name="date" xml:space="preserve"><value>Dátum</value></data>
+  <data name="previous_day" xml:space="preserve"><value>Előző nap</value></data>
+  <data name="next_day" xml:space="preserve"><value>Következő nap</value></data>
+  <data name="save_error" xml:space="preserve"><value>Mentés sikertelen</value></data>
+  <data name="error_loading_incomes" xml:space="preserve"><value>Nem sikerült betölteni a bevételeket</value></data>
+  <data name="edit_income" xml:space="preserve"><value>Bevétel szerkesztése</value></data>
+  <data name="no_accounts_found" xml:space="preserve"><value>Nem található számla</value></data>
+  <data name="something_went_wrong" xml:space="preserve"><value>Valami hiba történt.</value></data>
+  <data name="nav_logout" xml:space="preserve"><value>Kijelentkezés</value></data>
+  <data name="no_plans_yet" xml:space="preserve"><value>Még nincs felosztási terved.</value></data>
+  <data name="remaining_budget" xml:space="preserve"><value>Hátralévő keret</value></data>
+  <data name="currency_eur_short" xml:space="preserve"><value>€</value></data>
+  <data name="currency_huf_short" xml:space="preserve"><value>Ft</value></data>
+  <data name="login" xml:space="preserve"><value>Bejelentkezés</value></data>
+  <data name="email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="password" xml:space="preserve"><value>Jelszó</value></data>
+  <data name="username_or_email" xml:space="preserve"><value>Felhasználónév vagy e-mail</value></data>
+  <data name="repeat_password" xml:space="preserve"><value>Jelszó újra</value></data>
+  <data name="password_mismatch" xml:space="preserve"><value>A jelszavak nem egyeznek</value></data>
+  <data name="remember_me" xml:space="preserve"><value>Emlékezzen rám</value></data>
+  <data name="login_button" xml:space="preserve"><value>Bejelentkezés</value></data>
+  <data name="register" xml:space="preserve"><value>Regisztráció</value></data>
+  <data name="page_title_wishlist_new" xml:space="preserve"><value>Kívánságlista létrehozása</value></data>
+  <data name="registration_success" xml:space="preserve"><value>Sikeres regisztráció.</value></data>
+  <data name="registration_failed" xml:space="preserve"><value>Sikertelen regisztráció</value></data>
+  <data name="error_connecting_to_server" xml:space="preserve"><value>Nem sikerült csatlakozni a szerverhez.</value></data>
+  <data name="user_already_exists" xml:space="preserve"><value>Már létezik felhasználó ezzel a felhasználónévvel vagy e-mail címmel.</value></data>
+  <data name="no_account_yet" xml:space="preserve"><value>Még nincs fiókod?</value></data>
+  <data name="already_have_account" xml:space="preserve"><value>Már van fiókod?</value></data>
+  <data name="username" xml:space="preserve"><value>Felhasználónév</value></data>
+  <data name="invalid_credentials" xml:space="preserve"><value>Érvénytelen adatok!</value></data>
+  <data name="seeded_category_foods_drinks" xml:space="preserve"><value>Étel és ital</value></data>
+  <data name="seeded_category_clothes" xml:space="preserve"><value>Ruházat</value></data>
+  <data name="seeded_category_sports_hobbies" xml:space="preserve"><value>Sport és hobbi</value></data>
+  <data name="seeded_category_transportation" xml:space="preserve"><value>Közlekedés</value></data>
+  <data name="seeded_category_housing" xml:space="preserve"><value>Lakhatás</value></data>
+  <data name="slogan" xml:space="preserve"><value>Ide kerül a jelmondat :)</value></data>
+  <data name="no_expenditures_yet" xml:space="preserve"><value>Mára még nincs költés.</value></data>
+  <data name="nav_accounts" xml:space="preserve"><value>Számlák</value></data>
+  <data name="error_invalid_date" xml:space="preserve"><value>Érvénytelen dátum!</value></data>
+  <data name="page_error" xml:space="preserve"><value>Hiba történt.</value></data>
+  <data name="activate" xml:space="preserve"><value>Aktiválás</value></data>
+  <data name="plan_activate_error" xml:space="preserve"><value>Hiba történt a felosztási terv aktiválása közben</value></data>
+  <data name="plan_activated" xml:space="preserve"><value>Felosztási terv aktiválva</value></data>
+  <data name="single_expense_tab" xml:space="preserve"><value>Egyszeri költés</value></data>
+  <data name="receipt_expense_tab" xml:space="preserve"><value>Blokk</value></data>
+  <data name="upload" xml:space="preserve"><value>Feltöltés</value></data>
+  <data name="drop_zone_title" xml:space="preserve"><value>Húzd ide a képet</value></data>
+  <data name="drop_zone_hint" xml:space="preserve"><value>Húzd ide, vagy kattints a tallózáshoz</value></data>
+  <data name="browse_files" xml:space="preserve"><value>FÁJLOK TALLÓZÁSA</value></data>
+  <data name="nav_settings" xml:space="preserve"><value>Beállítások</value></data>
+  <data name="nav_admin" xml:space="preserve"><value>Admin</value></data>
+  <data name="chart_daily_spending" xml:space="preserve"><value>Napi költés</value></data>
+  <data name="chart_no_data" xml:space="preserve"><value>Nincs adat ehhez az időszakhoz</value></data>
+  <data name="chart_uncategorized" xml:space="preserve"><value>Kategorizálatlan</value></data>
+  <data name="chart_category_breakdown" xml:space="preserve"><value>Kategóriák megoszlása</value></data>
+  <data name="chart_budget_expected" xml:space="preserve"><value>Várható (keret)</value></data>
+  <data name="chart_actual_spending" xml:space="preserve"><value>Tényleges költés</value></data>
+  <data name="settings_rss_section" xml:space="preserve"><value>RSS hírcsatorna</value></data>
+  <data name="settings_rss_hint" xml:space="preserve"><value>Iratkozz fel az alkalmazás frissítéseire és állapotváltozásaira.</value></data>
+  <data name="settings_rss_button" xml:space="preserve"><value>RSS hírcsatorna megnyitása</value></data>
+  <data name="settings_profile_section" xml:space="preserve"><value>Profil</value></data>
+  <data name="settings_security_section" xml:space="preserve"><value>Biztonság</value></data>
+  <data name="settings_preferences_section" xml:space="preserve"><value>Beállítások</value></data>
+  <data name="settings_api_key_section" xml:space="preserve"><value>API kulcs</value></data>
+  <data name="settings_display_name" xml:space="preserve"><value>Megjelenítendő név</value></data>
+  <data name="settings_current_password" xml:space="preserve"><value>Jelenlegi jelszó</value></data>
+  <data name="settings_new_password" xml:space="preserve"><value>Új jelszó</value></data>
+  <data name="settings_confirm_password" xml:space="preserve"><value>Új jelszó megerősítése</value></data>
+  <data name="settings_change_password" xml:space="preserve"><value>Jelszó módosítása</value></data>
+  <data name="settings_theme" xml:space="preserve"><value>Téma</value></data>
+  <data name="settings_theme_light" xml:space="preserve"><value>Világos</value></data>
+  <data name="settings_theme_dark" xml:space="preserve"><value>Sötét</value></data>
+  <data name="settings_language" xml:space="preserve"><value>Nyelv</value></data>
+  <data name="settings_api_key_label" xml:space="preserve"><value>API kulcs</value></data>
+  <data name="settings_api_key_placeholder" xml:space="preserve"><value>Illeszd be ide az API kulcsodat…</value></data>
+  <data name="settings_api_key_hint" xml:space="preserve"><value>Az API kulcsod alapból rejtve van. A felfedéshez vagy módosításhoz add meg a jelszavadat.</value></data>
+  <data name="settings_enter_password_to_reveal" xml:space="preserve"><value>Add meg a jelszót a felfedéshez</value></data>
+  <data name="settings_confirm_with_password" xml:space="preserve"><value>Megerősítés jelszóval</value></data>
+  <data name="settings_reveal" xml:space="preserve"><value>Felfedés</value></data>
+  <data name="settings_hide" xml:space="preserve"><value>Elrejtés</value></data>
+  <data name="settings_profile_saved" xml:space="preserve"><value>A profil sikeresen mentve</value></data>
+  <data name="settings_password_changed" xml:space="preserve"><value>Jelszó sikeresen módosítva</value></data>
+  <data name="settings_preferences_saved" xml:space="preserve"><value>Beállítások mentve</value></data>
+  <data name="settings_api_key_saved" xml:space="preserve"><value>API kulcs mentve</value></data>
+  <data name="settings_password_mismatch" xml:space="preserve"><value>A jelszavak nem egyeznek</value></data>
+  <data name="saving" xml:space="preserve"><value>Mentés…</value></data>
+  <data name="file_missing" xml:space="preserve"><value>Nincs kiválasztott fájl</value></data>
+  <data name="no_api_key" xml:space="preserve"><value>Nincs API kulcs beállítva. A blokk-beolvasáshoz adj hozzá egyet a Beállításokban.</value></data>
+  <data name="receipt_requires_api_key" xml:space="preserve"><value>A blokk-beolvasáshoz adj hozzá API kulcsot a Beállításokban.</value></data>
+  <data name="upload_fail" xml:space="preserve"><value>A blokk-beolvasás sikertelen</value></data>
+  <data name="upload_success" xml:space="preserve"><value>Sikeres feltöltés</value></data>
+  <data name="receipt_scanning" xml:space="preserve"><value>Blokk beolvasása…</value></data>
+  <data name="receipt_items_found" xml:space="preserve"><value>Talált tételek</value></data>
+  <data name="receipt_rescan" xml:space="preserve"><value>Újraolvasás</value></data>
+  <data name="receipt_no_items" xml:space="preserve"><value>Nem sikerült tételeket kinyerni a blokkból. Próbáld újra.</value></data>
+  <data name="items_saved" xml:space="preserve"><value>tétel mentve</value></data>
+  <data name="error_loading_file" xml:space="preserve"><value>Nem sikerült beolvasni a fájlt</value></data>
+  <data name="split_across_days" xml:space="preserve"><value>Felosztás több napra</value></data>
+  <data name="split_date_range" xml:space="preserve"><value>Dátumtartomány</value></data>
+  <data name="split_preview" xml:space="preserve"><value>Előnézet</value></data>
+  <data name="split_days" xml:space="preserve"><value>nap</value></data>
+  <data name="split_unnamed" xml:space="preserve"><value>Költés</value></data>
+  <data name="relative_daily_limit" xml:space="preserve"><value>Relatív napi limit</value></data>
+  <data name="pocket_empty_error" xml:space="preserve"><value>Add meg a zsebet!</value></data>
+  <data name="diagram_invalid_view_mode_error" xml:space="preserve"><value>Érvénytelen nézet választva!</value></data>
+  <data name="view_mode_weekly" xml:space="preserve"><value>Heti</value></data>
+  <data name="view_mode_monthly" xml:space="preserve"><value>Havi</value></data>
+  <data name="view_mode" xml:space="preserve"><value>Nézet</value></data>
+  <data name="enable_notifications" xml:space="preserve"><value>E-mail értesítések engedélyezése</value></data>
+  <data name="nav_login" xml:space="preserve"><value>Bejelentkezés</value></data>
+  <data name="today" xml:space="preserve"><value>Ma</value></data>
+  <data name="diagram_title_bar" xml:space="preserve"><value>Oszlopdiagram: Napi költések</value></data>
+  <data name="diagram_title_donut" xml:space="preserve"><value>Donut diagram: Költési kategóriák megoszlása</value></data>
+  <data name="diagram_title_line" xml:space="preserve"><value>Vonaldiagram: Napi költések</value></data>
+  <data name="diagram_title_burndown" xml:space="preserve"><value>Burndown diagram: Várt vs. tényleges költés</value></data>
+  <data name="diagram_title_heatmap" xml:space="preserve"><value>Költési hőtérkép</value></data>
+  <data name="heatmap_date_selected" xml:space="preserve"><value>Kiválasztott nap: {0}</value></data>
+  <data name="nav_expenses" xml:space="preserve"><value>Költések</value></data>
+  <data name="page_not_found_title" xml:space="preserve"><value>Az oldal nem található</value></data>
+  <data name="page_not_found_description" xml:space="preserve"><value>Sajnáljuk, a kért oldal nem található. Ellenőrizd a hivatkozást.</value></data>
+  <data name="category" xml:space="preserve"><value>Kategória</value></data>
+  <data name="export_page_title" xml:space="preserve"><value>Költések exportálása</value></data>
+  <data name="expenses_page_title" xml:space="preserve"><value>Költések listája</value></data>
+  <data name="export_page_description" xml:space="preserve"><value>Exportáld a költéseidet általánosan használt fájlformátumokba.</value></data>
+  <data name="export_data_button" xml:space="preserve"><value>Adatok exportálása</value></data>
+  <data name="account" xml:space="preserve"><value>Számla</value></data>
+  <data name="export_this_quarter" xml:space="preserve"><value>Aktuális negyedév</value></data>
+  <data name="export_last_year" xml:space="preserve"><value>Tavalyi év</value></data>
+  <data name="export_started" xml:space="preserve"><value>Exportálás elindult</value></data>
+  <data name="from" xml:space="preserve"><value>Mettől</value></data>
+  <data name="to" xml:space="preserve"><value>Meddig</value></data>
+  <data name="export_format" xml:space="preserve"><value>Exportálási formátum</value></data>
+  <data name="export_csv_description" xml:space="preserve"><value>Univerzális táblázat- és adatelemző eszközök.</value></data>
+  <data name="export_json_description" xml:space="preserve"><value>Fejlesztői integráció és automatizált folyamatok.</value></data>
+  <data name="export_excel_description" xml:space="preserve"><value>Gazdag formázás és pénzügyi modellezés.</value></data>
+  <data name="export_txt_description" xml:space="preserve"><value>Egyszerű, szöveges főkönyvi archívumok.</value></data>
+  <data name="separator" xml:space="preserve"><value>Elválasztó</value></data>
+  <data name="define_separator" xml:space="preserve"><value>Add meg az oszlopelválasztót</value></data>
+  <data name="select_at_least_one_pocket" xml:space="preserve"><value>Válassz legalább egy zsebet!</value></data>
+  <data name="nav_wishlist" xml:space="preserve"><value>Kívánságlisták</value></data>
+  <data name="wishlist_select_empty" xml:space="preserve"><value>Semmi</value></data>
+  <data name="create_new_wishlist" xml:space="preserve"><value>Új kívánságlista létrehozása</value></data>
+  <data name="mask_as_income" xml:space="preserve"><value>Bevételként jelölés</value></data>
+  <data name="de_not_started" xml:space="preserve"><value>A napi költés még nincs elindítva!</value></data>
+  <data name="wishlist_inactive" xml:space="preserve"><value>A kívánságlista inaktív!</value></data>
+  <data name="wishlist_completed" xml:space="preserve"><value>A kívánságlista már teljesítve van!</value></data>
+  <data name="wishlist_move_tab" xml:space="preserve"><value>Kívánságlista</value></data>
+  <data name="wishlist" xml:space="preserve"><value>Kívánságlista</value></data>
+  <data name="wishlist_fields_required" xml:space="preserve"><value>A Kívánságlista, Név, Összeg és Dátum mezők kötelezőek!</value></data>
+  <data name="publish_rss_update" xml:space="preserve"><value>RSS frissítés közzététele</value></data>
+  <data name="admin_version_id_label" xml:space="preserve"><value>Verzió / azonosító</value></data>
+  <data name="admin_version_id_placeholder" xml:space="preserve"><value>pl. v1.2.0 vagy hotfix-2026-05-04</value></data>
+  <data name="admin_title_label" xml:space="preserve"><value>Cím</value></data>
+  <data name="admin_title_placeholder" xml:space="preserve"><value>pl. [v1.2.0] Blokkbeolvasás</value></data>
+  <data name="admin_description_placeholder" xml:space="preserve"><value>Mi változott, mit javítottunk, vagy mi az aktuális állapot…</value></data>
+  <data name="admin_publish_button" xml:space="preserve"><value>Közzététel</value></data>
+  <data name="admin_publishing" xml:space="preserve"><value>Közzététel…</value></data>
+  <data name="admin_preview_feed" xml:space="preserve"><value>Hírcsatorna előnézete</value></data>
+  <data name="admin_required_warning" xml:space="preserve"><value>A Cím és a Leírás kötelező.</value></data>
+  <data name="admin_publish_success" xml:space="preserve"><value>RSS bejegyzés sikeresen közzétéve.</value></data>
+  <data name="admin_publish_failed" xml:space="preserve"><value>Sikertelen: {0}</value></data>
+  <data name="admin_category_release" xml:space="preserve"><value>Kiadás</value></data>
+  <data name="admin_category_hotfix" xml:space="preserve"><value>Hibajavítás</value></data>
+  <data name="admin_category_status" xml:space="preserve"><value>Állapot</value></data>
+  <data name="admin_category_maintenance" xml:space="preserve"><value>Karbantartás</value></data>
+  <data name="price_cannot_be_zero" xml:space="preserve"><value>Az ár nem lehet nulla</value></data>
+  <data name="cannot_activate_with_existing_expenditures" xml:space="preserve"><value>Nem aktiválható ez a terv, mert a választott hónaptól kezdődően már rögzítettek költéseket. Távolítsd el őket, és próbáld újra.</value></data>
+</root>

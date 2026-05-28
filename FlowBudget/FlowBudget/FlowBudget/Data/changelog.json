@@ -1,6 +1,13 @@
 {
   "Entries": [
     {
+      "Id": "wishlist function",
+      "Title": "Added wishlist function",
+      "Description": "In this update, we have added a wishlist function, where you can save money for items.\nUse Manual mode for manual transactions or you can use Automatic mode, which in addition, moves your remaining money at the end of the day!",
+      "Date": "2026-05-28T07:11:20.573Z",
+      "Category": "release"
+    },
+    {
       "Id": "db-update",
       "Title": "Switching from SQLite to MSSQL",
       "Description": "The application will use Hangfire to schedule repeating jobs, so we had to move to MSSQL",
