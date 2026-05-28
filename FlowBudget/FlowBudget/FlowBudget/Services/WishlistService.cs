@@ -210,7 +210,8 @@ public class WishlistService(ApplicationDbContext db, IMapper mapper, Expenditur
             .Where(de => de.Date.Date == today
                          && de.EoDAmount > 0
                          && de.WishlistId != null
-                         && de.Wishlist!.Status == WishlistStatus.Active)
+                         && de.Wishlist!.Status == WishlistStatus.Active
+                         && de.Wishlist!.Mode == WishlistApproachType.Automatic)
             .ToListAsync();
 
         foreach (var de in dailyExpenses)

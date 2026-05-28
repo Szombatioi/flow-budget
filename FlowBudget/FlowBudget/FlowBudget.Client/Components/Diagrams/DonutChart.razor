@@ -50,7 +50,12 @@
 
         DateTime firstDay, lastDay;
 
-        if (ViewMode == ChartViewMode.Weekly)
+        if (ViewMode == ChartViewMode.Daily)
+        {
+            firstDay = Date.Date;
+            lastDay = Date.Date;
+        }
+        else if (ViewMode == ChartViewMode.Weekly)
         {
             var diff = (7 + (Date.DayOfWeek - DayOfWeek.Monday)) % 7;
             firstDay = Date.AddDays(-diff).Date;

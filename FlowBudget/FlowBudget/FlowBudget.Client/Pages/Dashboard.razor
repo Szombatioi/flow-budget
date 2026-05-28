@@ -7,6 +7,7 @@
 @using FlowBudget.Client.Components.Helpers
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
+@using FlowBudget.Client.Components.Diagrams
 @inject IStringLocalizer<SharedResources> L
 @inject HttpClient Http
 @inject ISnackbar Snackbar
@@ -95,7 +96,7 @@ else
 
         @* Date navigation *@
         <MudItem xs="12" Class="dashboard-toolbar mb-2">
-            <div class="toolbar-left">
+            <div class="toolbar-left d-flex justify-center">
                 <MudSelect T="AccountDTO"
                            Value="SelectedAccount"
                            ValueChanged="OnAccountChanged!"
@@ -239,6 +240,28 @@ else
                     </div>
                 }
             </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudGrid Justify="Justify.Center" Spacing="2">
+                @* Heatmap calendar *@
+                <MudItem xs="12" md="5" Class="mx-2">
+                    <MudPaper Elevation="2" Class="pa-2">
+                        <HeatmapCalendar PocketId="@SelectedPocket.Id"
+                                         Date="SelectedDate"
+                                         OnDateSelected="@((date) => Nav.NavigateTo($"/{date:yyyy-MM-dd}"))" />
+                    </MudPaper>
+                </MudItem>
+
+                @* Category donut chart *@
+                <MudItem xs="12" md="5" Class="mx-2">
+                    <MudPaper Elevation="2" Class="pa-2">
+                        <DonutChart PocketId="@SelectedPocket.Id"
+                                         Date="SelectedDate"
+                                         ViewMode="ChartViewMode.Daily" />
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
         </MudItem>
     </MudGrid>
 }
@@ -501,7 +524,7 @@ else
         if (SelectedPocket != null) await LoadDailyExpense();
         await PersistSelection();
     }
-
+    
     private async Task LoadDailyExpense()
     {
         IsLoading = true;

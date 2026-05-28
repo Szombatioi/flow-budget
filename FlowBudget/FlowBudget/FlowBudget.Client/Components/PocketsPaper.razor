@@ -166,7 +166,17 @@
                                     @foreach (var plan in _plans)
                                     {
                                         <MudSelectItem Value="@plan.Id">
-                                            @plan.Id @(plan.IsActive ? $"({L["active"]})" : "")
+                                            <div class="d-flex align-center justify-space-between" style="width: 100%;">
+                                                <span>
+                                                    @PlanLabel(plan) @(plan.IsActive ? $"({L["active"]})" : "")
+                                                </span>
+                                                <span @onclick:stopPropagation="true">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Error"
+                                                                   OnClick="@(() => DeletePlan(plan))" />
+                                                </span>
+                                            </div>
                                         </MudSelectItem>
                                     }
 
@@ -269,34 +279,65 @@
 
     private async Task CreateNewPlan()
     {
+        // Always reset the select first so it doesn't stay stuck on "CREATE_NEW".
+        var activePlan = _plans.FirstOrDefault(x => x.IsActive) ?? _plans.FirstOrDefault();
+        _selectedPlanId = activePlan?.Id;
+
+        var dialog = await DialogService.ShowAsync<AddDivisionPlanDialog>(L["add_new_plan"], _standardOptions);
+        var result = await dialog.Result;
+        if (result!.Canceled || result.Data is not string name || string.IsNullOrWhiteSpace(name)) return;
+
         try
         {
-            // Matches your POST /api/plans requirement
-            var payload = new { accountId = AccountId };
-
+            var payload = new CreateDivisionPlanDTO { AccountId = AccountId ?? string.Empty, Name = name };
             var response = await http.PostAsJsonAsync("api/plans", payload);
-
             if (response.IsSuccessStatusCode)
             {
                 Snackbar.Add(L["plan_created"], Severity.Success);
-
-                // Reload everything. LoadData will automatically pick 
-                // the new/active plan and set _selectedPlanId correctly.
                 await LoadData();
             }
             else
             {
                 Snackbar.Add(L["error_creating_plan"], Severity.Error);
-
-                // Reset the select value so it doesn't stay stuck on "CREATE_NEW"
-                var activePlan = _plans.FirstOrDefault(x => x.IsActive) ?? _plans.FirstOrDefault();
-                _selectedPlanId = activePlan?.Id;
             }
         }
         catch (Exception)
         {
             Snackbar.Add(L["error_creating_plan"], Severity.Error);
         }
+    }
+
+    private async Task DeletePlan(DivisionPlanDTO plan)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Title, L["delete_plan_title"].ToString() },
+            { x => x.ContentText, L["delete_plan_confirm_description"].ToString() }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["delete_plan_title"], parameters, _standardOptions);
+        var result = await dialog.Result;
+        if (result!.Canceled) return;
+
+        var res = await http.DeleteAsync($"api/plans/{plan.Id}");
+        if (res.IsSuccessStatusCode)
+        {
+            Snackbar.Add(L["item_deleted"], Severity.Success);
+            await LoadData();
+        }
+        else
+        {
+            // Server returns a localization key as the body for known cases.
+            var body = (await res.Content.ReadAsStringAsync()).Trim().Trim('"');
+            var localized = string.IsNullOrWhiteSpace(body) ? L["delete_error"] : L[body];
+            Snackbar.Add(localized, Severity.Error);
+        }
+    }
+
+    private static string PlanLabel(DivisionPlanDTO plan)
+    {
+        var shortId = plan.Id.Length > 8 ? plan.Id[..8] + "…" : plan.Id;
+        var name = string.IsNullOrWhiteSpace(plan.Name) ? "—" : plan.Name;
+        return $"{name} ({shortId})";
     }
 
     private async Task AddPocket()

@@ -20,14 +20,42 @@ public class DivisionPlanService(ApplicationDbContext db, IMapper mapper, DailyE
         var account = user.Accounts.SingleOrDefault(a => a.Id == dto.AccountId);
         if (account == null) throw new NotFoundException();
 
+        if (string.IsNullOrWhiteSpace(dto.Name)) throw new InvalidOperationException("field_required");
+
         var dp = new DivisionPlan
         {
             Account = account,
             AccountId = account.Id,
+            Name = dto.Name.Trim(),
             ActiveFrom = new DateTime(1,1,1) //Starting early..
         };
 
         await db.DivisionPlans.AddAsync(dp);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task Delete(string userId, string planId)
+    {
+        var user = await db.Users
+            .Include(u => u.Accounts)
+            .ThenInclude(a => a.DivisionPlans)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null) throw new NotFoundException();
+
+        var account = user.Accounts.FirstOrDefault(a => a.DivisionPlans.Any(dp => dp.Id == planId));
+        if (account == null) throw new UnauthorizedAccessException();
+
+        var plan = account.DivisionPlans.Single(dp => dp.Id == planId);
+
+        // Prevent removing a plan that has bookkeeping tied to it: if any DailyExpense
+        // exists under any of its pockets, deletion would orphan history (and is
+        // semantically wrong — the user logged expenses against this plan).
+        var hasDailyExpenses = await db.DailyExpenses
+            .AnyAsync(de => de.Pocket.DivisionPlanId == planId);
+        if (hasDailyExpenses)
+            throw new InvalidOperationException("cannot_delete_plan_with_history");
+
+        db.DivisionPlans.Remove(plan);
         await db.SaveChangesAsync();
     }
     

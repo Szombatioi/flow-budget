@@ -3,6 +3,7 @@ namespace DTO;
 public class DivisionPlanDTO
 {
     public string Id { get; set; }
+    public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime ActiveFrom { get; set; }
     public AccountDTO Account { get; set; }
@@ -12,4 +13,5 @@ public class DivisionPlanDTO
 public class CreateDivisionPlanDTO
 {
     public string AccountId { get; set; }
+    public string Name { get; set; } = string.Empty;
 }

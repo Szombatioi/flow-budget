@@ -24,12 +24,7 @@ namespace FlowBudget.Controllers
             await _divisionPlanService.Create(UserId, dto);
             return Created();
         }
-
-        /// <summary>
-        /// Activates a division plan starting from the given month.
-        /// If another plan is already active, activateFrom must be next month or later.
-        /// If no plan is active yet, activateFrom can be the current month.
-        /// </summary>
+        
         [HttpPost("{id}/activate")]
         public async Task<ActionResult> Activate(string id, [FromQuery] DateTime activateFrom)
         {
@@ -37,6 +32,20 @@ namespace FlowBudget.Controllers
             {
                 await _divisionPlanService.Activate(UserId, id, activateFrom);
                 return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(string id)
+        {
+            try
+            {
+                await _divisionPlanService.Delete(UserId, id);
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

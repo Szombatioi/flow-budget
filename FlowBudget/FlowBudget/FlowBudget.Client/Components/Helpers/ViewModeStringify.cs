@@ -9,6 +9,7 @@ public static class ViewModeStringify
     {
         return mode switch
         {
+            ChartViewMode.Daily => localizer["view_mode_daily"],
             ChartViewMode.Weekly => localizer["view_mode_weekly"],
             ChartViewMode.Monthly => localizer["view_mode_monthly"],
             _ => mode.ToString()

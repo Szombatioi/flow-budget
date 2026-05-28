@@ -313,6 +313,7 @@
   <data name="pocket_empty_error" xml:space="preserve"><value>Add meg a zsebet!</value></data>
   <data name="diagram_invalid_view_mode_error" xml:space="preserve"><value>Érvénytelen nézet választva!</value></data>
   <data name="view_mode_weekly" xml:space="preserve"><value>Heti</value></data>
+  <data name="view_mode_daily" xml:space="preserve"><value>Napi</value></data>
   <data name="view_mode_monthly" xml:space="preserve"><value>Havi</value></data>
   <data name="view_mode" xml:space="preserve"><value>Nézet</value></data>
   <data name="enable_notifications" xml:space="preserve"><value>E-mail értesítések engedélyezése</value></data>
@@ -374,4 +375,9 @@
   <data name="admin_category_maintenance" xml:space="preserve"><value>Karbantartás</value></data>
   <data name="price_cannot_be_zero" xml:space="preserve"><value>Az ár nem lehet nulla</value></data>
   <data name="cannot_activate_with_existing_expenditures" xml:space="preserve"><value>Nem aktiválható ez a terv, mert a választott hónaptól kezdődően már rögzítettek költéseket. Távolítsd el őket, és próbáld újra.</value></data>
+  <data name="division_plan_name_label" xml:space="preserve"><value>Felosztási terv neve</value></data>
+  <data name="error_creating_plan" xml:space="preserve"><value>Nem sikerült létrehozni a felosztási tervet</value></data>
+  <data name="delete_plan_title" xml:space="preserve"><value>Felosztási terv törlése?</value></data>
+  <data name="delete_plan_confirm_description" xml:space="preserve"><value>Biztosan törölni szeretnéd ezt a felosztási tervet? A művelet nem visszavonható.</value></data>
+  <data name="cannot_delete_plan_with_history" xml:space="preserve"><value>Ez a terv nem törölhető, mert már kapcsolódnak hozzá napi költések.</value></data>
 </root>
