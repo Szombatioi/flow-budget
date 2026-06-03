@@ -21,8 +21,8 @@ appsettings.Local.json
 ## Tooling & Build
 node_modules/
 .npm/
-dist/
-publish/
+/dist/
+/publish/
 *.log
 
 ## OS generated files
