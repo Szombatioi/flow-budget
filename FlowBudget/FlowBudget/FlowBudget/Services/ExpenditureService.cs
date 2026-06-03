@@ -35,18 +35,29 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
             throw new UnauthorizedAccessException();
         }
         
-        //Find DailyExpense
+        var targetDate = (dto.Date ?? DateTime.Now).Date;
+
+        //Find DailyExpense — auto-create the month if missing (same flow as the dashboard).
         var dailyExpense = await db.DailyExpenses
             .Include(de => de.Expenditures)
-            .SingleOrDefaultAsync(de => de.PocketId == pocket.Id && de.Date.Date == dto.Date);
+            .SingleOrDefaultAsync(de => de.PocketId == pocket.Id && de.Date.Date == targetDate);
         if (dailyExpense == null)
         {
-            throw new NotFoundException();
+            await dailyExpenseService.CreateDailyExpenseForMonth(userId, pocket.DivisionPlan.AccountId, targetDate);
+            await dailyExpenseService.RecalculateDailyExpenses(pocket.Id, targetDate, activate: true);
+
+            dailyExpense = await db.DailyExpenses
+                .Include(de => de.Expenditures)
+                .SingleOrDefaultAsync(de => de.PocketId == pocket.Id && de.Date.Date == targetDate);
+            if (dailyExpense == null)
+            {
+                throw new NotFoundException();
+            }
         }
 
         var newExpenditure = new Expenditure()
         {
-            Date = dto.Date ?? DateTime.Now,
+            Date = targetDate,
             Price = dto.Price,
             Name  = dto.Name,
             Description  = dto.Description,
