@@ -221,42 +221,21 @@ try
     app.MapControllers().DisableAntiforgery();
 
     // DB migrations for docker environment
-    // using (var scope = app.Services.CreateScope())
-    // {
-    //     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    //     Log.Information("Applying database migrations...");
-    //     try
-    //     {
-    //         var conn = db.Database.GetDbConnection();
-    //         await conn.OpenAsync();
-    //         await using (var cmd = conn.CreateCommand())
-    //         {
-    //             cmd.CommandText =
-    //                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-    //             var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
-    //
-    //             if (!hasMigrationTable)
-    //             {
-    //                 Log.Warning(
-    //                     "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
-    //                 await conn.CloseAsync();
-    //                 await db.Database.EnsureDeletedAsync();
-    //             }
-    //             else
-    //             {
-    //                 await conn.CloseAsync();
-    //             }
-    //         }
-    //
-    //         await db.Database.MigrateAsync();
-    //         Log.Information("Database migrations applied successfully");
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Log.Fatal(ex, "Failed to apply database migrations");
-    //         throw;
-    //     }
-    // }
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Log.Information("Applying database migrations...");
+        try
+        {
+            await db.Database.MigrateAsync();
+            Log.Information("Database migrations applied successfully");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to apply database migrations");
+            throw;
+        }
+    }
 
     // Seeding
     using (var scope = app.Services.CreateScope())
