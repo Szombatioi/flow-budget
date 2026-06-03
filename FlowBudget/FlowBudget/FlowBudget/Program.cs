@@ -18,6 +18,7 @@ using Hangfire;
 using Hangfire.Common;
 using Hangfire.States;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // ── Serilog: bootstrap logger for startup errors, replaced by full logger after Build() ──
 Log.Logger = new LoggerConfiguration()
@@ -170,6 +171,17 @@ try
     
     var app = builder.Build();
 
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                     | ForwardedHeaders.XForwardedProto
+                     | ForwardedHeaders.XForwardedHost,
+    // Trust the Tailscale/Docker proxy chain — accept forwarded headers from any source
+    // since the container only listens on 127.0.0.1 anyway.
+    KnownNetworks = { },
+    KnownProxies = { }
+});
+
     // Global exception logger
     app.UseMiddleware<ExceptionLoggingMiddleware>();
 
@@ -190,7 +202,12 @@ try
     }
 
     app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-    app.UseHttpsRedirection();
+    
+    // if(!app.Environment.IsDevelopment())
+    // {
+    //     app.UseHttpsRedirection();
+    // }
+
     app.UseRequestLocalization();
 
     app.UseRouting();
