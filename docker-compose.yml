@@ -1,0 +1,37 @@
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: flowbudget-db
+    environment:
+      - ACCEPT_EULA=1
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-Password123}
+    ports:
+      # Expose only on localhost so the DB isn't reachable from outside the host.
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - flowbudget-db:/var/opt/mssql
+    restart: unless-stopped
+
+  flowbudget:
+    image: ghcr.io/szombatioi/flow-budget:latest
+    container_name: flowbudget
+    depends_on:
+      - db
+    ports:
+      - "5288:5288"
+    volumes:
+      - flowbudget-data:/app/Data
+      - flowbudget-logs:/app/logs
+    environment:
+      - ASPNETCORE_URLS=https://+:5288
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=FlowBudget_Cert!
+      # Point the app at the db service instead of localhost.
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=flow-budget;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Password123};TrustServerCertificate=True;
+    restart: unless-stopped
+
+volumes:
+  flowbudget-db:
+  flowbudget-data:
+  flowbudget-logs:
