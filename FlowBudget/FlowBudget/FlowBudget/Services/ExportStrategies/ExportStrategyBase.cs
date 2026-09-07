@@ -19,6 +19,7 @@ public abstract class ExportStrategyBase(ApplicationDbContext db) : IExportStrat
         var pocketIds = dto.Pockets.Select(p => p.Id).ToList();
 
         return await db.Expenditures
+            .AsNoTracking()
             .Include(e => e.DailyExpense)
             .ThenInclude(de => de.Pocket)
             .ThenInclude(p => p.DivisionPlan)

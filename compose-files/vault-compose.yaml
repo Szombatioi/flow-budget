@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: flow_budget_vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=flowbudget-dev-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_ADDR=http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault-data:/vault/file
+      - vault-logs:/vault/logs
+    command: server -dev -dev-root-token-id=flowbudget-dev-token
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  vault-init:
+    image: hashicorp/vault:1.17
+    container_name: flow_budget_vault_init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=flowbudget-dev-token
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        echo "Enabling transit engine..."
+        vault secrets enable -path=transit transit 2>/dev/null || echo "transit already enabled"
+        echo "Creating flowbudget-kek key..."
+        vault write -f transit/keys/flowbudget-kek 2>/dev/null || echo "flowbudget-kek already exists"
+        echo "Vault ready for FlowBudget."
+    restart: "no"
+
+volumes:
+  vault-data:
+  vault-logs:

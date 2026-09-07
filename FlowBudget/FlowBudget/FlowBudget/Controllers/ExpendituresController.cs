@@ -39,27 +39,27 @@ namespace FlowBudget.Controllers
         [HttpGet]
         public async Task<ActionResult> Query(ODataQueryOptions<ExpenditureDTO> options)
         {
-            var query = expenditureService.QueryForUser(UserId);
+            // Encrypted Name/Description force us to materialize + decrypt via the interceptor,
+            // then apply the OData filter/order/paging in-memory over the DTO list.
+            var list = await expenditureService.QueryForUserAsync(UserId);
+            IQueryable<ExpenditureDTO> queryable = list.AsQueryable();
             var settings = new ODataQuerySettings();
 
-            IQueryable<ExpenditureDTO> result = query;
-
             if (options.Filter != null)
-                result = (IQueryable<ExpenditureDTO>)options.Filter.ApplyTo(result, settings);
+                queryable = (IQueryable<ExpenditureDTO>)options.Filter.ApplyTo(queryable, settings);
 
-            var count = await result.LongCountAsync();
+            var count = queryable.LongCount();
 
             if (options.OrderBy != null)
-                result = options.OrderBy.ApplyTo(result, settings);
+                queryable = options.OrderBy.ApplyTo(queryable, settings);
 
             if (options.Skip != null)
-                result = (IQueryable<ExpenditureDTO>)options.Skip.ApplyTo(result, settings);
+                queryable = (IQueryable<ExpenditureDTO>)options.Skip.ApplyTo(queryable, settings);
 
             if (options.Top != null)
-                result = (IQueryable<ExpenditureDTO>)options.Top.ApplyTo(result, settings);
+                queryable = (IQueryable<ExpenditureDTO>)options.Top.ApplyTo(queryable, settings);
 
-            var items = await result.ToListAsync();
-            return Ok(new { count, value = items });
+            return Ok(new { count, value = queryable.ToList() });
         }
 
         [HttpPost("export")]

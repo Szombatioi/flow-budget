@@ -13,6 +13,7 @@ using MudBlazor.Services;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Text.Json;
+using FlowBudget.Services.Crypto;
 using FlowBudget.Services.ExportStrategies;
 using Hangfire;
 using Hangfire.Common;
@@ -102,8 +103,16 @@ try
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
+
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddMemoryCache(options => options.SizeLimit = 10_000);
+    builder.Services.AddSingleton<IKmsService, VaultKmsService>();
+    builder.Services.AddScoped<IDekProvider, DekProvider>();
+    builder.Services.AddScoped<EncryptedFieldsInterceptor>();
+
+    builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        options.UseSqlServer(connectionString)
+               .AddInterceptors(sp.GetRequiredService<EncryptedFieldsInterceptor>()));
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
     builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -220,43 +229,22 @@ try
     app.MapAdditionalIdentityEndpoints();
     app.MapControllers().DisableAntiforgery();
 
-    // DB migrations for docker environment
-    // using (var scope = app.Services.CreateScope())
-    // {
-    //     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    //     Log.Information("Applying database migrations...");
-    //     try
-    //     {
-    //         var conn = db.Database.GetDbConnection();
-    //         await conn.OpenAsync();
-    //         await using (var cmd = conn.CreateCommand())
-    //         {
-    //             cmd.CommandText =
-    //                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-    //             var hasMigrationTable = (long)(await cmd.ExecuteScalarAsync() ?? 0L) > 0;
-    //
-    //             if (!hasMigrationTable)
-    //             {
-    //                 Log.Warning(
-    //                     "No migration history found — dropping legacy EnsureCreated database and recreating with migration tracking.");
-    //                 await conn.CloseAsync();
-    //                 await db.Database.EnsureDeletedAsync();
-    //             }
-    //             else
-    //             {
-    //                 await conn.CloseAsync();
-    //             }
-    //         }
-    //
-    //         await db.Database.MigrateAsync();
-    //         Log.Information("Database migrations applied successfully");
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Log.Fatal(ex, "Failed to apply database migrations");
-    //         throw;
-    //     }
-    // }
+    // DB migrations (auto-apply). Runs before the seeder because SeedAdminUser needs the schema.
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Log.Information("Applying database migrations...");
+        try
+        {
+            await db.Database.MigrateAsync();
+            Log.Information("Database migrations applied successfully");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to apply database migrations");
+            throw;
+        }
+    }
 
     // Seeding
     using (var scope = app.Services.CreateScope())

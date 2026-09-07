@@ -147,10 +147,22 @@ public class ExpenditureService(ApplicationDbContext db, IMapper mapper, DailyEx
         await dailyExpenseService.RecalculateStartedDaysFromDate(affectedPocketId, affectedDate);
     }
     
-    public IQueryable<ExpenditureDTO> QueryForUser(string userId)
-        => db.Expenditures
+    /// <summary>
+    /// Materializes the user's expenditures with all navigation properties needed for DTO mapping,
+    /// letting the encryption interceptor decrypt Name/Description on load, then maps in-memory.
+    /// </summary>
+    public async Task<List<ExpenditureDTO>> QueryForUserAsync(string userId, CancellationToken ct = default)
+    {
+        var entities = await db.Expenditures
             .Where(e => e.DailyExpense.Pocket.DivisionPlan.Account.UserId == userId)
-            .ProjectTo<ExpenditureDTO>(mapper.ConfigurationProvider);
+            .Include(e => e.Category)
+            .Include(e => e.DailyExpense).ThenInclude(de => de.Pocket)
+                .ThenInclude(p => p.DivisionPlan).ThenInclude(dp => dp.Account)
+            .Include(e => e.Wishlist)
+            .ToListAsync(ct);
+
+        return mapper.Map<List<ExpenditureDTO>>(entities);
+    }
 
     public async Task<ExpenditureStatsDTO> GetStats(string userId, string? accountId = null)
     {

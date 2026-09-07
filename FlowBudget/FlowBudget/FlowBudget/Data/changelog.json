@@ -1,6 +1,13 @@
 {
   "Entries": [
     {
+      "Id": "Real 1.0",
+      "Title": "Elk\u00E9sz\u00FClt",
+      "Description": "asd",
+      "Date": "2026-05-28T11:18:04.684Z",
+      "Category": "release"
+    },
+    {
       "Id": "wishlist function",
       "Title": "Added wishlist function",
       "Description": "In this update, we have added a wishlist function, where you can save money for items.\nUse Manual mode for manual transactions or you can use Automatic mode, which in addition, moves your remaining money at the end of the day!",

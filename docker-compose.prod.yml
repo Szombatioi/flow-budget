@@ -1,0 +1,113 @@
+# FlowBudget — production docker-compose
+#
+# Usage:
+#   1. cp compose-files/prod/env.example .env      # then edit .env
+#   2. docker compose -f docker-compose.prod.yml up -d --build
+#
+# See compose-files/prod/README.md for the full deploy runbook.
+
+services:
+  sqledge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: flowbudget_db
+    environment:
+      - ACCEPT_EULA=1
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:?SQL_SA_PASSWORD is required}
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      # Azure SQL Edge ships no sqlcmd binary — probe TCP 1433 instead.
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/1433' >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [flowbudget-net]
+
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: flowbudget_vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+    volumes:
+      - vault-data:/vault/file
+      - vault-secrets:/vault/secrets
+      - ./compose-files/prod/vault-config.hcl:/vault/config/config.hcl:ro
+    command: server -config=/vault/config/config.hcl
+    healthcheck:
+      # 501 = uninitialized (still healthy for our purposes), 503 = sealed
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8200/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [flowbudget-net]
+
+  vault-bootstrap:
+    image: hashicorp/vault:1.17
+    container_name: flowbudget_vault_bootstrap
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      - VAULT_ADDR=http://vault:8200
+    volumes:
+      - vault-secrets:/vault/secrets
+      - ./compose-files/prod/vault-bootstrap.sh:/vault/bootstrap.sh:ro
+      - ./compose-files/prod/flowbudget-policy.hcl:/vault/config/flowbudget-policy.hcl:ro
+    entrypoint: ["/bin/sh", "/vault/bootstrap.sh"]
+    restart: "no"
+    networks: [flowbudget-net]
+
+  flowbudget:
+    build:
+      context: ./FlowBudget
+      dockerfile: Dockerfile
+    container_name: flowbudget_app
+    depends_on:
+      sqledge:
+        condition: service_healthy
+      vault-bootstrap:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_HTTPS_PORT:-5288}:5288"
+    volumes:
+      - flowbudget-logs:/app/logs
+      - vault-secrets:/vault/secrets:ro
+      - ./compose-files/prod/app-entrypoint.sh:/app/entrypoint.sh:ro
+    environment:
+      - ASPNETCORE_URLS=https://+:5288
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-FlowBudget_Cert!}
+      # Overrides for the container network (see compose-files/prod/env.example)
+      - ConnectionStrings__DefaultConnection=Server=sqledge,1433;Database=flow-budget;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - Kms__VaultAddress=http://vault:8200
+      - Kms__KeyName=flowbudget-kek
+      - Kms__CurrentKekVersion=1
+      - Kms__Token=
+      - ApiSettings__BaseUrl=${PUBLIC_BASE_URL:?PUBLIC_BASE_URL is required, e.g. https://flowbudget.example.com/}
+      - Seeder__AdminUsername=${ADMIN_USERNAME:-admin}
+      - Seeder__AdminEmail=${ADMIN_EMAIL:-admin@flowbudget.local}
+      - Seeder__AdminPassword=${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      - EmailSettings__Host=${EMAIL_HOST:-}
+      - EmailSettings__Port=${EMAIL_PORT:-587}
+      - EmailSettings__SenderEmail=${EMAIL_SENDER:-}
+      - EmailSettings__SenderName=${EMAIL_SENDER_NAME:-FlowBudget}
+      - EmailSettings__Password=${EMAIL_PASSWORD:-}
+      - EmailSettings__LogExpenseUrl=${PUBLIC_BASE_URL}
+    entrypoint: ["/bin/sh", "/app/entrypoint.sh"]
+    restart: unless-stopped
+    networks: [flowbudget-net]
+
+networks:
+  flowbudget-net:
+    driver: bridge
+
+volumes:
+  sqldata:
+  vault-data:
+  vault-secrets:
+  flowbudget-logs:

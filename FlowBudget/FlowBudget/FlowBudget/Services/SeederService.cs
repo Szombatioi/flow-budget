@@ -1,12 +1,18 @@
 using FlowBudget.Data;
 using FlowBudget.Data.Models;
+using FlowBudget.Services.Crypto;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace FlowBudget.Services;
 
-public class SeederService(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IConfiguration config)
+public class SeederService(
+    ApplicationDbContext db,
+    UserManager<ApplicationUser> userManager,
+    IConfiguration config,
+    IKmsService kms)
 {
     private string AdminUsername => config["Seeder:AdminUsername"]!;
     private string AdminEmail    => config["Seeder:AdminEmail"]!;
@@ -32,7 +38,17 @@ public class SeederService(ApplicationDbContext db, UserManager<ApplicationUser>
                 throw new InvalidOperationException($"Failed to seed admin user: {errors}");
             }
         }
-        
+
+        // Ensure the admin has a wrapped DEK (idempotent — only generate if missing).
+        if (admin.WrappedDek is null || admin.WrappedDek.Length == 0)
+        {
+            var dek = RandomNumberGenerator.GetBytes(32);
+            admin.WrappedDek = await kms.WrapAsync(dek, kms.CurrentKekVersion);
+            admin.KekVersion = kms.CurrentKekVersion;
+            admin.DekCreatedAt = DateTime.UtcNow;
+            await userManager.UpdateAsync(admin);
+        }
+
         var existingClaims = await userManager.GetClaimsAsync(admin);
         if (!existingClaims.Any(c => c.Type == "admin" && c.Value == "true"))
         {
