@@ -1,0 +1,35 @@
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: flowbudget-db
+    environment:
+      - ACCEPT_EULA=1
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-Password123}
+    ports:
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - flowbudget-db:/var/opt/mssql
+    restart: unless-stopped
+
+  flowbudget:
+    image: ghcr.io/szombatioi/flow-budget:latest
+    container_name: flowbudget
+    depends_on:
+      - db
+    ports:
+      # Bound to localhost only — Tailscale on the host reaches it,
+      # nothing on the LAN/internet does.
+      - "127.0.0.1:5288:5288"
+    volumes:
+      - flowbudget-data:/app/Data
+      - flowbudget-logs:/app/logs
+    environment:
+      - ASPNETCORE_URLS=http://+:5288
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=flow-budget;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Password123};TrustServerCertificate=True;
+    restart: unless-stopped
+
+volumes:
+  flowbudget-db:
+  flowbudget-data:
+  flowbudget-logs:
