@@ -29,13 +29,34 @@ ASP.NET solution (`../FlowBudget/FlowBudget/FlowBudget`), the frontend follows t
 
 ## Running with Docker
 
+### Production (GHCR images behind Traefik)
+
+`docker-compose.yml` runs the images published by CI (`ghcr.io/szombatioi/flowbudget-{backend,frontend}`) behind an
+existing Traefik instance. Only the frontend joins Traefik's external network; the backend and PostgreSQL publish no
+ports and stay on the internal network. The Traefik labels add HTTPS with the configured certificate resolver,
+security headers (HSTS, `frameDeny`, `nosniff`, referrer policy) and a per-IP rate limit on `/api/auth`.
+
 ```sh
-cp .env.example .env   # then set POSTGRES_PASSWORD, BETTER_AUTH_SECRET and KMS_LOCAL_KEYS
-docker compose up --build
+cp .env.example .env   # set APP_DOMAIN, the Traefik names, POSTGRES_PASSWORD, BETTER_AUTH_SECRET and KMS_LOCAL_KEYS
+chmod 600 .env
+docker compose pull
+docker compose up -d
 ```
 
-The app is served on <http://localhost:3000>. Database migrations (both Better Auth's and TypeORM's) run automatically
-when the backend starts; currencies and the default categories are seeded.
+`BETTER_AUTH_URL` is derived from `APP_DOMAIN` (`https://<APP_DOMAIN>`). Set `FLOWBUDGET_TAG=sha-<commit>` to pin or
+roll back to a specific build. Redirecting HTTP to HTTPS is configured on Traefik's `web` entrypoint.
+
+### Local (built from source)
+
+```sh
+cp .env.example .env   # set POSTGRES_PASSWORD, BETTER_AUTH_SECRET and KMS_LOCAL_KEYS
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+The app is served on <http://localhost:3000> without Traefik.
+
+Database migrations (both Better Auth's and TypeORM's) run automatically when the backend starts; currencies and the
+default categories are seeded.
 
 ## Local development
 
@@ -62,10 +83,13 @@ Backend (see `.env.example` for details):
 | -------------------------------------------- | ------------------------------------------------------------------------- |
 | `DATABASE_URL`, `DATABASE_SSL`               | PostgreSQL connection                                                      |
 | `PORT`                                       | HTTP port (default `3001`)                                                 |
-| `BETTER_AUTH_URL`                            | Public URL of the frontend (cookies and CSRF checks are bound to it)       |
+| `BETTER_AUTH_URL`                            | Public URL of the frontend (cookies and CSRF checks are bound to it); set from `APP_DOMAIN` in Docker |
 | `BETTER_AUTH_SECRET`                         | ≥ 32 random characters                                                     |
 | `TRUSTED_ORIGINS`                            | Extra allowed origins, comma separated                                     |
-| `MIN_PASSWORD_LENGTH`                        | Default `8`                                                                |
+| `DISABLE_SIGN_UP`                            | `true` closes registration (existing users can still sign in)              |
+| `MIN_PASSWORD_LENGTH`                        | Default `12`                                                               |
+| `PASSWORD_REQUIRE_COMPLEXITY`                | Default `true`: three of lowercase, uppercase, digit, symbol               |
+| `PASSWORD_CHECK_PWNED`                       | Default `false`: reject passwords found in known breaches (needs internet) |
 | `KMS_PROVIDER`                               | `local` or `vault`                                                         |
 | `KMS_LOCAL_KEYS`, `KMS_CURRENT_KEY_VERSION`  | `1:<base64 32-byte key>,2:...` and the version used for new users          |
 | `VAULT_ADDR`, `VAULT_TOKEN`, `VAULT_KEY_NAME`| Vault Transit settings                                                     |
@@ -87,7 +111,7 @@ npm run migration:run
 
 ```sh
 cd backend
-npm test            # unit tests (dates, versioning)
+npm test            # unit tests (dates, versioning, password rules)
 npm run test:e2e    # API end-to-end test; needs the backend running and DATABASE_URL set
 ```
 
@@ -106,7 +130,7 @@ build the images without pushing. Both workflows can also be started manually (`
 
 ## API overview
 
-All endpoints except `/health*` and `/api/auth/*` require a session.
+All endpoints except `/health*`, `/api/auth/*` and `/api/public-config` require a session.
 
 | Area            | Endpoints                                                                                                   |
 | --------------- | ----------------------------------------------------------------------------------------------------------- |

@@ -1,7 +1,10 @@
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { getMigrations } from 'better-auth/db/migration';
+import { haveIBeenPwned } from 'better-auth/plugins/haveibeenpwned';
 import { username } from 'better-auth/plugins/username';
 import pg from 'pg';
+import { isStrongPassword } from '../common/password.js';
 import type { AppConfig } from '../config/config.js';
 
 export const AUTH = Symbol('AUTH');
@@ -24,9 +27,19 @@ function authOptions(config: AppConfig, pool: pg.Pool, onUserCreated?: UserCreat
     emailAndPassword: {
       enabled: true,
       autoSignIn: true,
+      disableSignUp: config.auth.disableSignUp,
       minPasswordLength: config.auth.minPasswordLength,
     },
-    plugins: [username({ minUsernameLength: 3, maxUsernameLength: 50 })],
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (!config.auth.requireStrongPasswords) return;
+        const password = ctx.path === '/sign-up/email' ? ctx.body?.password : ctx.path === '/change-password' ? ctx.body?.newPassword : undefined;
+        if (typeof password === 'string' && !isStrongPassword(password)) {
+          throw APIError.from('BAD_REQUEST', { message: 'Use at least three of: lowercase, uppercase, digit, symbol.', code: 'PASSWORD_TOO_WEAK' });
+        }
+      }),
+    },
+    plugins: [username({ minUsernameLength: 3, maxUsernameLength: 50 }), haveIBeenPwned({ enabled: config.auth.checkPwnedPasswords })],
     databaseHooks: {
       user: {
         create: {

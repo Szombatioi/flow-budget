@@ -13,6 +13,7 @@ import { DomainModule } from './domain/domain.module.js';
 import { ExpendituresModule } from './expenditures/expenditures.module.js';
 import { HealthController } from './health/health.controller.js';
 import { PlansModule } from './plans/plans.module.js';
+import { PublicConfigModule } from './public-config/public-config.js';
 import { SeedService } from './seed/seed.service.js';
 import { UsersModule } from './users/users.js';
 import { WishlistsModule } from './wishlists/wishlists.module.js';
@@ -33,6 +34,7 @@ import { WishlistsModule } from './wishlists/wishlists.module.js';
     ExpendituresModule,
     WishlistsModule,
     DailyExpensesModule,
+    PublicConfigModule,
   ],
   controllers: [HealthController],
   providers: [SeedService],

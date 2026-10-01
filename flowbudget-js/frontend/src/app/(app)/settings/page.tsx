@@ -11,6 +11,7 @@ import { useFeedback } from '@/components/providers/Feedback';
 import { LOCALE_COOKIE, LOCALES } from '@/i18n/config';
 import { api } from '@/lib/api';
 import { useErrorMessage } from '@/lib/format';
+import { passwordProblem, usePasswordHint, usePublicConfig } from '@/lib/password';
 import { keys, useUser } from '@/lib/queries';
 import type { User } from '@/lib/types';
 
@@ -49,6 +50,9 @@ function SettingsForm({ user }: { user: User }) {
 
   const [userName, setUserName] = useState(user.userName);
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const passwordConfig = usePublicConfig();
+  const passwordHint = usePasswordHint(passwordConfig.data);
+  const newPasswordProblem = passwords.next ? passwordProblem(passwords.next, passwordConfig.data) : null;
   const [dark, setDark] = useState(user.theme === 'dark');
   const [language, setLanguage] = useState(user.language ?? locale);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -80,7 +84,13 @@ function SettingsForm({ user }: { user: User }) {
             run('profile', () => api.put('user/profile', { userName: userName.trim() }), 'settings_profile_saved');
           }}
         >
-          <TextField label={t('username')} value={userName} onChange={(e) => setUserName(e.target.value)} required slotProps={{ htmlInput: { minLength: 3, maxLength: 50 } }} />
+          <TextField
+            label={t('username')}
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            required
+            slotProps={{ htmlInput: { minLength: 3, maxLength: 50 } }}
+          />
           <TextField label={t('email')} value={user.email} slotProps={{ input: { readOnly: true } }} />
           <Box>
             <Button type="submit" variant="contained" disabled={busy === 'profile'}>
@@ -93,6 +103,10 @@ function SettingsForm({ user }: { user: User }) {
           title={t('settings_security_section')}
           onSubmit={(e) => {
             e.preventDefault();
+            if (newPasswordProblem) {
+              notify(t(newPasswordProblem), 'warning');
+              return;
+            }
             if (passwords.next !== passwords.confirm) {
               notify(t('settings_password_mismatch'), 'warning');
               return;
@@ -107,8 +121,24 @@ function SettingsForm({ user }: { user: User }) {
             );
           }}
         >
-          <TextField label={t('settings_current_password')} type="password" autoComplete="current-password" value={passwords.current} onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))} required />
-          <TextField label={t('settings_new_password')} type="password" autoComplete="new-password" value={passwords.next} onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))} required />
+          <TextField
+            label={t('settings_current_password')}
+            type="password"
+            autoComplete="current-password"
+            value={passwords.current}
+            onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))}
+            required
+          />
+          <TextField
+            label={t('settings_new_password')}
+            type="password"
+            autoComplete="new-password"
+            value={passwords.next}
+            onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
+            required
+            error={!!newPasswordProblem}
+            helperText={newPasswordProblem ? t(newPasswordProblem) : passwordHint}
+          />
           <TextField
             label={t('settings_confirm_password')}
             type="password"
@@ -186,7 +216,14 @@ function SettingsForm({ user }: { user: User }) {
               }
             }}
           >
-            <TextField label={t('settings_enter_password_to_reveal')} type="password" autoComplete="current-password" value={revealPassword} onChange={(e) => setRevealPassword(e.target.value)} required />
+            <TextField
+              label={t('settings_enter_password_to_reveal')}
+              type="password"
+              autoComplete="current-password"
+              value={revealPassword}
+              onChange={(e) => setRevealPassword(e.target.value)}
+              required
+            />
             <Box>
               <Button type="submit" variant="contained" disabled={busy === 'reveal'}>
                 {t('settings_reveal')}
@@ -208,8 +245,21 @@ function SettingsForm({ user }: { user: User }) {
               );
             }}
           >
-            <TextField label={t('settings_api_key_label')} placeholder={t('settings_api_key_placeholder')} value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
-            <TextField label={t('settings_confirm_with_password')} type="password" autoComplete="current-password" value={savePassword} onChange={(e) => setSavePassword(e.target.value)} required />
+            <TextField
+              label={t('settings_api_key_label')}
+              placeholder={t('settings_api_key_placeholder')}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              autoComplete="off"
+            />
+            <TextField
+              label={t('settings_confirm_with_password')}
+              type="password"
+              autoComplete="current-password"
+              value={savePassword}
+              onChange={(e) => setSavePassword(e.target.value)}
+              required
+            />
             <Stack direction="row" spacing={1}>
               <Button type="submit" variant="contained" disabled={busy === 'apikey'}>
                 {busy === 'apikey' ? t('saving') : t('save')}
