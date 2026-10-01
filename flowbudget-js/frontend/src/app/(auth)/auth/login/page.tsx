@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, Suspense, useState } from 'react';
 import { useFeedback } from '@/components/providers/Feedback';
 import { authClient } from '@/lib/auth-client';
+import { usePublicConfig } from '@/lib/password';
 
 function LoginForm() {
   const t = useTranslations();
@@ -15,6 +16,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const qc = useQueryClient();
+  const config = usePublicConfig();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -46,7 +48,14 @@ function LoginForm() {
           {t('login')}
         </Typography>
         <Box component="form" onSubmit={submit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField label={t('username_or_email')} value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required autoFocus />
+          <TextField
+            label={t('username_or_email')}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="username"
+            required
+            autoFocus
+          />
           <TextField
             label={t('password')}
             type="password"
@@ -60,12 +69,14 @@ function LoginForm() {
             {t('login_button')}
           </Button>
         </Box>
-        <Typography align="center" sx={{ mt: 3 }}>
-          {t('no_account_yet')}{' '}
-          <Link component={NextLink} href="/auth/register">
-            {t('register')}
-          </Link>
-        </Typography>
+        {config.data?.signUpEnabled !== false && (
+          <Typography align="center" sx={{ mt: 3 }}>
+            {t('no_account_yet')}{' '}
+            <Link component={NextLink} href="/auth/register">
+              {t('register')}
+            </Link>
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );

@@ -21,10 +21,12 @@ const M0 = monthOf(0);
 const M1 = monthOf(1);
 const MP = monthOf(-1);
 const dateIn = (month, d) => `${month.y}-${pad(month.m)}-${pad(d)}`;
+const PASSWORD = 'Budget-Pass-2026';
 const round2 = (v) => Math.round(v * 100) / 100;
 const share = (distributable, ratio, month) => round2((distributable * ratio) / 100 / month.days);
 
 let cookie = '';
+let r;
 let failures = 0;
 async function call(method, path, body, { raw = false } = {}) {
   const res = await fetch(BASE + path, {
@@ -54,21 +56,27 @@ function check(name, cond, extra) {
 async function signUp(prefix) {
   cookie = '';
   const user = `${prefix}_${Date.now().toString(36)}`;
-  const r = await call('POST', '/api/auth/sign-up/email', { email: `${user}@example.com`, password: 'password123', name: user, username: user });
+  const r = await call('POST', '/api/auth/sign-up/email', { email: `${user}@example.com`, password: PASSWORD, name: user, username: user });
   return { user, r };
 }
 
 
 console.log('auth');
+r = await call('GET', '/api/public-config');
+check('public config', typeof r.data?.signUpEnabled === 'boolean' && r.data.minPasswordLength >= 8, r.data);
+r = await call('POST', '/api/auth/sign-up/email', { email: 'short@example.com', password: 'Ab1!', name: 'shortpw', username: 'shortpw' });
+check('too short password rejected', r.status === 400 && r.data?.code === 'PASSWORD_TOO_SHORT', r);
+r = await call('POST', '/api/auth/sign-up/email', { email: 'weak@example.com', password: 'onlylowercaseletters', name: 'weakpw', username: 'weakpw' });
+check('weak password rejected', r.status === 400 && r.data?.code === 'PASSWORD_TOO_WEAK', r);
 const { user, r: signUpResult } = await signUp('tester');
-let r = signUpResult;
+r = signUpResult;
 check('sign up', r.status === 200, r);
 r = await call('GET', '/api/user');
 check('me', r.status === 200 && r.data.userName === user && r.data.accountIds.length === 0, r);
 await call('POST', '/api/auth/sign-out', {});
 r = await call('GET', '/api/user');
 check('signed out -> 401', r.status === 401, r);
-r = await call('POST', '/api/auth/sign-in/username', { username: user, password: 'password123' });
+r = await call('POST', '/api/auth/sign-in/username', { username: user, password: PASSWORD });
 check('sign in with username', r.status === 200, r);
 
 console.log('setup');
@@ -192,14 +200,14 @@ check('excel export', xres.status === 200 && buf.subarray(0, 2).toString() === '
 console.log('user settings');
 r = await call('PUT', '/api/user/api-key', { password: 'wrong', apiKey: 'abc' });
 check('api key wrong password', r.status === 400, r);
-r = await call('PUT', '/api/user/api-key', { password: 'password123', apiKey: 'secret-key' });
+r = await call('PUT', '/api/user/api-key', { password: PASSWORD, apiKey: 'secret-key' });
 check('api key saved', r.status === 204, r);
-r = await call('POST', '/api/user/api-key/reveal', { password: 'password123' });
+r = await call('POST', '/api/user/api-key/reveal', { password: PASSWORD });
 check('api key revealed', r.data.apiKey === 'secret-key', r);
 r = await call('PUT', '/api/user/preferences', { theme: 'dark', language: 'hu' });
 r = await call('GET', '/api/user');
 check('prefs saved', r.data.theme === 'dark' && r.data.language === 'hu' && r.data.hasApiKey, r.data);
-r = await call('PUT', '/api/user/password', { currentPassword: 'password123', newPassword: 'password456' });
+r = await call('PUT', '/api/user/password', { currentPassword: PASSWORD, newPassword: 'Budget-Pass-2027' });
 check('change password', r.status === 204, r);
 
 console.log('cleanup');

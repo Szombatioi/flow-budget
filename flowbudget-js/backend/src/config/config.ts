@@ -8,7 +8,10 @@ export interface AppConfig {
     secret: string;
     baseUrl: string;
     trustedOrigins: string[];
+    disableSignUp: boolean;
     minPasswordLength: number;
+    requireStrongPasswords: boolean;
+    checkPwnedPasswords: boolean;
   };
   kms: {
     provider: 'local' | 'vault';
@@ -26,6 +29,13 @@ function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
+}
+
+function bool(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  if (raw !== 'true' && raw !== 'false') throw new Error(`Environment variable ${name} must be "true" or "false"`);
+  return raw === 'true';
 }
 
 function int(name: string, fallback: number): number {
@@ -67,7 +77,10 @@ export function loadConfig(): AppConfig {
       secret,
       baseUrl,
       trustedOrigins: (process.env.TRUSTED_ORIGINS ?? baseUrl).split(',').map((o) => o.trim()).filter(Boolean),
-      minPasswordLength: int('MIN_PASSWORD_LENGTH', 8),
+      disableSignUp: bool('DISABLE_SIGN_UP', false),
+      minPasswordLength: int('MIN_PASSWORD_LENGTH', 12),
+      requireStrongPasswords: bool('PASSWORD_REQUIRE_COMPLEXITY', true),
+      checkPwnedPasswords: bool('PASSWORD_CHECK_PWNED', false),
     },
     kms: {
       provider,

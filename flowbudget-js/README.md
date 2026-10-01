@@ -65,7 +65,10 @@ Backend (see `.env.example` for details):
 | `BETTER_AUTH_URL`                            | Public URL of the frontend (cookies and CSRF checks are bound to it)       |
 | `BETTER_AUTH_SECRET`                         | ≥ 32 random characters                                                     |
 | `TRUSTED_ORIGINS`                            | Extra allowed origins, comma separated                                     |
-| `MIN_PASSWORD_LENGTH`                        | Default `8`                                                                |
+| `DISABLE_SIGN_UP`                            | `true` closes registration (existing users can still sign in)              |
+| `MIN_PASSWORD_LENGTH`                        | Default `12`                                                               |
+| `PASSWORD_REQUIRE_COMPLEXITY`                | Default `true`: three of lowercase, uppercase, digit, symbol               |
+| `PASSWORD_CHECK_PWNED`                       | Default `false`: reject passwords found in known breaches (needs internet) |
 | `KMS_PROVIDER`                               | `local` or `vault`                                                         |
 | `KMS_LOCAL_KEYS`, `KMS_CURRENT_KEY_VERSION`  | `1:<base64 32-byte key>,2:...` and the version used for new users          |
 | `VAULT_ADDR`, `VAULT_TOKEN`, `VAULT_KEY_NAME`| Vault Transit settings                                                     |
@@ -87,7 +90,7 @@ npm run migration:run
 
 ```sh
 cd backend
-npm test            # unit tests (dates, versioning)
+npm test            # unit tests (dates, versioning, password rules)
 npm run test:e2e    # API end-to-end test; needs the backend running and DATABASE_URL set
 ```
 
@@ -106,7 +109,7 @@ build the images without pushing. Both workflows can also be started manually (`
 
 ## API overview
 
-All endpoints except `/health*` and `/api/auth/*` require a session.
+All endpoints except `/health*`, `/api/auth/*` and `/api/public-config` require a session.
 
 | Area            | Endpoints                                                                                                   |
 | --------------- | ----------------------------------------------------------------------------------------------------------- |
