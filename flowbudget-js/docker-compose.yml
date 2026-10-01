@@ -1,3 +1,6 @@
+# Production setup: images from GHCR, served over HTTPS by an existing Traefik instance.
+# Only the frontend joins Traefik's network; the backend and the database stay on the internal network.
+# For a local build without Traefik see docker-compose.local.yml.
 services:
   db:
     image: postgres:16-alpine
@@ -15,14 +18,14 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    image: ghcr.io/szombatioi/flowbudget-backend:${FLOWBUDGET_TAG:-latest}
     depends_on:
       db:
         condition: service_healthy
     environment:
       PORT: 3001
       DATABASE_URL: postgres://${POSTGRES_USER:-flowbudget}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-flowbudget}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: https://${APP_DOMAIN:?Set APP_DOMAIN in .env}
       TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
       DISABLE_SIGN_UP: ${DISABLE_SIGN_UP:-false}
@@ -40,15 +43,43 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    image: ghcr.io/szombatioi/flowbudget-frontend:${FLOWBUDGET_TAG:-latest}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       BACKEND_URL: http://backend:3001
       TZ: ${TZ:-Europe/Budapest}
-    ports:
-      - "3000:3000"
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+      - traefik.http.services.flowbudget.loadbalancer.server.port=3000
+      - traefik.http.routers.flowbudget.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.flowbudget.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.flowbudget.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.flowbudget.middlewares=flowbudget-headers
+      # Login and registration get their own router (longer rule, so higher priority) with a per-IP rate limit.
+      - traefik.http.routers.flowbudget-auth.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/auth`)
+      - traefik.http.routers.flowbudget-auth.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.flowbudget-auth.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.flowbudget-auth.middlewares=flowbudget-headers,flowbudget-auth-limit
+      - traefik.http.middlewares.flowbudget-auth-limit.ratelimit.average=10
+      - traefik.http.middlewares.flowbudget-auth-limit.ratelimit.period=1m
+      - traefik.http.middlewares.flowbudget-auth-limit.ratelimit.burst=5
+      - traefik.http.middlewares.flowbudget-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.flowbudget-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.flowbudget-headers.headers.frameDeny=true
+      - traefik.http.middlewares.flowbudget-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.flowbudget-headers.headers.referrerPolicy=strict-origin-when-cross-origin
     restart: unless-stopped
+
+networks:
+  traefik:
+    name: ${TRAEFIK_NETWORK:-traefik}
+    external: true
 
 volumes:
   db-data:

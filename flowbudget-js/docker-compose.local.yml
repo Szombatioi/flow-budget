@@ -1,0 +1,17 @@
+# Local run built from source, without Traefik, on http://localhost:3000:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+services:
+  backend:
+    image: flowbudget-backend:local
+    build: ./backend
+    environment:
+      BETTER_AUTH_URL: http://localhost:3000
+
+  frontend:
+    image: flowbudget-frontend:local
+    build: ./frontend
+    networks: !override
+      - default
+    labels: !reset []
+    ports:
+      - "127.0.0.1:3000:3000"
