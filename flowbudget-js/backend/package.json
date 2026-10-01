@@ -1,0 +1,43 @@
+{
+  "name": "flowbudget-backend",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "start:dev": "tsc-watch -p tsconfig.build.json --onSuccess \"node dist/main.js\"",
+    "migration:generate": "npm run build && typeorm -d dist/database/data-source.js migration:generate",
+    "migration:run": "npm run build && typeorm -d dist/database/data-source.js migration:run",
+    "test": "tsc -p tsconfig.json && node --test \"dist/**/*.test.js\"",
+    "test:e2e": "node test/api.e2e.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-express": "^12.1.2",
+    "@nestjs/typeorm": "^12.0.2",
+    "better-auth": "^1.7.7",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "exceljs": "^4.4.0",
+    "multer": "^2.4.0",
+    "pg": "^8.23.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^22.20.4",
+    "@types/pg": "^8.23.1",
+    "tsc-watch": "^7.2.1",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  }
+}
