@@ -1,0 +1,55 @@
+name: FlowBudget frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - flowbudget-js/frontend/**
+      - .github/workflows/flowbudget-frontend.yml
+      - .github/workflows/flowbudget-image.yml
+  pull_request:
+    paths:
+      - flowbudget-js/frontend/**
+      - .github/workflows/flowbudget-frontend.yml
+      - .github/workflows/flowbudget-image.yml
+  workflow_dispatch:
+
+concurrency:
+  group: flowbudget-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flowbudget-js/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: flowbudget-js/frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  image:
+    needs: test
+    uses: ./.github/workflows/flowbudget-image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      component: frontend
+      push: ${{ github.event_name != 'pull_request' }}
