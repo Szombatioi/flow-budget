@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-flowbudget}
+      POSTGRES_USER: ${POSTGRES_USER:-flowbudget}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://${POSTGRES_USER:-flowbudget}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-flowbudget}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
+      MIN_PASSWORD_LENGTH: ${MIN_PASSWORD_LENGTH:-8}
+      KMS_PROVIDER: ${KMS_PROVIDER:-local}
+      KMS_CURRENT_KEY_VERSION: ${KMS_CURRENT_KEY_VERSION:-1}
+      KMS_LOCAL_KEYS: ${KMS_LOCAL_KEYS:-}
+      VAULT_ADDR: ${VAULT_ADDR:-}
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
+      VAULT_KEY_NAME: ${VAULT_KEY_NAME:-flowbudget-kek}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      TZ: ${TZ:-Europe/Budapest}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:3001
+      TZ: ${TZ:-Europe/Budapest}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  db-data:

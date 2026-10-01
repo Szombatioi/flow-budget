@@ -1,4 +1,11 @@
-## FlowBudget — local dev setup
+## FlowBudget
+
+This repository contains two implementations:
+
+- `FlowBudget/` — the original ASP.NET Core + Blazor WebAssembly solution (setup below).
+- `flowbudget-js/` — the Next.js + NestJS + PostgreSQL implementation. See [flowbudget-js/README.md](flowbudget-js/README.md).
+
+## ASP.NET solution — local dev setup
 
 ### Database
 ```sh
