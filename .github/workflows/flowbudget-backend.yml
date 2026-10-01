@@ -1,0 +1,90 @@
+name: FlowBudget backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - flowbudget-js/backend/**
+      - .github/workflows/flowbudget-backend.yml
+      - .github/workflows/flowbudget-image.yml
+  pull_request:
+    paths:
+      - flowbudget-js/backend/**
+      - .github/workflows/flowbudget-backend.yml
+      - .github/workflows/flowbudget-image.yml
+  workflow_dispatch:
+
+concurrency:
+  group: flowbudget-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flowbudget-js/backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: flowbudget
+          POSTGRES_USER: flowbudget
+          POSTGRES_PASSWORD: flowbudget
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U flowbudget -d flowbudget"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PORT: 3001
+      DATABASE_URL: postgres://flowbudget:flowbudget@localhost:5432/flowbudget
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only-secret-0000
+      KMS_PROVIDER: local
+      KMS_CURRENT_KEY_VERSION: 1
+      KMS_LOCAL_KEYS: 1:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      TZ: Europe/Budapest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: flowbudget-js/backend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck and unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: End-to-end API tests
+        run: |
+          node dist/main.js > backend.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3001/health/ready && break
+            sleep 2
+          done
+          npm run test:e2e
+
+      - name: Backend log
+        if: failure()
+        run: cat backend.log
+
+  image:
+    needs: test
+    uses: ./.github/workflows/flowbudget-image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      component: backend
+      push: ${{ github.event_name != 'pull_request' }}

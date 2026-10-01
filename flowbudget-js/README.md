@@ -91,6 +91,19 @@ npm test            # unit tests (dates, versioning)
 npm run test:e2e    # API end-to-end test; needs the backend running and DATABASE_URL set
 ```
 
+## CI/CD
+
+GitHub Actions builds the two images independently:
+
+| Workflow                                  | Runs when                        | Steps                                                         |
+| ----------------------------------------- | -------------------------------- | ------------------------------------------------------------- |
+| `.github/workflows/flowbudget-backend.yml`  | `flowbudget-js/backend/**` changes | typecheck, unit tests, end-to-end API tests (PostgreSQL service), image |
+| `.github/workflows/flowbudget-frontend.yml` | `flowbudget-js/frontend/**` changes | lint, typecheck, image                                        |
+
+Images are pushed to `ghcr.io/<owner>/flowbudget-backend` and `ghcr.io/<owner>/flowbudget-frontend` (tags: `latest`
+for the default branch and `sha-<commit>`) for `linux/amd64` and `linux/arm64`. Pull requests run the same checks and
+build the images without pushing. Both workflows can also be started manually (`workflow_dispatch`).
+
 ## API overview
 
 All endpoints except `/health*` and `/api/auth/*` require a session.
